@@ -11,9 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TutorRouteImport } from './routes/tutor'
 import { Route as StudentRouteImport } from './routes/student'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TutorIndexRouteImport } from './routes/tutor.index'
 import { Route as StudentIndexRouteImport } from './routes/student.index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as TutorStudentsRouteImport } from './routes/tutor.students'
 import { Route as TutorSettingsRouteImport } from './routes/tutor.settings'
 import { Route as TutorQuizzesRouteImport } from './routes/tutor.quizzes'
@@ -30,6 +32,17 @@ import { Route as StudentExploreRouteImport } from './routes/student.explore'
 import { Route as StudentCertificatesRouteImport } from './routes/student.certificates'
 import { Route as StudentBookmarksRouteImport } from './routes/student.bookmarks'
 import { Route as StudentAssignmentsRouteImport } from './routes/student.assignments'
+import { Route as AdminTutorsRouteImport } from './routes/admin.tutors'
+import { Route as AdminSupportRouteImport } from './routes/admin.support'
+import { Route as AdminStudentsRouteImport } from './routes/admin.students'
+import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
+import { Route as AdminRolesRouteImport } from './routes/admin.roles'
+import { Route as AdminReportsRouteImport } from './routes/admin.reports'
+import { Route as AdminCoursesRouteImport } from './routes/admin.courses'
+import { Route as AdminCmsRouteImport } from './routes/admin.cms'
+import { Route as AdminCertificatesRouteImport } from './routes/admin.certificates'
+import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
+import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 import { Route as StudentStudyIndexRouteImport } from './routes/student.study.index'
 import { Route as StudentStudySlugRouteImport } from './routes/student.study.$slug'
 import { Route as StudentCourseSlugRouteImport } from './routes/student.course.$slug'
@@ -42,6 +55,11 @@ const TutorRoute = TutorRouteImport.update({
 const StudentRoute = StudentRouteImport.update({
   id: '/student',
   path: '/student',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -58,6 +76,11 @@ const StudentIndexRoute = StudentIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => StudentRoute,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
 } as any)
 const TutorStudentsRoute = TutorStudentsRouteImport.update({
   id: '/students',
@@ -139,6 +162,61 @@ const StudentAssignmentsRoute = StudentAssignmentsRouteImport.update({
   path: '/assignments',
   getParentRoute: () => StudentRoute,
 } as any)
+const AdminTutorsRoute = AdminTutorsRouteImport.update({
+  id: '/tutors',
+  path: '/tutors',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSupportRoute = AdminSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminStudentsRoute = AdminStudentsRouteImport.update({
+  id: '/students',
+  path: '/students',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSettingsRoute = AdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminRolesRoute = AdminRolesRouteImport.update({
+  id: '/roles',
+  path: '/roles',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminReportsRoute = AdminReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCoursesRoute = AdminCoursesRouteImport.update({
+  id: '/courses',
+  path: '/courses',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCmsRoute = AdminCmsRouteImport.update({
+  id: '/cms',
+  path: '/cms',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCertificatesRoute = AdminCertificatesRouteImport.update({
+  id: '/certificates',
+  path: '/certificates',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAuditRoute = AdminAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AdminRoute,
+} as any)
 const StudentStudyIndexRoute = StudentStudyIndexRouteImport.update({
   id: '/study/',
   path: '/study/',
@@ -157,8 +235,20 @@ const StudentCourseSlugRoute = StudentCourseSlugRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/student': typeof StudentRouteWithChildren
   '/tutor': typeof TutorRouteWithChildren
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/categories': typeof AdminCategoriesRoute
+  '/admin/certificates': typeof AdminCertificatesRoute
+  '/admin/cms': typeof AdminCmsRoute
+  '/admin/courses': typeof AdminCoursesRoute
+  '/admin/reports': typeof AdminReportsRoute
+  '/admin/roles': typeof AdminRolesRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/students': typeof AdminStudentsRoute
+  '/admin/support': typeof AdminSupportRoute
+  '/admin/tutors': typeof AdminTutorsRoute
   '/student/assignments': typeof StudentAssignmentsRoute
   '/student/bookmarks': typeof StudentBookmarksRoute
   '/student/certificates': typeof StudentCertificatesRoute
@@ -175,6 +265,7 @@ export interface FileRoutesByFullPath {
   '/tutor/quizzes': typeof TutorQuizzesRoute
   '/tutor/settings': typeof TutorSettingsRoute
   '/tutor/students': typeof TutorStudentsRoute
+  '/admin/': typeof AdminIndexRoute
   '/student/': typeof StudentIndexRoute
   '/tutor/': typeof TutorIndexRoute
   '/student/course/$slug': typeof StudentCourseSlugRoute
@@ -183,6 +274,17 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/categories': typeof AdminCategoriesRoute
+  '/admin/certificates': typeof AdminCertificatesRoute
+  '/admin/cms': typeof AdminCmsRoute
+  '/admin/courses': typeof AdminCoursesRoute
+  '/admin/reports': typeof AdminReportsRoute
+  '/admin/roles': typeof AdminRolesRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/students': typeof AdminStudentsRoute
+  '/admin/support': typeof AdminSupportRoute
+  '/admin/tutors': typeof AdminTutorsRoute
   '/student/assignments': typeof StudentAssignmentsRoute
   '/student/bookmarks': typeof StudentBookmarksRoute
   '/student/certificates': typeof StudentCertificatesRoute
@@ -199,6 +301,7 @@ export interface FileRoutesByTo {
   '/tutor/quizzes': typeof TutorQuizzesRoute
   '/tutor/settings': typeof TutorSettingsRoute
   '/tutor/students': typeof TutorStudentsRoute
+  '/admin': typeof AdminIndexRoute
   '/student': typeof StudentIndexRoute
   '/tutor': typeof TutorIndexRoute
   '/student/course/$slug': typeof StudentCourseSlugRoute
@@ -208,8 +311,20 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/student': typeof StudentRouteWithChildren
   '/tutor': typeof TutorRouteWithChildren
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/categories': typeof AdminCategoriesRoute
+  '/admin/certificates': typeof AdminCertificatesRoute
+  '/admin/cms': typeof AdminCmsRoute
+  '/admin/courses': typeof AdminCoursesRoute
+  '/admin/reports': typeof AdminReportsRoute
+  '/admin/roles': typeof AdminRolesRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/students': typeof AdminStudentsRoute
+  '/admin/support': typeof AdminSupportRoute
+  '/admin/tutors': typeof AdminTutorsRoute
   '/student/assignments': typeof StudentAssignmentsRoute
   '/student/bookmarks': typeof StudentBookmarksRoute
   '/student/certificates': typeof StudentCertificatesRoute
@@ -226,6 +341,7 @@ export interface FileRoutesById {
   '/tutor/quizzes': typeof TutorQuizzesRoute
   '/tutor/settings': typeof TutorSettingsRoute
   '/tutor/students': typeof TutorStudentsRoute
+  '/admin/': typeof AdminIndexRoute
   '/student/': typeof StudentIndexRoute
   '/tutor/': typeof TutorIndexRoute
   '/student/course/$slug': typeof StudentCourseSlugRoute
@@ -236,8 +352,20 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/student'
     | '/tutor'
+    | '/admin/audit'
+    | '/admin/categories'
+    | '/admin/certificates'
+    | '/admin/cms'
+    | '/admin/courses'
+    | '/admin/reports'
+    | '/admin/roles'
+    | '/admin/settings'
+    | '/admin/students'
+    | '/admin/support'
+    | '/admin/tutors'
     | '/student/assignments'
     | '/student/bookmarks'
     | '/student/certificates'
@@ -254,6 +382,7 @@ export interface FileRouteTypes {
     | '/tutor/quizzes'
     | '/tutor/settings'
     | '/tutor/students'
+    | '/admin/'
     | '/student/'
     | '/tutor/'
     | '/student/course/$slug'
@@ -262,6 +391,17 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin/audit'
+    | '/admin/categories'
+    | '/admin/certificates'
+    | '/admin/cms'
+    | '/admin/courses'
+    | '/admin/reports'
+    | '/admin/roles'
+    | '/admin/settings'
+    | '/admin/students'
+    | '/admin/support'
+    | '/admin/tutors'
     | '/student/assignments'
     | '/student/bookmarks'
     | '/student/certificates'
@@ -278,6 +418,7 @@ export interface FileRouteTypes {
     | '/tutor/quizzes'
     | '/tutor/settings'
     | '/tutor/students'
+    | '/admin'
     | '/student'
     | '/tutor'
     | '/student/course/$slug'
@@ -286,8 +427,20 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/student'
     | '/tutor'
+    | '/admin/audit'
+    | '/admin/categories'
+    | '/admin/certificates'
+    | '/admin/cms'
+    | '/admin/courses'
+    | '/admin/reports'
+    | '/admin/roles'
+    | '/admin/settings'
+    | '/admin/students'
+    | '/admin/support'
+    | '/admin/tutors'
     | '/student/assignments'
     | '/student/bookmarks'
     | '/student/certificates'
@@ -304,6 +457,7 @@ export interface FileRouteTypes {
     | '/tutor/quizzes'
     | '/tutor/settings'
     | '/tutor/students'
+    | '/admin/'
     | '/student/'
     | '/tutor/'
     | '/student/course/$slug'
@@ -313,6 +467,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   StudentRoute: typeof StudentRouteWithChildren
   TutorRoute: typeof TutorRouteWithChildren
 }
@@ -331,6 +486,13 @@ declare module '@tanstack/react-router' {
       path: '/student'
       fullPath: '/student'
       preLoaderRoute: typeof StudentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -353,6 +515,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/student/'
       preLoaderRoute: typeof StudentIndexRouteImport
       parentRoute: typeof StudentRoute
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/tutor/students': {
       id: '/tutor/students'
@@ -466,6 +635,83 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudentAssignmentsRouteImport
       parentRoute: typeof StudentRoute
     }
+    '/admin/tutors': {
+      id: '/admin/tutors'
+      path: '/tutors'
+      fullPath: '/admin/tutors'
+      preLoaderRoute: typeof AdminTutorsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/support': {
+      id: '/admin/support'
+      path: '/support'
+      fullPath: '/admin/support'
+      preLoaderRoute: typeof AdminSupportRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/students': {
+      id: '/admin/students'
+      path: '/students'
+      fullPath: '/admin/students'
+      preLoaderRoute: typeof AdminStudentsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/settings': {
+      id: '/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/roles': {
+      id: '/admin/roles'
+      path: '/roles'
+      fullPath: '/admin/roles'
+      preLoaderRoute: typeof AdminRolesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/reports': {
+      id: '/admin/reports'
+      path: '/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AdminReportsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/courses': {
+      id: '/admin/courses'
+      path: '/courses'
+      fullPath: '/admin/courses'
+      preLoaderRoute: typeof AdminCoursesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/cms': {
+      id: '/admin/cms'
+      path: '/cms'
+      fullPath: '/admin/cms'
+      preLoaderRoute: typeof AdminCmsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/certificates': {
+      id: '/admin/certificates'
+      path: '/certificates'
+      fullPath: '/admin/certificates'
+      preLoaderRoute: typeof AdminCertificatesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/categories': {
+      id: '/admin/categories'
+      path: '/categories'
+      fullPath: '/admin/categories'
+      preLoaderRoute: typeof AdminCategoriesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/audit': {
+      id: '/admin/audit'
+      path: '/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AdminAuditRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/student/study/': {
       id: '/student/study/'
       path: '/study'
@@ -489,6 +735,38 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AdminRouteChildren {
+  AdminAuditRoute: typeof AdminAuditRoute
+  AdminCategoriesRoute: typeof AdminCategoriesRoute
+  AdminCertificatesRoute: typeof AdminCertificatesRoute
+  AdminCmsRoute: typeof AdminCmsRoute
+  AdminCoursesRoute: typeof AdminCoursesRoute
+  AdminReportsRoute: typeof AdminReportsRoute
+  AdminRolesRoute: typeof AdminRolesRoute
+  AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminStudentsRoute: typeof AdminStudentsRoute
+  AdminSupportRoute: typeof AdminSupportRoute
+  AdminTutorsRoute: typeof AdminTutorsRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminAuditRoute: AdminAuditRoute,
+  AdminCategoriesRoute: AdminCategoriesRoute,
+  AdminCertificatesRoute: AdminCertificatesRoute,
+  AdminCmsRoute: AdminCmsRoute,
+  AdminCoursesRoute: AdminCoursesRoute,
+  AdminReportsRoute: AdminReportsRoute,
+  AdminRolesRoute: AdminRolesRoute,
+  AdminSettingsRoute: AdminSettingsRoute,
+  AdminStudentsRoute: AdminStudentsRoute,
+  AdminSupportRoute: AdminSupportRoute,
+  AdminTutorsRoute: AdminTutorsRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface StudentRouteChildren {
   StudentAssignmentsRoute: typeof StudentAssignmentsRoute
@@ -551,6 +829,7 @@ const TutorRouteWithChildren = TutorRoute._addFileChildren(TutorRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   StudentRoute: StudentRouteWithChildren,
   TutorRoute: TutorRouteWithChildren,
 }
