@@ -15,8 +15,13 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as TutorIndexRouteImport } from './routes/tutor.index'
 import { Route as StudentIndexRouteImport } from './routes/student.index'
 import { Route as TutorStudentsRouteImport } from './routes/tutor.students'
+import { Route as TutorSettingsRouteImport } from './routes/tutor.settings'
+import { Route as TutorQuizzesRouteImport } from './routes/tutor.quizzes'
+import { Route as TutorMessagesRouteImport } from './routes/tutor.messages'
 import { Route as TutorCoursesRouteImport } from './routes/tutor.courses'
+import { Route as TutorCertificatesRouteImport } from './routes/tutor.certificates'
 import { Route as TutorBuilderRouteImport } from './routes/tutor.builder'
+import { Route as TutorAssignmentsRouteImport } from './routes/tutor.assignments'
 import { Route as TutorAnalyticsRouteImport } from './routes/tutor.analytics'
 import { Route as StudentSettingsRouteImport } from './routes/student.settings'
 import { Route as StudentProfileRouteImport } from './routes/student.profile'
@@ -59,14 +64,39 @@ const TutorStudentsRoute = TutorStudentsRouteImport.update({
   path: '/students',
   getParentRoute: () => TutorRoute,
 } as any)
+const TutorSettingsRoute = TutorSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => TutorRoute,
+} as any)
+const TutorQuizzesRoute = TutorQuizzesRouteImport.update({
+  id: '/quizzes',
+  path: '/quizzes',
+  getParentRoute: () => TutorRoute,
+} as any)
+const TutorMessagesRoute = TutorMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => TutorRoute,
+} as any)
 const TutorCoursesRoute = TutorCoursesRouteImport.update({
   id: '/courses',
   path: '/courses',
   getParentRoute: () => TutorRoute,
 } as any)
+const TutorCertificatesRoute = TutorCertificatesRouteImport.update({
+  id: '/certificates',
+  path: '/certificates',
+  getParentRoute: () => TutorRoute,
+} as any)
 const TutorBuilderRoute = TutorBuilderRouteImport.update({
   id: '/builder',
   path: '/builder',
+  getParentRoute: () => TutorRoute,
+} as any)
+const TutorAssignmentsRoute = TutorAssignmentsRouteImport.update({
+  id: '/assignments',
+  path: '/assignments',
   getParentRoute: () => TutorRoute,
 } as any)
 const TutorAnalyticsRoute = TutorAnalyticsRouteImport.update({
@@ -137,8 +167,13 @@ export interface FileRoutesByFullPath {
   '/student/profile': typeof StudentProfileRoute
   '/student/settings': typeof StudentSettingsRoute
   '/tutor/analytics': typeof TutorAnalyticsRoute
+  '/tutor/assignments': typeof TutorAssignmentsRoute
   '/tutor/builder': typeof TutorBuilderRoute
+  '/tutor/certificates': typeof TutorCertificatesRoute
   '/tutor/courses': typeof TutorCoursesRoute
+  '/tutor/messages': typeof TutorMessagesRoute
+  '/tutor/quizzes': typeof TutorQuizzesRoute
+  '/tutor/settings': typeof TutorSettingsRoute
   '/tutor/students': typeof TutorStudentsRoute
   '/student/': typeof StudentIndexRoute
   '/tutor/': typeof TutorIndexRoute
@@ -156,8 +191,13 @@ export interface FileRoutesByTo {
   '/student/profile': typeof StudentProfileRoute
   '/student/settings': typeof StudentSettingsRoute
   '/tutor/analytics': typeof TutorAnalyticsRoute
+  '/tutor/assignments': typeof TutorAssignmentsRoute
   '/tutor/builder': typeof TutorBuilderRoute
+  '/tutor/certificates': typeof TutorCertificatesRoute
   '/tutor/courses': typeof TutorCoursesRoute
+  '/tutor/messages': typeof TutorMessagesRoute
+  '/tutor/quizzes': typeof TutorQuizzesRoute
+  '/tutor/settings': typeof TutorSettingsRoute
   '/tutor/students': typeof TutorStudentsRoute
   '/student': typeof StudentIndexRoute
   '/tutor': typeof TutorIndexRoute
@@ -178,8 +218,13 @@ export interface FileRoutesById {
   '/student/profile': typeof StudentProfileRoute
   '/student/settings': typeof StudentSettingsRoute
   '/tutor/analytics': typeof TutorAnalyticsRoute
+  '/tutor/assignments': typeof TutorAssignmentsRoute
   '/tutor/builder': typeof TutorBuilderRoute
+  '/tutor/certificates': typeof TutorCertificatesRoute
   '/tutor/courses': typeof TutorCoursesRoute
+  '/tutor/messages': typeof TutorMessagesRoute
+  '/tutor/quizzes': typeof TutorQuizzesRoute
+  '/tutor/settings': typeof TutorSettingsRoute
   '/tutor/students': typeof TutorStudentsRoute
   '/student/': typeof StudentIndexRoute
   '/tutor/': typeof TutorIndexRoute
@@ -201,8 +246,13 @@ export interface FileRouteTypes {
     | '/student/profile'
     | '/student/settings'
     | '/tutor/analytics'
+    | '/tutor/assignments'
     | '/tutor/builder'
+    | '/tutor/certificates'
     | '/tutor/courses'
+    | '/tutor/messages'
+    | '/tutor/quizzes'
+    | '/tutor/settings'
     | '/tutor/students'
     | '/student/'
     | '/tutor/'
@@ -220,8 +270,13 @@ export interface FileRouteTypes {
     | '/student/profile'
     | '/student/settings'
     | '/tutor/analytics'
+    | '/tutor/assignments'
     | '/tutor/builder'
+    | '/tutor/certificates'
     | '/tutor/courses'
+    | '/tutor/messages'
+    | '/tutor/quizzes'
+    | '/tutor/settings'
     | '/tutor/students'
     | '/student'
     | '/tutor'
@@ -241,8 +296,13 @@ export interface FileRouteTypes {
     | '/student/profile'
     | '/student/settings'
     | '/tutor/analytics'
+    | '/tutor/assignments'
     | '/tutor/builder'
+    | '/tutor/certificates'
     | '/tutor/courses'
+    | '/tutor/messages'
+    | '/tutor/quizzes'
+    | '/tutor/settings'
     | '/tutor/students'
     | '/student/'
     | '/tutor/'
@@ -301,6 +361,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TutorStudentsRouteImport
       parentRoute: typeof TutorRoute
     }
+    '/tutor/settings': {
+      id: '/tutor/settings'
+      path: '/settings'
+      fullPath: '/tutor/settings'
+      preLoaderRoute: typeof TutorSettingsRouteImport
+      parentRoute: typeof TutorRoute
+    }
+    '/tutor/quizzes': {
+      id: '/tutor/quizzes'
+      path: '/quizzes'
+      fullPath: '/tutor/quizzes'
+      preLoaderRoute: typeof TutorQuizzesRouteImport
+      parentRoute: typeof TutorRoute
+    }
+    '/tutor/messages': {
+      id: '/tutor/messages'
+      path: '/messages'
+      fullPath: '/tutor/messages'
+      preLoaderRoute: typeof TutorMessagesRouteImport
+      parentRoute: typeof TutorRoute
+    }
     '/tutor/courses': {
       id: '/tutor/courses'
       path: '/courses'
@@ -308,11 +389,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TutorCoursesRouteImport
       parentRoute: typeof TutorRoute
     }
+    '/tutor/certificates': {
+      id: '/tutor/certificates'
+      path: '/certificates'
+      fullPath: '/tutor/certificates'
+      preLoaderRoute: typeof TutorCertificatesRouteImport
+      parentRoute: typeof TutorRoute
+    }
     '/tutor/builder': {
       id: '/tutor/builder'
       path: '/builder'
       fullPath: '/tutor/builder'
       preLoaderRoute: typeof TutorBuilderRouteImport
+      parentRoute: typeof TutorRoute
+    }
+    '/tutor/assignments': {
+      id: '/tutor/assignments'
+      path: '/assignments'
+      fullPath: '/tutor/assignments'
+      preLoaderRoute: typeof TutorAssignmentsRouteImport
       parentRoute: typeof TutorRoute
     }
     '/tutor/analytics': {
@@ -428,16 +523,26 @@ const StudentRouteWithChildren =
 
 interface TutorRouteChildren {
   TutorAnalyticsRoute: typeof TutorAnalyticsRoute
+  TutorAssignmentsRoute: typeof TutorAssignmentsRoute
   TutorBuilderRoute: typeof TutorBuilderRoute
+  TutorCertificatesRoute: typeof TutorCertificatesRoute
   TutorCoursesRoute: typeof TutorCoursesRoute
+  TutorMessagesRoute: typeof TutorMessagesRoute
+  TutorQuizzesRoute: typeof TutorQuizzesRoute
+  TutorSettingsRoute: typeof TutorSettingsRoute
   TutorStudentsRoute: typeof TutorStudentsRoute
   TutorIndexRoute: typeof TutorIndexRoute
 }
 
 const TutorRouteChildren: TutorRouteChildren = {
   TutorAnalyticsRoute: TutorAnalyticsRoute,
+  TutorAssignmentsRoute: TutorAssignmentsRoute,
   TutorBuilderRoute: TutorBuilderRoute,
+  TutorCertificatesRoute: TutorCertificatesRoute,
   TutorCoursesRoute: TutorCoursesRoute,
+  TutorMessagesRoute: TutorMessagesRoute,
+  TutorQuizzesRoute: TutorQuizzesRoute,
+  TutorSettingsRoute: TutorSettingsRoute,
   TutorStudentsRoute: TutorStudentsRoute,
   TutorIndexRoute: TutorIndexRoute,
 }
