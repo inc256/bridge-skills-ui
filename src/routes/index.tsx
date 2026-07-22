@@ -300,7 +300,7 @@ function LandingPage() {
                 <p className="mt-5 text-[15px] leading-relaxed text-foreground">"{t.quote}"</p>
                 <div className="mt-6 flex items-center gap-3 border-t border-border pt-5">
                   <div className="grid h-10 w-10 place-items-center rounded-full bg-primary/10 text-primary text-sm font-semibold">
-                    {t.name.split(" ").map(n => n[0]).join("")}
+                    {t.name.split(" ").map((n: string) => n[0]).join("")}
                   </div>
                   <div>
                     <div className="text-sm font-semibold">{t.name}</div>
