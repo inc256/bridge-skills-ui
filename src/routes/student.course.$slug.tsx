@@ -101,7 +101,7 @@ function CourseDetails() {
             <h3 className="text-[18px] font-semibold">Your instructor</h3>
             <div className="mt-4 flex gap-4">
               <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-primary/10 text-primary text-lg font-semibold">
-                {course.instructor.split(" ").map(n => n[0]).join("")}
+                {course.instructor.split(" ").map((n: string) => n[0]).join("")}
               </div>
               <div>
                 <div className="text-[15px] font-semibold">{course.instructor}</div>
