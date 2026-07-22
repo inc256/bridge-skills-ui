@@ -12,10 +12,13 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as StudentRouteImport } from './routes/student'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StudentIndexRouteImport } from './routes/student.index'
+import { Route as StudentSettingsRouteImport } from './routes/student.settings'
 import { Route as StudentProfileRouteImport } from './routes/student.profile'
 import { Route as StudentMyLearningRouteImport } from './routes/student.my-learning'
 import { Route as StudentExploreRouteImport } from './routes/student.explore'
 import { Route as StudentCertificatesRouteImport } from './routes/student.certificates'
+import { Route as StudentBookmarksRouteImport } from './routes/student.bookmarks'
+import { Route as StudentAssignmentsRouteImport } from './routes/student.assignments'
 import { Route as StudentStudyIndexRouteImport } from './routes/student.study.index'
 import { Route as StudentStudySlugRouteImport } from './routes/student.study.$slug'
 import { Route as StudentCourseSlugRouteImport } from './routes/student.course.$slug'
@@ -33,6 +36,11 @@ const IndexRoute = IndexRouteImport.update({
 const StudentIndexRoute = StudentIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentSettingsRoute = StudentSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => StudentRoute,
 } as any)
 const StudentProfileRoute = StudentProfileRouteImport.update({
@@ -55,6 +63,16 @@ const StudentCertificatesRoute = StudentCertificatesRouteImport.update({
   path: '/certificates',
   getParentRoute: () => StudentRoute,
 } as any)
+const StudentBookmarksRoute = StudentBookmarksRouteImport.update({
+  id: '/bookmarks',
+  path: '/bookmarks',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentAssignmentsRoute = StudentAssignmentsRouteImport.update({
+  id: '/assignments',
+  path: '/assignments',
+  getParentRoute: () => StudentRoute,
+} as any)
 const StudentStudyIndexRoute = StudentStudyIndexRouteImport.update({
   id: '/study/',
   path: '/study/',
@@ -74,10 +92,13 @@ const StudentCourseSlugRoute = StudentCourseSlugRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/student': typeof StudentRouteWithChildren
+  '/student/assignments': typeof StudentAssignmentsRoute
+  '/student/bookmarks': typeof StudentBookmarksRoute
   '/student/certificates': typeof StudentCertificatesRoute
   '/student/explore': typeof StudentExploreRoute
   '/student/my-learning': typeof StudentMyLearningRoute
   '/student/profile': typeof StudentProfileRoute
+  '/student/settings': typeof StudentSettingsRoute
   '/student/': typeof StudentIndexRoute
   '/student/course/$slug': typeof StudentCourseSlugRoute
   '/student/study/$slug': typeof StudentStudySlugRoute
@@ -85,10 +106,13 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/student/assignments': typeof StudentAssignmentsRoute
+  '/student/bookmarks': typeof StudentBookmarksRoute
   '/student/certificates': typeof StudentCertificatesRoute
   '/student/explore': typeof StudentExploreRoute
   '/student/my-learning': typeof StudentMyLearningRoute
   '/student/profile': typeof StudentProfileRoute
+  '/student/settings': typeof StudentSettingsRoute
   '/student': typeof StudentIndexRoute
   '/student/course/$slug': typeof StudentCourseSlugRoute
   '/student/study/$slug': typeof StudentStudySlugRoute
@@ -98,10 +122,13 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/student': typeof StudentRouteWithChildren
+  '/student/assignments': typeof StudentAssignmentsRoute
+  '/student/bookmarks': typeof StudentBookmarksRoute
   '/student/certificates': typeof StudentCertificatesRoute
   '/student/explore': typeof StudentExploreRoute
   '/student/my-learning': typeof StudentMyLearningRoute
   '/student/profile': typeof StudentProfileRoute
+  '/student/settings': typeof StudentSettingsRoute
   '/student/': typeof StudentIndexRoute
   '/student/course/$slug': typeof StudentCourseSlugRoute
   '/student/study/$slug': typeof StudentStudySlugRoute
@@ -112,10 +139,13 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/student'
+    | '/student/assignments'
+    | '/student/bookmarks'
     | '/student/certificates'
     | '/student/explore'
     | '/student/my-learning'
     | '/student/profile'
+    | '/student/settings'
     | '/student/'
     | '/student/course/$slug'
     | '/student/study/$slug'
@@ -123,10 +153,13 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/student/assignments'
+    | '/student/bookmarks'
     | '/student/certificates'
     | '/student/explore'
     | '/student/my-learning'
     | '/student/profile'
+    | '/student/settings'
     | '/student'
     | '/student/course/$slug'
     | '/student/study/$slug'
@@ -135,10 +168,13 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/student'
+    | '/student/assignments'
+    | '/student/bookmarks'
     | '/student/certificates'
     | '/student/explore'
     | '/student/my-learning'
     | '/student/profile'
+    | '/student/settings'
     | '/student/'
     | '/student/course/$slug'
     | '/student/study/$slug'
@@ -173,6 +209,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudentIndexRouteImport
       parentRoute: typeof StudentRoute
     }
+    '/student/settings': {
+      id: '/student/settings'
+      path: '/settings'
+      fullPath: '/student/settings'
+      preLoaderRoute: typeof StudentSettingsRouteImport
+      parentRoute: typeof StudentRoute
+    }
     '/student/profile': {
       id: '/student/profile'
       path: '/profile'
@@ -201,6 +244,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudentCertificatesRouteImport
       parentRoute: typeof StudentRoute
     }
+    '/student/bookmarks': {
+      id: '/student/bookmarks'
+      path: '/bookmarks'
+      fullPath: '/student/bookmarks'
+      preLoaderRoute: typeof StudentBookmarksRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/student/assignments': {
+      id: '/student/assignments'
+      path: '/assignments'
+      fullPath: '/student/assignments'
+      preLoaderRoute: typeof StudentAssignmentsRouteImport
+      parentRoute: typeof StudentRoute
+    }
     '/student/study/': {
       id: '/student/study/'
       path: '/study'
@@ -226,10 +283,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface StudentRouteChildren {
+  StudentAssignmentsRoute: typeof StudentAssignmentsRoute
+  StudentBookmarksRoute: typeof StudentBookmarksRoute
   StudentCertificatesRoute: typeof StudentCertificatesRoute
   StudentExploreRoute: typeof StudentExploreRoute
   StudentMyLearningRoute: typeof StudentMyLearningRoute
   StudentProfileRoute: typeof StudentProfileRoute
+  StudentSettingsRoute: typeof StudentSettingsRoute
   StudentIndexRoute: typeof StudentIndexRoute
   StudentCourseSlugRoute: typeof StudentCourseSlugRoute
   StudentStudySlugRoute: typeof StudentStudySlugRoute
@@ -237,10 +297,13 @@ interface StudentRouteChildren {
 }
 
 const StudentRouteChildren: StudentRouteChildren = {
+  StudentAssignmentsRoute: StudentAssignmentsRoute,
+  StudentBookmarksRoute: StudentBookmarksRoute,
   StudentCertificatesRoute: StudentCertificatesRoute,
   StudentExploreRoute: StudentExploreRoute,
   StudentMyLearningRoute: StudentMyLearningRoute,
   StudentProfileRoute: StudentProfileRoute,
+  StudentSettingsRoute: StudentSettingsRoute,
   StudentIndexRoute: StudentIndexRoute,
   StudentCourseSlugRoute: StudentCourseSlugRoute,
   StudentStudySlugRoute: StudentStudySlugRoute,
