@@ -12,7 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as StudentRouteImport } from './routes/student'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StudentIndexRouteImport } from './routes/student.index'
+import { Route as StudentProfileRouteImport } from './routes/student.profile'
+import { Route as StudentMyLearningRouteImport } from './routes/student.my-learning'
 import { Route as StudentExploreRouteImport } from './routes/student.explore'
+import { Route as StudentCertificatesRouteImport } from './routes/student.certificates'
+import { Route as StudentStudyIndexRouteImport } from './routes/student.study.index'
+import { Route as StudentStudySlugRouteImport } from './routes/student.study.$slug'
 import { Route as StudentCourseSlugRouteImport } from './routes/student.course.$slug'
 
 const StudentRoute = StudentRouteImport.update({
@@ -30,9 +35,34 @@ const StudentIndexRoute = StudentIndexRouteImport.update({
   path: '/',
   getParentRoute: () => StudentRoute,
 } as any)
+const StudentProfileRoute = StudentProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentMyLearningRoute = StudentMyLearningRouteImport.update({
+  id: '/my-learning',
+  path: '/my-learning',
+  getParentRoute: () => StudentRoute,
+} as any)
 const StudentExploreRoute = StudentExploreRouteImport.update({
   id: '/explore',
   path: '/explore',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentCertificatesRoute = StudentCertificatesRouteImport.update({
+  id: '/certificates',
+  path: '/certificates',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentStudyIndexRoute = StudentStudyIndexRouteImport.update({
+  id: '/study/',
+  path: '/study/',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentStudySlugRoute = StudentStudySlugRouteImport.update({
+  id: '/study/$slug',
+  path: '/study/$slug',
   getParentRoute: () => StudentRoute,
 } as any)
 const StudentCourseSlugRoute = StudentCourseSlugRouteImport.update({
@@ -44,41 +74,75 @@ const StudentCourseSlugRoute = StudentCourseSlugRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/student': typeof StudentRouteWithChildren
+  '/student/certificates': typeof StudentCertificatesRoute
   '/student/explore': typeof StudentExploreRoute
+  '/student/my-learning': typeof StudentMyLearningRoute
+  '/student/profile': typeof StudentProfileRoute
   '/student/': typeof StudentIndexRoute
   '/student/course/$slug': typeof StudentCourseSlugRoute
+  '/student/study/$slug': typeof StudentStudySlugRoute
+  '/student/study/': typeof StudentStudyIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/student/certificates': typeof StudentCertificatesRoute
   '/student/explore': typeof StudentExploreRoute
+  '/student/my-learning': typeof StudentMyLearningRoute
+  '/student/profile': typeof StudentProfileRoute
   '/student': typeof StudentIndexRoute
   '/student/course/$slug': typeof StudentCourseSlugRoute
+  '/student/study/$slug': typeof StudentStudySlugRoute
+  '/student/study': typeof StudentStudyIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/student': typeof StudentRouteWithChildren
+  '/student/certificates': typeof StudentCertificatesRoute
   '/student/explore': typeof StudentExploreRoute
+  '/student/my-learning': typeof StudentMyLearningRoute
+  '/student/profile': typeof StudentProfileRoute
   '/student/': typeof StudentIndexRoute
   '/student/course/$slug': typeof StudentCourseSlugRoute
+  '/student/study/$slug': typeof StudentStudySlugRoute
+  '/student/study/': typeof StudentStudyIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/student'
+    | '/student/certificates'
     | '/student/explore'
+    | '/student/my-learning'
+    | '/student/profile'
     | '/student/'
     | '/student/course/$slug'
+    | '/student/study/$slug'
+    | '/student/study/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/student/explore' | '/student' | '/student/course/$slug'
+  to:
+    | '/'
+    | '/student/certificates'
+    | '/student/explore'
+    | '/student/my-learning'
+    | '/student/profile'
+    | '/student'
+    | '/student/course/$slug'
+    | '/student/study/$slug'
+    | '/student/study'
   id:
     | '__root__'
     | '/'
     | '/student'
+    | '/student/certificates'
     | '/student/explore'
+    | '/student/my-learning'
+    | '/student/profile'
     | '/student/'
     | '/student/course/$slug'
+    | '/student/study/$slug'
+    | '/student/study/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -109,11 +173,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudentIndexRouteImport
       parentRoute: typeof StudentRoute
     }
+    '/student/profile': {
+      id: '/student/profile'
+      path: '/profile'
+      fullPath: '/student/profile'
+      preLoaderRoute: typeof StudentProfileRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/student/my-learning': {
+      id: '/student/my-learning'
+      path: '/my-learning'
+      fullPath: '/student/my-learning'
+      preLoaderRoute: typeof StudentMyLearningRouteImport
+      parentRoute: typeof StudentRoute
+    }
     '/student/explore': {
       id: '/student/explore'
       path: '/explore'
       fullPath: '/student/explore'
       preLoaderRoute: typeof StudentExploreRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/student/certificates': {
+      id: '/student/certificates'
+      path: '/certificates'
+      fullPath: '/student/certificates'
+      preLoaderRoute: typeof StudentCertificatesRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/student/study/': {
+      id: '/student/study/'
+      path: '/study'
+      fullPath: '/student/study/'
+      preLoaderRoute: typeof StudentStudyIndexRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/student/study/$slug': {
+      id: '/student/study/$slug'
+      path: '/study/$slug'
+      fullPath: '/student/study/$slug'
+      preLoaderRoute: typeof StudentStudySlugRouteImport
       parentRoute: typeof StudentRoute
     }
     '/student/course/$slug': {
@@ -127,15 +226,25 @@ declare module '@tanstack/react-router' {
 }
 
 interface StudentRouteChildren {
+  StudentCertificatesRoute: typeof StudentCertificatesRoute
   StudentExploreRoute: typeof StudentExploreRoute
+  StudentMyLearningRoute: typeof StudentMyLearningRoute
+  StudentProfileRoute: typeof StudentProfileRoute
   StudentIndexRoute: typeof StudentIndexRoute
   StudentCourseSlugRoute: typeof StudentCourseSlugRoute
+  StudentStudySlugRoute: typeof StudentStudySlugRoute
+  StudentStudyIndexRoute: typeof StudentStudyIndexRoute
 }
 
 const StudentRouteChildren: StudentRouteChildren = {
+  StudentCertificatesRoute: StudentCertificatesRoute,
   StudentExploreRoute: StudentExploreRoute,
+  StudentMyLearningRoute: StudentMyLearningRoute,
+  StudentProfileRoute: StudentProfileRoute,
   StudentIndexRoute: StudentIndexRoute,
   StudentCourseSlugRoute: StudentCourseSlugRoute,
+  StudentStudySlugRoute: StudentStudySlugRoute,
+  StudentStudyIndexRoute: StudentStudyIndexRoute,
 }
 
 const StudentRouteWithChildren =
