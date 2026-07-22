@@ -9,52 +9,47 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TutorRouteImport } from './routes/tutor'
-import { Route as StudentRouteImport } from './routes/student'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as TutorIndexRouteImport } from './routes/tutor.index'
-import { Route as StudentIndexRouteImport } from './routes/student.index'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as StudentRouteImport } from './routes/student'
+import { Route as TutorRouteImport } from './routes/tutor'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
-import { Route as TutorStudentsRouteImport } from './routes/tutor.students'
-import { Route as TutorSettingsRouteImport } from './routes/tutor.settings'
-import { Route as TutorQuizzesRouteImport } from './routes/tutor.quizzes'
-import { Route as TutorMessagesRouteImport } from './routes/tutor.messages'
-import { Route as TutorCoursesRouteImport } from './routes/tutor.courses'
-import { Route as TutorCertificatesRouteImport } from './routes/tutor.certificates'
-import { Route as TutorBuilderRouteImport } from './routes/tutor.builder'
-import { Route as TutorAssignmentsRouteImport } from './routes/tutor.assignments'
-import { Route as TutorAnalyticsRouteImport } from './routes/tutor.analytics'
-import { Route as StudentSettingsRouteImport } from './routes/student.settings'
-import { Route as StudentProfileRouteImport } from './routes/student.profile'
-import { Route as StudentMyLearningRouteImport } from './routes/student.my-learning'
-import { Route as StudentExploreRouteImport } from './routes/student.explore'
-import { Route as StudentCertificatesRouteImport } from './routes/student.certificates'
-import { Route as StudentBookmarksRouteImport } from './routes/student.bookmarks'
-import { Route as StudentAssignmentsRouteImport } from './routes/student.assignments'
-import { Route as AdminTutorsRouteImport } from './routes/admin.tutors'
-import { Route as AdminSupportRouteImport } from './routes/admin.support'
-import { Route as AdminStudentsRouteImport } from './routes/admin.students'
-import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
-import { Route as AdminRolesRouteImport } from './routes/admin.roles'
-import { Route as AdminReportsRouteImport } from './routes/admin.reports'
-import { Route as AdminCoursesRouteImport } from './routes/admin.courses'
-import { Route as AdminCmsRouteImport } from './routes/admin.cms'
-import { Route as AdminCertificatesRouteImport } from './routes/admin.certificates'
-import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
+import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
+import { Route as AdminCertificatesRouteImport } from './routes/admin.certificates'
+import { Route as AdminCmsRouteImport } from './routes/admin.cms'
+import { Route as AdminCoursesRouteImport } from './routes/admin.courses'
+import { Route as AdminReportsRouteImport } from './routes/admin.reports'
+import { Route as AdminRolesRouteImport } from './routes/admin.roles'
+import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
+import { Route as AdminStudentsRouteImport } from './routes/admin.students'
+import { Route as AdminSupportRouteImport } from './routes/admin.support'
+import { Route as AdminTutorsRouteImport } from './routes/admin.tutors'
+import { Route as StudentIndexRouteImport } from './routes/student.index'
+import { Route as StudentAssignmentsRouteImport } from './routes/student.assignments'
+import { Route as StudentBookmarksRouteImport } from './routes/student.bookmarks'
+import { Route as StudentCertificatesRouteImport } from './routes/student.certificates'
+import { Route as StudentExploreRouteImport } from './routes/student.explore'
+import { Route as StudentMyLearningRouteImport } from './routes/student.my-learning'
+import { Route as StudentProfileRouteImport } from './routes/student.profile'
+import { Route as StudentSettingsRouteImport } from './routes/student.settings'
+import { Route as TutorIndexRouteImport } from './routes/tutor.index'
+import { Route as TutorAnalyticsRouteImport } from './routes/tutor.analytics'
+import { Route as TutorAssignmentsRouteImport } from './routes/tutor.assignments'
+import { Route as TutorBuilderRouteImport } from './routes/tutor.builder'
+import { Route as TutorCertificatesRouteImport } from './routes/tutor.certificates'
+import { Route as TutorCoursesRouteImport } from './routes/tutor.courses'
+import { Route as TutorMessagesRouteImport } from './routes/tutor.messages'
+import { Route as TutorQuizzesRouteImport } from './routes/tutor.quizzes'
+import { Route as TutorSettingsRouteImport } from './routes/tutor.settings'
+import { Route as TutorStudentsRouteImport } from './routes/tutor.students'
+import { Route as StudentCourseSlugRouteImport } from './routes/student.course.$slug'
 import { Route as StudentStudyIndexRouteImport } from './routes/student.study.index'
 import { Route as StudentStudySlugRouteImport } from './routes/student.study.$slug'
-import { Route as StudentCourseSlugRouteImport } from './routes/student.course.$slug'
 
-const TutorRoute = TutorRouteImport.update({
-  id: '/tutor',
-  path: '/tutor',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const StudentRoute = StudentRouteImport.update({
-  id: '/student',
-  path: '/student',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -62,149 +57,24 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const StudentRoute = StudentRouteImport.update({
+  id: '/student',
+  path: '/student',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TutorIndexRoute = TutorIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => TutorRoute,
-} as any)
-const StudentIndexRoute = StudentIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => StudentRoute,
+const TutorRoute = TutorRouteImport.update({
+  id: '/tutor',
+  path: '/tutor',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
-const TutorStudentsRoute = TutorStudentsRouteImport.update({
-  id: '/students',
-  path: '/students',
-  getParentRoute: () => TutorRoute,
-} as any)
-const TutorSettingsRoute = TutorSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => TutorRoute,
-} as any)
-const TutorQuizzesRoute = TutorQuizzesRouteImport.update({
-  id: '/quizzes',
-  path: '/quizzes',
-  getParentRoute: () => TutorRoute,
-} as any)
-const TutorMessagesRoute = TutorMessagesRouteImport.update({
-  id: '/messages',
-  path: '/messages',
-  getParentRoute: () => TutorRoute,
-} as any)
-const TutorCoursesRoute = TutorCoursesRouteImport.update({
-  id: '/courses',
-  path: '/courses',
-  getParentRoute: () => TutorRoute,
-} as any)
-const TutorCertificatesRoute = TutorCertificatesRouteImport.update({
-  id: '/certificates',
-  path: '/certificates',
-  getParentRoute: () => TutorRoute,
-} as any)
-const TutorBuilderRoute = TutorBuilderRouteImport.update({
-  id: '/builder',
-  path: '/builder',
-  getParentRoute: () => TutorRoute,
-} as any)
-const TutorAssignmentsRoute = TutorAssignmentsRouteImport.update({
-  id: '/assignments',
-  path: '/assignments',
-  getParentRoute: () => TutorRoute,
-} as any)
-const TutorAnalyticsRoute = TutorAnalyticsRouteImport.update({
-  id: '/analytics',
-  path: '/analytics',
-  getParentRoute: () => TutorRoute,
-} as any)
-const StudentSettingsRoute = StudentSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => StudentRoute,
-} as any)
-const StudentProfileRoute = StudentProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => StudentRoute,
-} as any)
-const StudentMyLearningRoute = StudentMyLearningRouteImport.update({
-  id: '/my-learning',
-  path: '/my-learning',
-  getParentRoute: () => StudentRoute,
-} as any)
-const StudentExploreRoute = StudentExploreRouteImport.update({
-  id: '/explore',
-  path: '/explore',
-  getParentRoute: () => StudentRoute,
-} as any)
-const StudentCertificatesRoute = StudentCertificatesRouteImport.update({
-  id: '/certificates',
-  path: '/certificates',
-  getParentRoute: () => StudentRoute,
-} as any)
-const StudentBookmarksRoute = StudentBookmarksRouteImport.update({
-  id: '/bookmarks',
-  path: '/bookmarks',
-  getParentRoute: () => StudentRoute,
-} as any)
-const StudentAssignmentsRoute = StudentAssignmentsRouteImport.update({
-  id: '/assignments',
-  path: '/assignments',
-  getParentRoute: () => StudentRoute,
-} as any)
-const AdminTutorsRoute = AdminTutorsRouteImport.update({
-  id: '/tutors',
-  path: '/tutors',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminSupportRoute = AdminSupportRouteImport.update({
-  id: '/support',
-  path: '/support',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminStudentsRoute = AdminStudentsRouteImport.update({
-  id: '/students',
-  path: '/students',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminSettingsRoute = AdminSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminRolesRoute = AdminRolesRouteImport.update({
-  id: '/roles',
-  path: '/roles',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminReportsRoute = AdminReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminCoursesRoute = AdminCoursesRouteImport.update({
-  id: '/courses',
-  path: '/courses',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminCmsRoute = AdminCmsRouteImport.update({
-  id: '/cms',
-  path: '/cms',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminCertificatesRoute = AdminCertificatesRouteImport.update({
-  id: '/certificates',
-  path: '/certificates',
+const AdminAuditRoute = AdminAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
@@ -212,10 +82,145 @@ const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
   path: '/categories',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminAuditRoute = AdminAuditRouteImport.update({
-  id: '/audit',
-  path: '/audit',
+const AdminCertificatesRoute = AdminCertificatesRouteImport.update({
+  id: '/certificates',
+  path: '/certificates',
   getParentRoute: () => AdminRoute,
+} as any)
+const AdminCmsRoute = AdminCmsRouteImport.update({
+  id: '/cms',
+  path: '/cms',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCoursesRoute = AdminCoursesRouteImport.update({
+  id: '/courses',
+  path: '/courses',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminReportsRoute = AdminReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminRolesRoute = AdminRolesRouteImport.update({
+  id: '/roles',
+  path: '/roles',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSettingsRoute = AdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminStudentsRoute = AdminStudentsRouteImport.update({
+  id: '/students',
+  path: '/students',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSupportRoute = AdminSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminTutorsRoute = AdminTutorsRouteImport.update({
+  id: '/tutors',
+  path: '/tutors',
+  getParentRoute: () => AdminRoute,
+} as any)
+const StudentIndexRoute = StudentIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentAssignmentsRoute = StudentAssignmentsRouteImport.update({
+  id: '/assignments',
+  path: '/assignments',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentBookmarksRoute = StudentBookmarksRouteImport.update({
+  id: '/bookmarks',
+  path: '/bookmarks',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentCertificatesRoute = StudentCertificatesRouteImport.update({
+  id: '/certificates',
+  path: '/certificates',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentExploreRoute = StudentExploreRouteImport.update({
+  id: '/explore',
+  path: '/explore',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentMyLearningRoute = StudentMyLearningRouteImport.update({
+  id: '/my-learning',
+  path: '/my-learning',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentProfileRoute = StudentProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentSettingsRoute = StudentSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => StudentRoute,
+} as any)
+const TutorIndexRoute = TutorIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => TutorRoute,
+} as any)
+const TutorAnalyticsRoute = TutorAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => TutorRoute,
+} as any)
+const TutorAssignmentsRoute = TutorAssignmentsRouteImport.update({
+  id: '/assignments',
+  path: '/assignments',
+  getParentRoute: () => TutorRoute,
+} as any)
+const TutorBuilderRoute = TutorBuilderRouteImport.update({
+  id: '/builder',
+  path: '/builder',
+  getParentRoute: () => TutorRoute,
+} as any)
+const TutorCertificatesRoute = TutorCertificatesRouteImport.update({
+  id: '/certificates',
+  path: '/certificates',
+  getParentRoute: () => TutorRoute,
+} as any)
+const TutorCoursesRoute = TutorCoursesRouteImport.update({
+  id: '/courses',
+  path: '/courses',
+  getParentRoute: () => TutorRoute,
+} as any)
+const TutorMessagesRoute = TutorMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => TutorRoute,
+} as any)
+const TutorQuizzesRoute = TutorQuizzesRouteImport.update({
+  id: '/quizzes',
+  path: '/quizzes',
+  getParentRoute: () => TutorRoute,
+} as any)
+const TutorSettingsRoute = TutorSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => TutorRoute,
+} as any)
+const TutorStudentsRoute = TutorStudentsRouteImport.update({
+  id: '/students',
+  path: '/students',
+  getParentRoute: () => TutorRoute,
+} as any)
+const StudentCourseSlugRoute = StudentCourseSlugRouteImport.update({
+  id: '/course/$slug',
+  path: '/course/$slug',
+  getParentRoute: () => StudentRoute,
 } as any)
 const StudentStudyIndexRoute = StudentStudyIndexRouteImport.update({
   id: '/study/',
@@ -225,11 +230,6 @@ const StudentStudyIndexRoute = StudentStudyIndexRouteImport.update({
 const StudentStudySlugRoute = StudentStudySlugRouteImport.update({
   id: '/study/$slug',
   path: '/study/$slug',
-  getParentRoute: () => StudentRoute,
-} as any)
-const StudentCourseSlugRoute = StudentCourseSlugRouteImport.update({
-  id: '/course/$slug',
-  path: '/course/$slug',
   getParentRoute: () => StudentRoute,
 } as any)
 
@@ -474,18 +474,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/tutor': {
-      id: '/tutor'
-      path: '/tutor'
-      fullPath: '/tutor'
-      preLoaderRoute: typeof TutorRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/student': {
-      id: '/student'
-      path: '/student'
-      fullPath: '/student'
-      preLoaderRoute: typeof StudentRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -495,26 +488,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/student': {
+      id: '/student'
+      path: '/student'
+      fullPath: '/student'
+      preLoaderRoute: typeof StudentRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/tutor/': {
-      id: '/tutor/'
-      path: '/'
-      fullPath: '/tutor/'
-      preLoaderRoute: typeof TutorIndexRouteImport
-      parentRoute: typeof TutorRoute
-    }
-    '/student/': {
-      id: '/student/'
-      path: '/'
-      fullPath: '/student/'
-      preLoaderRoute: typeof StudentIndexRouteImport
-      parentRoute: typeof StudentRoute
+    '/tutor': {
+      id: '/tutor'
+      path: '/tutor'
+      fullPath: '/tutor'
+      preLoaderRoute: typeof TutorRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/admin/': {
       id: '/admin/'
@@ -523,179 +509,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/tutor/students': {
-      id: '/tutor/students'
-      path: '/students'
-      fullPath: '/tutor/students'
-      preLoaderRoute: typeof TutorStudentsRouteImport
-      parentRoute: typeof TutorRoute
-    }
-    '/tutor/settings': {
-      id: '/tutor/settings'
-      path: '/settings'
-      fullPath: '/tutor/settings'
-      preLoaderRoute: typeof TutorSettingsRouteImport
-      parentRoute: typeof TutorRoute
-    }
-    '/tutor/quizzes': {
-      id: '/tutor/quizzes'
-      path: '/quizzes'
-      fullPath: '/tutor/quizzes'
-      preLoaderRoute: typeof TutorQuizzesRouteImport
-      parentRoute: typeof TutorRoute
-    }
-    '/tutor/messages': {
-      id: '/tutor/messages'
-      path: '/messages'
-      fullPath: '/tutor/messages'
-      preLoaderRoute: typeof TutorMessagesRouteImport
-      parentRoute: typeof TutorRoute
-    }
-    '/tutor/courses': {
-      id: '/tutor/courses'
-      path: '/courses'
-      fullPath: '/tutor/courses'
-      preLoaderRoute: typeof TutorCoursesRouteImport
-      parentRoute: typeof TutorRoute
-    }
-    '/tutor/certificates': {
-      id: '/tutor/certificates'
-      path: '/certificates'
-      fullPath: '/tutor/certificates'
-      preLoaderRoute: typeof TutorCertificatesRouteImport
-      parentRoute: typeof TutorRoute
-    }
-    '/tutor/builder': {
-      id: '/tutor/builder'
-      path: '/builder'
-      fullPath: '/tutor/builder'
-      preLoaderRoute: typeof TutorBuilderRouteImport
-      parentRoute: typeof TutorRoute
-    }
-    '/tutor/assignments': {
-      id: '/tutor/assignments'
-      path: '/assignments'
-      fullPath: '/tutor/assignments'
-      preLoaderRoute: typeof TutorAssignmentsRouteImport
-      parentRoute: typeof TutorRoute
-    }
-    '/tutor/analytics': {
-      id: '/tutor/analytics'
-      path: '/analytics'
-      fullPath: '/tutor/analytics'
-      preLoaderRoute: typeof TutorAnalyticsRouteImport
-      parentRoute: typeof TutorRoute
-    }
-    '/student/settings': {
-      id: '/student/settings'
-      path: '/settings'
-      fullPath: '/student/settings'
-      preLoaderRoute: typeof StudentSettingsRouteImport
-      parentRoute: typeof StudentRoute
-    }
-    '/student/profile': {
-      id: '/student/profile'
-      path: '/profile'
-      fullPath: '/student/profile'
-      preLoaderRoute: typeof StudentProfileRouteImport
-      parentRoute: typeof StudentRoute
-    }
-    '/student/my-learning': {
-      id: '/student/my-learning'
-      path: '/my-learning'
-      fullPath: '/student/my-learning'
-      preLoaderRoute: typeof StudentMyLearningRouteImport
-      parentRoute: typeof StudentRoute
-    }
-    '/student/explore': {
-      id: '/student/explore'
-      path: '/explore'
-      fullPath: '/student/explore'
-      preLoaderRoute: typeof StudentExploreRouteImport
-      parentRoute: typeof StudentRoute
-    }
-    '/student/certificates': {
-      id: '/student/certificates'
-      path: '/certificates'
-      fullPath: '/student/certificates'
-      preLoaderRoute: typeof StudentCertificatesRouteImport
-      parentRoute: typeof StudentRoute
-    }
-    '/student/bookmarks': {
-      id: '/student/bookmarks'
-      path: '/bookmarks'
-      fullPath: '/student/bookmarks'
-      preLoaderRoute: typeof StudentBookmarksRouteImport
-      parentRoute: typeof StudentRoute
-    }
-    '/student/assignments': {
-      id: '/student/assignments'
-      path: '/assignments'
-      fullPath: '/student/assignments'
-      preLoaderRoute: typeof StudentAssignmentsRouteImport
-      parentRoute: typeof StudentRoute
-    }
-    '/admin/tutors': {
-      id: '/admin/tutors'
-      path: '/tutors'
-      fullPath: '/admin/tutors'
-      preLoaderRoute: typeof AdminTutorsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/support': {
-      id: '/admin/support'
-      path: '/support'
-      fullPath: '/admin/support'
-      preLoaderRoute: typeof AdminSupportRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/students': {
-      id: '/admin/students'
-      path: '/students'
-      fullPath: '/admin/students'
-      preLoaderRoute: typeof AdminStudentsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/settings': {
-      id: '/admin/settings'
-      path: '/settings'
-      fullPath: '/admin/settings'
-      preLoaderRoute: typeof AdminSettingsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/roles': {
-      id: '/admin/roles'
-      path: '/roles'
-      fullPath: '/admin/roles'
-      preLoaderRoute: typeof AdminRolesRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/reports': {
-      id: '/admin/reports'
-      path: '/reports'
-      fullPath: '/admin/reports'
-      preLoaderRoute: typeof AdminReportsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/courses': {
-      id: '/admin/courses'
-      path: '/courses'
-      fullPath: '/admin/courses'
-      preLoaderRoute: typeof AdminCoursesRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/cms': {
-      id: '/admin/cms'
-      path: '/cms'
-      fullPath: '/admin/cms'
-      preLoaderRoute: typeof AdminCmsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/certificates': {
-      id: '/admin/certificates'
-      path: '/certificates'
-      fullPath: '/admin/certificates'
-      preLoaderRoute: typeof AdminCertificatesRouteImport
+    '/admin/audit': {
+      id: '/admin/audit'
+      path: '/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AdminAuditRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/categories': {
@@ -705,12 +523,201 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCategoriesRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/audit': {
-      id: '/admin/audit'
-      path: '/audit'
-      fullPath: '/admin/audit'
-      preLoaderRoute: typeof AdminAuditRouteImport
+    '/admin/certificates': {
+      id: '/admin/certificates'
+      path: '/certificates'
+      fullPath: '/admin/certificates'
+      preLoaderRoute: typeof AdminCertificatesRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/admin/cms': {
+      id: '/admin/cms'
+      path: '/cms'
+      fullPath: '/admin/cms'
+      preLoaderRoute: typeof AdminCmsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/courses': {
+      id: '/admin/courses'
+      path: '/courses'
+      fullPath: '/admin/courses'
+      preLoaderRoute: typeof AdminCoursesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/reports': {
+      id: '/admin/reports'
+      path: '/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AdminReportsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/roles': {
+      id: '/admin/roles'
+      path: '/roles'
+      fullPath: '/admin/roles'
+      preLoaderRoute: typeof AdminRolesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/settings': {
+      id: '/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/students': {
+      id: '/admin/students'
+      path: '/students'
+      fullPath: '/admin/students'
+      preLoaderRoute: typeof AdminStudentsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/support': {
+      id: '/admin/support'
+      path: '/support'
+      fullPath: '/admin/support'
+      preLoaderRoute: typeof AdminSupportRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/tutors': {
+      id: '/admin/tutors'
+      path: '/tutors'
+      fullPath: '/admin/tutors'
+      preLoaderRoute: typeof AdminTutorsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/student/': {
+      id: '/student/'
+      path: '/'
+      fullPath: '/student/'
+      preLoaderRoute: typeof StudentIndexRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/student/assignments': {
+      id: '/student/assignments'
+      path: '/assignments'
+      fullPath: '/student/assignments'
+      preLoaderRoute: typeof StudentAssignmentsRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/student/bookmarks': {
+      id: '/student/bookmarks'
+      path: '/bookmarks'
+      fullPath: '/student/bookmarks'
+      preLoaderRoute: typeof StudentBookmarksRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/student/certificates': {
+      id: '/student/certificates'
+      path: '/certificates'
+      fullPath: '/student/certificates'
+      preLoaderRoute: typeof StudentCertificatesRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/student/explore': {
+      id: '/student/explore'
+      path: '/explore'
+      fullPath: '/student/explore'
+      preLoaderRoute: typeof StudentExploreRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/student/my-learning': {
+      id: '/student/my-learning'
+      path: '/my-learning'
+      fullPath: '/student/my-learning'
+      preLoaderRoute: typeof StudentMyLearningRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/student/profile': {
+      id: '/student/profile'
+      path: '/profile'
+      fullPath: '/student/profile'
+      preLoaderRoute: typeof StudentProfileRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/student/settings': {
+      id: '/student/settings'
+      path: '/settings'
+      fullPath: '/student/settings'
+      preLoaderRoute: typeof StudentSettingsRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/tutor/': {
+      id: '/tutor/'
+      path: '/'
+      fullPath: '/tutor/'
+      preLoaderRoute: typeof TutorIndexRouteImport
+      parentRoute: typeof TutorRoute
+    }
+    '/tutor/analytics': {
+      id: '/tutor/analytics'
+      path: '/analytics'
+      fullPath: '/tutor/analytics'
+      preLoaderRoute: typeof TutorAnalyticsRouteImport
+      parentRoute: typeof TutorRoute
+    }
+    '/tutor/assignments': {
+      id: '/tutor/assignments'
+      path: '/assignments'
+      fullPath: '/tutor/assignments'
+      preLoaderRoute: typeof TutorAssignmentsRouteImport
+      parentRoute: typeof TutorRoute
+    }
+    '/tutor/builder': {
+      id: '/tutor/builder'
+      path: '/builder'
+      fullPath: '/tutor/builder'
+      preLoaderRoute: typeof TutorBuilderRouteImport
+      parentRoute: typeof TutorRoute
+    }
+    '/tutor/certificates': {
+      id: '/tutor/certificates'
+      path: '/certificates'
+      fullPath: '/tutor/certificates'
+      preLoaderRoute: typeof TutorCertificatesRouteImport
+      parentRoute: typeof TutorRoute
+    }
+    '/tutor/courses': {
+      id: '/tutor/courses'
+      path: '/courses'
+      fullPath: '/tutor/courses'
+      preLoaderRoute: typeof TutorCoursesRouteImport
+      parentRoute: typeof TutorRoute
+    }
+    '/tutor/messages': {
+      id: '/tutor/messages'
+      path: '/messages'
+      fullPath: '/tutor/messages'
+      preLoaderRoute: typeof TutorMessagesRouteImport
+      parentRoute: typeof TutorRoute
+    }
+    '/tutor/quizzes': {
+      id: '/tutor/quizzes'
+      path: '/quizzes'
+      fullPath: '/tutor/quizzes'
+      preLoaderRoute: typeof TutorQuizzesRouteImport
+      parentRoute: typeof TutorRoute
+    }
+    '/tutor/settings': {
+      id: '/tutor/settings'
+      path: '/settings'
+      fullPath: '/tutor/settings'
+      preLoaderRoute: typeof TutorSettingsRouteImport
+      parentRoute: typeof TutorRoute
+    }
+    '/tutor/students': {
+      id: '/tutor/students'
+      path: '/students'
+      fullPath: '/tutor/students'
+      preLoaderRoute: typeof TutorStudentsRouteImport
+      parentRoute: typeof TutorRoute
+    }
+    '/student/course/$slug': {
+      id: '/student/course/$slug'
+      path: '/course/$slug'
+      fullPath: '/student/course/$slug'
+      preLoaderRoute: typeof StudentCourseSlugRouteImport
+      parentRoute: typeof StudentRoute
     }
     '/student/study/': {
       id: '/student/study/'
@@ -724,13 +731,6 @@ declare module '@tanstack/react-router' {
       path: '/study/$slug'
       fullPath: '/student/study/$slug'
       preLoaderRoute: typeof StudentStudySlugRouteImport
-      parentRoute: typeof StudentRoute
-    }
-    '/student/course/$slug': {
-      id: '/student/course/$slug'
-      path: '/course/$slug'
-      fullPath: '/student/course/$slug'
-      preLoaderRoute: typeof StudentCourseSlugRouteImport
       parentRoute: typeof StudentRoute
     }
   }
@@ -836,3 +836,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

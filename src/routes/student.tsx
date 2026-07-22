@@ -1,8 +1,11 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import {
-  LayoutDashboard, Compass, BookOpen, GraduationCap, Award, Bookmark, ClipboardList, User, Settings, PlayCircle,
+  LayoutDashboard, Compass, BookOpen, Award, Bookmark, ClipboardList, User, Settings, PlayCircle,
 } from "lucide-react";
+import { useEffect } from "react";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { PortalShell } from "@/components/portal-shell";
+import { hasSelectedCourse } from "@/lib/student-onboarding";
 
 export const Route = createFileRoute("/student")({
   head: () => ({ meta: [{ title: "Dashboard — TechBridge" }, { name: "description", content: "Your learning dashboard on TechBridge." }] }),
@@ -10,6 +13,20 @@ export const Route = createFileRoute("/student")({
 });
 
 function StudentLayout() {
+  const navigate = useNavigate();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  useEffect(() => {
+    const allowedWithoutCourse = ["/student/study", "/student/explore", "/student/course"];
+    const canContinue = allowedWithoutCourse.some(
+      (path) => pathname === path || pathname.startsWith(`${path}/`),
+    );
+
+    if (!hasSelectedCourse() && !canContinue) {
+      void navigate({ to: "/student/study", replace: true });
+    }
+  }, [navigate, pathname]);
+
   return (
     <PortalShell
       accent="student"

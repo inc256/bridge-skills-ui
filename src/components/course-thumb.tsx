@@ -1,9 +1,9 @@
 // Abstract, elegant SVG course thumbnails — no external assets.
-export function CourseThumb({ variant, color, title }: { variant: string; color: string; title?: string }) {
+export function CourseThumb({ variant, color, title, className }: { variant: string; color: string; title?: string; className?: string }) {
   const bg = color;
   return (
     <div
-      className="relative aspect-[16/10] w-full overflow-hidden"
+      className={`relative w-full overflow-hidden ${className ?? "aspect-[16/10]"}`}
       style={{ background: `linear-gradient(135deg, ${bg} 0%, ${shade(bg, -15)} 100%)` }}
     >
       <svg viewBox="0 0 400 250" className="absolute inset-0 h-full w-full opacity-90">
