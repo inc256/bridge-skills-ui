@@ -9,9 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TutorRouteImport } from './routes/tutor'
 import { Route as StudentRouteImport } from './routes/student'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TutorIndexRouteImport } from './routes/tutor.index'
 import { Route as StudentIndexRouteImport } from './routes/student.index'
+import { Route as TutorStudentsRouteImport } from './routes/tutor.students'
+import { Route as TutorCoursesRouteImport } from './routes/tutor.courses'
+import { Route as TutorBuilderRouteImport } from './routes/tutor.builder'
+import { Route as TutorAnalyticsRouteImport } from './routes/tutor.analytics'
 import { Route as StudentSettingsRouteImport } from './routes/student.settings'
 import { Route as StudentProfileRouteImport } from './routes/student.profile'
 import { Route as StudentMyLearningRouteImport } from './routes/student.my-learning'
@@ -23,6 +29,11 @@ import { Route as StudentStudyIndexRouteImport } from './routes/student.study.in
 import { Route as StudentStudySlugRouteImport } from './routes/student.study.$slug'
 import { Route as StudentCourseSlugRouteImport } from './routes/student.course.$slug'
 
+const TutorRoute = TutorRouteImport.update({
+  id: '/tutor',
+  path: '/tutor',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StudentRoute = StudentRouteImport.update({
   id: '/student',
   path: '/student',
@@ -33,10 +44,35 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TutorIndexRoute = TutorIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => TutorRoute,
+} as any)
 const StudentIndexRoute = StudentIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => StudentRoute,
+} as any)
+const TutorStudentsRoute = TutorStudentsRouteImport.update({
+  id: '/students',
+  path: '/students',
+  getParentRoute: () => TutorRoute,
+} as any)
+const TutorCoursesRoute = TutorCoursesRouteImport.update({
+  id: '/courses',
+  path: '/courses',
+  getParentRoute: () => TutorRoute,
+} as any)
+const TutorBuilderRoute = TutorBuilderRouteImport.update({
+  id: '/builder',
+  path: '/builder',
+  getParentRoute: () => TutorRoute,
+} as any)
+const TutorAnalyticsRoute = TutorAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => TutorRoute,
 } as any)
 const StudentSettingsRoute = StudentSettingsRouteImport.update({
   id: '/settings',
@@ -92,6 +128,7 @@ const StudentCourseSlugRoute = StudentCourseSlugRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/student': typeof StudentRouteWithChildren
+  '/tutor': typeof TutorRouteWithChildren
   '/student/assignments': typeof StudentAssignmentsRoute
   '/student/bookmarks': typeof StudentBookmarksRoute
   '/student/certificates': typeof StudentCertificatesRoute
@@ -99,7 +136,12 @@ export interface FileRoutesByFullPath {
   '/student/my-learning': typeof StudentMyLearningRoute
   '/student/profile': typeof StudentProfileRoute
   '/student/settings': typeof StudentSettingsRoute
+  '/tutor/analytics': typeof TutorAnalyticsRoute
+  '/tutor/builder': typeof TutorBuilderRoute
+  '/tutor/courses': typeof TutorCoursesRoute
+  '/tutor/students': typeof TutorStudentsRoute
   '/student/': typeof StudentIndexRoute
+  '/tutor/': typeof TutorIndexRoute
   '/student/course/$slug': typeof StudentCourseSlugRoute
   '/student/study/$slug': typeof StudentStudySlugRoute
   '/student/study/': typeof StudentStudyIndexRoute
@@ -113,7 +155,12 @@ export interface FileRoutesByTo {
   '/student/my-learning': typeof StudentMyLearningRoute
   '/student/profile': typeof StudentProfileRoute
   '/student/settings': typeof StudentSettingsRoute
+  '/tutor/analytics': typeof TutorAnalyticsRoute
+  '/tutor/builder': typeof TutorBuilderRoute
+  '/tutor/courses': typeof TutorCoursesRoute
+  '/tutor/students': typeof TutorStudentsRoute
   '/student': typeof StudentIndexRoute
+  '/tutor': typeof TutorIndexRoute
   '/student/course/$slug': typeof StudentCourseSlugRoute
   '/student/study/$slug': typeof StudentStudySlugRoute
   '/student/study': typeof StudentStudyIndexRoute
@@ -122,6 +169,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/student': typeof StudentRouteWithChildren
+  '/tutor': typeof TutorRouteWithChildren
   '/student/assignments': typeof StudentAssignmentsRoute
   '/student/bookmarks': typeof StudentBookmarksRoute
   '/student/certificates': typeof StudentCertificatesRoute
@@ -129,7 +177,12 @@ export interface FileRoutesById {
   '/student/my-learning': typeof StudentMyLearningRoute
   '/student/profile': typeof StudentProfileRoute
   '/student/settings': typeof StudentSettingsRoute
+  '/tutor/analytics': typeof TutorAnalyticsRoute
+  '/tutor/builder': typeof TutorBuilderRoute
+  '/tutor/courses': typeof TutorCoursesRoute
+  '/tutor/students': typeof TutorStudentsRoute
   '/student/': typeof StudentIndexRoute
+  '/tutor/': typeof TutorIndexRoute
   '/student/course/$slug': typeof StudentCourseSlugRoute
   '/student/study/$slug': typeof StudentStudySlugRoute
   '/student/study/': typeof StudentStudyIndexRoute
@@ -139,6 +192,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/student'
+    | '/tutor'
     | '/student/assignments'
     | '/student/bookmarks'
     | '/student/certificates'
@@ -146,7 +200,12 @@ export interface FileRouteTypes {
     | '/student/my-learning'
     | '/student/profile'
     | '/student/settings'
+    | '/tutor/analytics'
+    | '/tutor/builder'
+    | '/tutor/courses'
+    | '/tutor/students'
     | '/student/'
+    | '/tutor/'
     | '/student/course/$slug'
     | '/student/study/$slug'
     | '/student/study/'
@@ -160,7 +219,12 @@ export interface FileRouteTypes {
     | '/student/my-learning'
     | '/student/profile'
     | '/student/settings'
+    | '/tutor/analytics'
+    | '/tutor/builder'
+    | '/tutor/courses'
+    | '/tutor/students'
     | '/student'
+    | '/tutor'
     | '/student/course/$slug'
     | '/student/study/$slug'
     | '/student/study'
@@ -168,6 +232,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/student'
+    | '/tutor'
     | '/student/assignments'
     | '/student/bookmarks'
     | '/student/certificates'
@@ -175,7 +240,12 @@ export interface FileRouteTypes {
     | '/student/my-learning'
     | '/student/profile'
     | '/student/settings'
+    | '/tutor/analytics'
+    | '/tutor/builder'
+    | '/tutor/courses'
+    | '/tutor/students'
     | '/student/'
+    | '/tutor/'
     | '/student/course/$slug'
     | '/student/study/$slug'
     | '/student/study/'
@@ -184,10 +254,18 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   StudentRoute: typeof StudentRouteWithChildren
+  TutorRoute: typeof TutorRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/tutor': {
+      id: '/tutor'
+      path: '/tutor'
+      fullPath: '/tutor'
+      preLoaderRoute: typeof TutorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/student': {
       id: '/student'
       path: '/student'
@@ -202,12 +280,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tutor/': {
+      id: '/tutor/'
+      path: '/'
+      fullPath: '/tutor/'
+      preLoaderRoute: typeof TutorIndexRouteImport
+      parentRoute: typeof TutorRoute
+    }
     '/student/': {
       id: '/student/'
       path: '/'
       fullPath: '/student/'
       preLoaderRoute: typeof StudentIndexRouteImport
       parentRoute: typeof StudentRoute
+    }
+    '/tutor/students': {
+      id: '/tutor/students'
+      path: '/students'
+      fullPath: '/tutor/students'
+      preLoaderRoute: typeof TutorStudentsRouteImport
+      parentRoute: typeof TutorRoute
+    }
+    '/tutor/courses': {
+      id: '/tutor/courses'
+      path: '/courses'
+      fullPath: '/tutor/courses'
+      preLoaderRoute: typeof TutorCoursesRouteImport
+      parentRoute: typeof TutorRoute
+    }
+    '/tutor/builder': {
+      id: '/tutor/builder'
+      path: '/builder'
+      fullPath: '/tutor/builder'
+      preLoaderRoute: typeof TutorBuilderRouteImport
+      parentRoute: typeof TutorRoute
+    }
+    '/tutor/analytics': {
+      id: '/tutor/analytics'
+      path: '/analytics'
+      fullPath: '/tutor/analytics'
+      preLoaderRoute: typeof TutorAnalyticsRouteImport
+      parentRoute: typeof TutorRoute
     }
     '/student/settings': {
       id: '/student/settings'
@@ -313,9 +426,28 @@ const StudentRouteChildren: StudentRouteChildren = {
 const StudentRouteWithChildren =
   StudentRoute._addFileChildren(StudentRouteChildren)
 
+interface TutorRouteChildren {
+  TutorAnalyticsRoute: typeof TutorAnalyticsRoute
+  TutorBuilderRoute: typeof TutorBuilderRoute
+  TutorCoursesRoute: typeof TutorCoursesRoute
+  TutorStudentsRoute: typeof TutorStudentsRoute
+  TutorIndexRoute: typeof TutorIndexRoute
+}
+
+const TutorRouteChildren: TutorRouteChildren = {
+  TutorAnalyticsRoute: TutorAnalyticsRoute,
+  TutorBuilderRoute: TutorBuilderRoute,
+  TutorCoursesRoute: TutorCoursesRoute,
+  TutorStudentsRoute: TutorStudentsRoute,
+  TutorIndexRoute: TutorIndexRoute,
+}
+
+const TutorRouteWithChildren = TutorRoute._addFileChildren(TutorRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   StudentRoute: StudentRouteWithChildren,
+  TutorRoute: TutorRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
