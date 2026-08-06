@@ -1,13 +1,19 @@
 {
-  "name": "tanstack_start_ts",
+  "name": "bridge-skills-ui-monorepo",
   "private": true,
   "sideEffects": false,
   "type": "module",
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
-    "dev": "vite dev",
-    "build": "vite build",
-    "build:dev": "vite build --mode development",
-    "preview": "vite preview",
+    "dev:student": "npm run dev --workspace @bridge-skills/student",
+    "dev:tutor": "npm run dev --workspace @bridge-skills/tutor",
+    "dev:admin": "npm run dev --workspace @bridge-skills/admin",
+    "build": "npm run build --workspaces --if-present",
+    "build:student": "npm run build --workspace @bridge-skills/student",
+    "build:tutor": "npm run build --workspace @bridge-skills/tutor",
+    "build:admin": "npm run build --workspace @bridge-skills/admin",
     "lint": "eslint .",
     "format": "prettier --write ."
   },

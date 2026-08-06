@@ -1,0 +1,10 @@
+{
+  "name": "@bridge-skills/tutor",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev --port 3002",
+    "build": "vite build",
+    "preview": "vite preview --port 4002"
+  }
+}

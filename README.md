@@ -1,25 +1,50 @@
-# Welcome to your Lovable project
+# Bridge Skills UI Monorepo
 
-This project was built with [Lovable](https://lovable.dev).
+Detailed workspace documentation: [MONOREPO.md](./MONOREPO.md)
 
-## Build with Lovable
+This repository is now organized as a frontend monorepo with three separate TanStack Start apps:
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+- `apps/student` for the learner experience
+- `apps/tutor` for the instructor experience
+- `apps/admin` for the operations and governance experience
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+Each app is independently runnable and buildable, while the root workspace manages shared dependencies.
 
 ## Development
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+Install dependencies once at the repository root:
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+npm install
 ```
+
+Start one app at a time:
+
+```sh
+npm run dev:student
+npm run dev:tutor
+npm run dev:admin
+```
+
+Build all apps:
+
+```sh
+npm run build
+```
+
+Build a single app:
+
+```sh
+npm run build:student
+npm run build:tutor
+npm run build:admin
+```
+
+## Structure
+
+- `apps/student` keeps only student-facing routes and auth
+- `apps/tutor` keeps only tutor-facing routes and auth
+- `apps/admin` keeps only admin-facing routes and auth
 
 ## Built with
 

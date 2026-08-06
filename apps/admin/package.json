@@ -1,0 +1,10 @@
+{
+  "name": "@bridge-skills/admin",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev --port 3003",
+    "build": "vite build",
+    "preview": "vite preview --port 4003"
+  }
+}
