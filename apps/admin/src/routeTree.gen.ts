@@ -13,11 +13,19 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
+import { Route as AdminAuditlogsRouteImport } from './routes/admin.auditlogs'
+import { Route as AdminBlogRouteImport } from './routes/admin.blog'
 import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
 import { Route as AdminCertificatesRouteImport } from './routes/admin.certificates'
 import { Route as AdminCmsRouteImport } from './routes/admin.cms'
+import { Route as AdminContentRouteImport } from './routes/admin.content'
 import { Route as AdminCoursesRouteImport } from './routes/admin.courses'
 import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
+import { Route as AdminEnrollmentsRouteImport } from './routes/admin.enrollments'
+import { Route as AdminJobsRouteImport } from './routes/admin.jobs'
+import { Route as AdminLessonsRouteImport } from './routes/admin.lessons'
+import { Route as AdminNotificationsRouteImport } from './routes/admin.notifications'
+import { Route as AdminQuizzesRouteImport } from './routes/admin.quizzes'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as AdminRolesRouteImport } from './routes/admin.roles'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
@@ -45,6 +53,16 @@ const AdminAuditRoute = AdminAuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAuditlogsRoute = AdminAuditlogsRouteImport.update({
+  id: '/auditlogs',
+  path: '/auditlogs',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminBlogRoute = AdminBlogRouteImport.update({
+  id: '/blog',
+  path: '/blog',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
   id: '/categories',
   path: '/categories',
@@ -60,6 +78,11 @@ const AdminCmsRoute = AdminCmsRouteImport.update({
   path: '/cms',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminContentRoute = AdminContentRouteImport.update({
+  id: '/content',
+  path: '/content',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminCoursesRoute = AdminCoursesRouteImport.update({
   id: '/courses',
   path: '/courses',
@@ -68,6 +91,31 @@ const AdminCoursesRoute = AdminCoursesRouteImport.update({
 const AdminDashboardRoute = AdminDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminEnrollmentsRoute = AdminEnrollmentsRouteImport.update({
+  id: '/enrollments',
+  path: '/enrollments',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminJobsRoute = AdminJobsRouteImport.update({
+  id: '/jobs',
+  path: '/jobs',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminLessonsRoute = AdminLessonsRouteImport.update({
+  id: '/lessons',
+  path: '/lessons',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminQuizzesRoute = AdminQuizzesRouteImport.update({
+  id: '/quizzes',
+  path: '/quizzes',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminReportsRoute = AdminReportsRouteImport.update({
@@ -105,11 +153,19 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/admin/audit': typeof AdminAuditRoute
+  '/admin/auditlogs': typeof AdminAuditlogsRoute
+  '/admin/blog': typeof AdminBlogRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/certificates': typeof AdminCertificatesRoute
   '/admin/cms': typeof AdminCmsRoute
+  '/admin/content': typeof AdminContentRoute
   '/admin/courses': typeof AdminCoursesRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/enrollments': typeof AdminEnrollmentsRoute
+  '/admin/jobs': typeof AdminJobsRoute
+  '/admin/lessons': typeof AdminLessonsRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/quizzes': typeof AdminQuizzesRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/roles': typeof AdminRolesRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -121,11 +177,19 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin/audit': typeof AdminAuditRoute
+  '/admin/auditlogs': typeof AdminAuditlogsRoute
+  '/admin/blog': typeof AdminBlogRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/certificates': typeof AdminCertificatesRoute
   '/admin/cms': typeof AdminCmsRoute
+  '/admin/content': typeof AdminContentRoute
   '/admin/courses': typeof AdminCoursesRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/enrollments': typeof AdminEnrollmentsRoute
+  '/admin/jobs': typeof AdminJobsRoute
+  '/admin/lessons': typeof AdminLessonsRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/quizzes': typeof AdminQuizzesRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/roles': typeof AdminRolesRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -139,11 +203,19 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/admin/audit': typeof AdminAuditRoute
+  '/admin/auditlogs': typeof AdminAuditlogsRoute
+  '/admin/blog': typeof AdminBlogRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/certificates': typeof AdminCertificatesRoute
   '/admin/cms': typeof AdminCmsRoute
+  '/admin/content': typeof AdminContentRoute
   '/admin/courses': typeof AdminCoursesRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/enrollments': typeof AdminEnrollmentsRoute
+  '/admin/jobs': typeof AdminJobsRoute
+  '/admin/lessons': typeof AdminLessonsRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/quizzes': typeof AdminQuizzesRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/roles': typeof AdminRolesRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -158,11 +230,19 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/admin/audit'
+    | '/admin/auditlogs'
+    | '/admin/blog'
     | '/admin/categories'
     | '/admin/certificates'
     | '/admin/cms'
+    | '/admin/content'
     | '/admin/courses'
     | '/admin/dashboard'
+    | '/admin/enrollments'
+    | '/admin/jobs'
+    | '/admin/lessons'
+    | '/admin/notifications'
+    | '/admin/quizzes'
     | '/admin/reports'
     | '/admin/roles'
     | '/admin/settings'
@@ -174,11 +254,19 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin/audit'
+    | '/admin/auditlogs'
+    | '/admin/blog'
     | '/admin/categories'
     | '/admin/certificates'
     | '/admin/cms'
+    | '/admin/content'
     | '/admin/courses'
     | '/admin/dashboard'
+    | '/admin/enrollments'
+    | '/admin/jobs'
+    | '/admin/lessons'
+    | '/admin/notifications'
+    | '/admin/quizzes'
     | '/admin/reports'
     | '/admin/roles'
     | '/admin/settings'
@@ -191,11 +279,19 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/admin/audit'
+    | '/admin/auditlogs'
+    | '/admin/blog'
     | '/admin/categories'
     | '/admin/certificates'
     | '/admin/cms'
+    | '/admin/content'
     | '/admin/courses'
     | '/admin/dashboard'
+    | '/admin/enrollments'
+    | '/admin/jobs'
+    | '/admin/lessons'
+    | '/admin/notifications'
+    | '/admin/quizzes'
     | '/admin/reports'
     | '/admin/roles'
     | '/admin/settings'
@@ -240,6 +336,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAuditRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/auditlogs': {
+      id: '/admin/auditlogs'
+      path: '/auditlogs'
+      fullPath: '/admin/auditlogs'
+      preLoaderRoute: typeof AdminAuditlogsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/blog': {
+      id: '/admin/blog'
+      path: '/blog'
+      fullPath: '/admin/blog'
+      preLoaderRoute: typeof AdminBlogRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/categories': {
       id: '/admin/categories'
       path: '/categories'
@@ -261,6 +371,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCmsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/content': {
+      id: '/admin/content'
+      path: '/content'
+      fullPath: '/admin/content'
+      preLoaderRoute: typeof AdminContentRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/courses': {
       id: '/admin/courses'
       path: '/courses'
@@ -273,6 +390,41 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/admin/dashboard'
       preLoaderRoute: typeof AdminDashboardRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/enrollments': {
+      id: '/admin/enrollments'
+      path: '/enrollments'
+      fullPath: '/admin/enrollments'
+      preLoaderRoute: typeof AdminEnrollmentsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/jobs': {
+      id: '/admin/jobs'
+      path: '/jobs'
+      fullPath: '/admin/jobs'
+      preLoaderRoute: typeof AdminJobsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/lessons': {
+      id: '/admin/lessons'
+      path: '/lessons'
+      fullPath: '/admin/lessons'
+      preLoaderRoute: typeof AdminLessonsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/notifications': {
+      id: '/admin/notifications'
+      path: '/notifications'
+      fullPath: '/admin/notifications'
+      preLoaderRoute: typeof AdminNotificationsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/quizzes': {
+      id: '/admin/quizzes'
+      path: '/quizzes'
+      fullPath: '/admin/quizzes'
+      preLoaderRoute: typeof AdminQuizzesRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/reports': {
@@ -322,11 +474,19 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminAuditRoute: typeof AdminAuditRoute
+  AdminAuditlogsRoute: typeof AdminAuditlogsRoute
+  AdminBlogRoute: typeof AdminBlogRoute
   AdminCategoriesRoute: typeof AdminCategoriesRoute
   AdminCertificatesRoute: typeof AdminCertificatesRoute
   AdminCmsRoute: typeof AdminCmsRoute
+  AdminContentRoute: typeof AdminContentRoute
   AdminCoursesRoute: typeof AdminCoursesRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
+  AdminEnrollmentsRoute: typeof AdminEnrollmentsRoute
+  AdminJobsRoute: typeof AdminJobsRoute
+  AdminLessonsRoute: typeof AdminLessonsRoute
+  AdminNotificationsRoute: typeof AdminNotificationsRoute
+  AdminQuizzesRoute: typeof AdminQuizzesRoute
   AdminReportsRoute: typeof AdminReportsRoute
   AdminRolesRoute: typeof AdminRolesRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
@@ -338,11 +498,19 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAuditRoute: AdminAuditRoute,
+  AdminAuditlogsRoute: AdminAuditlogsRoute,
+  AdminBlogRoute: AdminBlogRoute,
   AdminCategoriesRoute: AdminCategoriesRoute,
   AdminCertificatesRoute: AdminCertificatesRoute,
   AdminCmsRoute: AdminCmsRoute,
+  AdminContentRoute: AdminContentRoute,
   AdminCoursesRoute: AdminCoursesRoute,
   AdminDashboardRoute: AdminDashboardRoute,
+  AdminEnrollmentsRoute: AdminEnrollmentsRoute,
+  AdminJobsRoute: AdminJobsRoute,
+  AdminLessonsRoute: AdminLessonsRoute,
+  AdminNotificationsRoute: AdminNotificationsRoute,
+  AdminQuizzesRoute: AdminQuizzesRoute,
   AdminReportsRoute: AdminReportsRoute,
   AdminRolesRoute: AdminRolesRoute,
   AdminSettingsRoute: AdminSettingsRoute,

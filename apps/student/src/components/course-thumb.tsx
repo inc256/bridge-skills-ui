@@ -1,6 +1,6 @@
 // Abstract, elegant SVG course thumbnails — no external assets.
-export function CourseThumb({ variant, color, title, className }: { variant: string; color: string; title?: string; className?: string }) {
-  const bg = color;
+export function CourseThumb({ variant, color = "#3B82F6", title, className }: { variant: string; color?: string; title?: string; className?: string }) {
+  const bg = typeof color === "string" && color.trim() ? color.trim() : "#3B82F6";
   return (
     <div
       className={`relative w-full overflow-hidden ${className ?? "aspect-[16/10]"}`}
@@ -88,7 +88,8 @@ export function CourseThumb({ variant, color, title, className }: { variant: str
 }
 
 function shade(hex: string, percent: number) {
-  const num = parseInt(hex.replace("#", ""), 16);
+  const raw = typeof hex === "string" ? hex.replace("#", "").trim() : "";
+  const num = Number.isFinite(Number.parseInt(raw, 16)) ? parseInt(raw, 16) : 0x3b82f6;
   const r = Math.max(0, Math.min(255, (num >> 16) + percent));
   const g = Math.max(0, Math.min(255, ((num >> 8) & 0x00ff) + percent));
   const b = Math.max(0, Math.min(255, (num & 0x0000ff) + percent));

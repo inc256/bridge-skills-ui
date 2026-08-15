@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Clock3, Layers3, Play, ShoppingCart, Signal, Users } from "lucide-react";
-import type { Course } from "@/lib/mock-data";
+import type { Course } from "@/lib/api";
 import { CourseThumb } from "./course-thumb";
 
 export function CourseCard({ course, href }: { course: Course; href?: string }) {

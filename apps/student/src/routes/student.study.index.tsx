@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, PlayCircle } from "lucide-react";
-import { courses } from "@/lib/mock-data";
+import { useEffect, useState } from "react";
 import { CourseThumb } from "@/components/course-thumb";
+import { getMyEnrollments } from "@/lib/api";
 import { setSelectedCourseSlug } from "@/lib/student-onboarding";
 
 export const Route = createFileRoute("/student/study/")({
@@ -9,7 +10,28 @@ export const Route = createFileRoute("/student/study/")({
 });
 
 function StudyCoursePicker() {
-  const availableCourses = courses.filter((course) => course.progress != null).slice(0, 4);
+  const [enrollments, setEnrollments] = useState<any[]>([]);
+
+  useEffect(() => {
+    void getMyEnrollments().then(setEnrollments);
+  }, []);
+
+  const availableCourses = enrollments
+    .filter((item) => item?.course && (item.progress ?? 0) > 0)
+    .slice(0, 4)
+    .map((item) => {
+      const course = item.course ?? {};
+      return {
+        ...course,
+        category:
+          typeof course.category === "string"
+            ? course.category
+            : course.category?.name ?? "General",
+        color: typeof course.color === "string" ? course.color : "#3B82F6",
+        image: typeof course.image === "string" ? course.image : "code",
+        progress: item.progress,
+      };
+    });
 
   return (
     <div className="space-y-6">

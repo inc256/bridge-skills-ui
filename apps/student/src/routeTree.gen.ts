@@ -18,6 +18,7 @@ import { Route as StudentCertificatesRouteImport } from './routes/student.certif
 import { Route as StudentDashboardRouteImport } from './routes/student.dashboard'
 import { Route as StudentExploreRouteImport } from './routes/student.explore'
 import { Route as StudentMyLearningRouteImport } from './routes/student.my-learning'
+import { Route as StudentPathsRouteImport } from './routes/student.paths'
 import { Route as StudentProfileRouteImport } from './routes/student.profile'
 import { Route as StudentSettingsRouteImport } from './routes/student.settings'
 import { Route as StudentCourseSlugRouteImport } from './routes/student.course.$slug'
@@ -69,6 +70,11 @@ const StudentMyLearningRoute = StudentMyLearningRouteImport.update({
   path: '/my-learning',
   getParentRoute: () => StudentRoute,
 } as any)
+const StudentPathsRoute = StudentPathsRouteImport.update({
+  id: '/paths',
+  path: '/paths',
+  getParentRoute: () => StudentRoute,
+} as any)
 const StudentProfileRoute = StudentProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -104,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/student/dashboard': typeof StudentDashboardRoute
   '/student/explore': typeof StudentExploreRoute
   '/student/my-learning': typeof StudentMyLearningRoute
+  '/student/paths': typeof StudentPathsRoute
   '/student/profile': typeof StudentProfileRoute
   '/student/settings': typeof StudentSettingsRoute
   '/student/': typeof StudentIndexRoute
@@ -119,6 +126,7 @@ export interface FileRoutesByTo {
   '/student/dashboard': typeof StudentDashboardRoute
   '/student/explore': typeof StudentExploreRoute
   '/student/my-learning': typeof StudentMyLearningRoute
+  '/student/paths': typeof StudentPathsRoute
   '/student/profile': typeof StudentProfileRoute
   '/student/settings': typeof StudentSettingsRoute
   '/student': typeof StudentIndexRoute
@@ -136,6 +144,7 @@ export interface FileRoutesById {
   '/student/dashboard': typeof StudentDashboardRoute
   '/student/explore': typeof StudentExploreRoute
   '/student/my-learning': typeof StudentMyLearningRoute
+  '/student/paths': typeof StudentPathsRoute
   '/student/profile': typeof StudentProfileRoute
   '/student/settings': typeof StudentSettingsRoute
   '/student/': typeof StudentIndexRoute
@@ -154,6 +163,7 @@ export interface FileRouteTypes {
     | '/student/dashboard'
     | '/student/explore'
     | '/student/my-learning'
+    | '/student/paths'
     | '/student/profile'
     | '/student/settings'
     | '/student/'
@@ -169,6 +179,7 @@ export interface FileRouteTypes {
     | '/student/dashboard'
     | '/student/explore'
     | '/student/my-learning'
+    | '/student/paths'
     | '/student/profile'
     | '/student/settings'
     | '/student'
@@ -185,6 +196,7 @@ export interface FileRouteTypes {
     | '/student/dashboard'
     | '/student/explore'
     | '/student/my-learning'
+    | '/student/paths'
     | '/student/profile'
     | '/student/settings'
     | '/student/'
@@ -263,6 +275,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudentMyLearningRouteImport
       parentRoute: typeof StudentRoute
     }
+    '/student/paths': {
+      id: '/student/paths'
+      path: '/paths'
+      fullPath: '/student/paths'
+      preLoaderRoute: typeof StudentPathsRouteImport
+      parentRoute: typeof StudentRoute
+    }
     '/student/profile': {
       id: '/student/profile'
       path: '/profile'
@@ -308,6 +327,7 @@ interface StudentRouteChildren {
   StudentDashboardRoute: typeof StudentDashboardRoute
   StudentExploreRoute: typeof StudentExploreRoute
   StudentMyLearningRoute: typeof StudentMyLearningRoute
+  StudentPathsRoute: typeof StudentPathsRoute
   StudentProfileRoute: typeof StudentProfileRoute
   StudentSettingsRoute: typeof StudentSettingsRoute
   StudentIndexRoute: typeof StudentIndexRoute
@@ -323,6 +343,7 @@ const StudentRouteChildren: StudentRouteChildren = {
   StudentDashboardRoute: StudentDashboardRoute,
   StudentExploreRoute: StudentExploreRoute,
   StudentMyLearningRoute: StudentMyLearningRoute,
+  StudentPathsRoute: StudentPathsRoute,
   StudentProfileRoute: StudentProfileRoute,
   StudentSettingsRoute: StudentSettingsRoute,
   StudentIndexRoute: StudentIndexRoute,

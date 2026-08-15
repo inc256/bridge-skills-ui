@@ -1,96 +1,208 @@
-import { Link } from "@tanstack/react-router";
-import { ArrowRight, BookOpen, GraduationCap, Sparkles } from "lucide-react";
-import { Logo } from "@/components/logo";
+// apps/student/src/components/student-auth-page.tsx
+import { useRouter } from "@tanstack/react-router";
+import { 
+  ArrowRight, Mail, Lock, Eye, EyeOff,
+  Shield, CheckCircle, AlertCircle, GraduationCap
+} from "lucide-react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/lib/auth";
 
 export function StudentAuthPage() {
+  const router = useRouter();
+  const { login: authLogin } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    setLoading(true);
+    
+    try {
+      if (!email.trim() || !password.trim()) {
+        setError("Please enter both email and password.");
+        setLoading(false);
+        return;
+      }
+
+      console.log("Attempting login for:", email.trim());
+      
+      try {
+        await authLogin(email.trim(), password);
+        console.log("Login successful, navigating to dashboard...");
+        await router.navigate({ to: "/student/dashboard" });
+      } catch (err: any) {
+        console.error("Login error:", err);
+        setError(err.message || "Invalid credentials. Please try again.");
+        setLoading(false);
+      }
+    } catch (err: any) {
+      console.error("Auth error:", err);
+      setError(err.message || "Unable to sign in right now. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const togglePasswordVisibility = () => setShowPassword(!showPassword);
+
+  // Don't render on server, show loading state
+  if (!isClient) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-blue-600" />
+      </div>
+    );
+  }
+
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(31,110,92,0.16),transparent_32%),linear-gradient(180deg,rgba(218,165,32,0.08),transparent_35%)]" />
-      <div className="absolute left-[-5rem] top-24 -z-10 h-72 w-72 rounded-full bg-primary/15 blur-3xl" />
-      <div className="absolute bottom-[-4rem] right-[-2rem] -z-10 h-60 w-60 rounded-full bg-[var(--gold)]/15 blur-3xl" />
+    <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.08),transparent_60%),radial-gradient(circle_at_bottom_right,rgba(96,165,250,0.05),transparent_50%)]" />
+      <div className="absolute left-[-10rem] top-[-10rem] -z-10 h-[40rem] w-[40rem] rounded-full bg-blue-500/5 blur-3xl" />
+      <div className="absolute bottom-[-10rem] right-[-10rem] -z-10 h-[40rem] w-[40rem] rounded-full bg-sky-400/5 blur-3xl" />
 
-      <header className="mx-auto flex w-full max-w-[1240px] items-center justify-between px-4 py-6 sm:px-6 lg:px-8">
-        <Logo />
-        <Link to="/" className="rounded-full border border-border bg-background/70 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary">
-          Back home
-        </Link>
-      </header>
-
-      <main className="mx-auto grid min-h-[calc(100vh-88px)] max-w-[1240px] gap-8 px-4 pb-10 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:pb-16">
-        <section className="flex flex-col justify-center py-6 lg:py-0">
-          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
-            <GraduationCap className="h-3.5 w-3.5" />
-            Student portal login
-          </div>
-          <h1 className="mt-6 max-w-xl text-[40px] font-semibold leading-[1.05] tracking-tight sm:text-[54px]">
-            Keep learning without losing your pace.
-          </h1>
-          <p className="mt-5 max-w-xl text-[16px] leading-7 text-muted-foreground">
-            This sign-in is built for learners. Resume your lessons, review saved resources, and track assignment deadlines from a student-only entry point.
-          </p>
-
-          <div className="mt-8 grid gap-3 sm:grid-cols-3">
-            {[
-              { icon: Sparkles, label: "Continue live cohorts" },
-              { icon: BookOpen, label: "Open saved study plans" },
-              { icon: GraduationCap, label: "Track certificate progress" },
-            ].map((item) => (
-              <div key={item.label} className="rounded-2xl border border-border bg-card/80 px-4 py-4 shadow-[0_18px_40px_-34px_rgba(15,23,42,0.65)]">
-                <item.icon className="h-4 w-4 text-primary" />
-                <p className="mt-3 text-sm text-foreground/85">{item.label}</p>
+      <div className="w-full max-w-md px-4">
+        <div className="rounded-[32px] border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-blue-50/50 via-white to-blue-50/50 dark:from-gray-800/50 dark:via-gray-800 dark:to-gray-800/50 p-6 shadow-lg sm:p-8">
+          <div className="rounded-[28px] border border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-800/95 p-6 sm:p-8 backdrop-blur-sm">
+            <div className="text-center">
+              <div className="mx-auto w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-4">
+                <GraduationCap className="h-8 w-8 text-blue-600 dark:text-blue-400" />
               </div>
-            ))}
-          </div>
-        </section>
+              <h2 className="text-[28px] font-bold tracking-tight text-gray-900 dark:text-white">
+                Student Sign In
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Welcome back to your courses
+              </p>
+            </div>
 
-        <section className="rounded-[32px] border border-border bg-gradient-to-br from-primary/12 via-background to-[var(--gold)]/10 p-6 shadow-[0_30px_80px_-48px_rgba(15,23,42,0.7)] sm:p-8">
-          <div className="rounded-[28px] border border-border bg-background/94 p-6 sm:p-8">
-            <p className="text-sm font-medium text-muted-foreground">Secure learner access</p>
-            <h2 className="mt-1 text-[28px] font-semibold tracking-tight">Sign in as a student</h2>
+            <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <div className="relative mt-1.5">
+                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    placeholder="student@example.com"
+                    className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 pl-10 pr-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                    required
+                    autoComplete="email"
+                  />
+                </div>
+              </div>
 
-            <form className="mt-8 space-y-5">
-              <label className="block text-sm font-medium text-foreground">
-                Email
-                <input
-                  type="email"
-                  defaultValue="ama.boateng@techbridge.io"
-                  className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
-                />
-              </label>
-
-              <label className="block text-sm font-medium text-foreground">
-                Password
-                <input
-                  type="password"
-                  defaultValue="student-demo"
-                  className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
-                />
-              </label>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Password <span className="text-red-500">*</span>
+                </label>
+                <div className="relative mt-1.5">
+                  <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    placeholder="Enter your password"
+                    className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 pl-10 pr-12 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                    required
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={togglePasswordVisibility}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
 
               <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-                <label className="inline-flex items-center gap-2 text-muted-foreground">
-                  <input type="checkbox" defaultChecked className="h-4 w-4 rounded border-border text-primary focus:ring-primary/20" />
-                  Keep me signed in on this device
+                <label className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                  />
+                  Keep me signed in
                 </label>
-                <button type="button" className="font-medium text-primary transition-colors hover:text-primary/80">
+                <button 
+                  type="button" 
+                  className="font-medium text-blue-600 dark:text-blue-400 transition-colors hover:text-blue-700 dark:hover:text-blue-300"
+                  onClick={() => {
+                    setError("Password reset functionality coming soon.");
+                  }}
+                >
                   Reset password
                 </button>
               </div>
 
-              <Link
-                to="/student/dashboard"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+              {error && (
+                <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-400 flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-semibold text-white transition-all hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-70 shadow-sm hover:shadow-md"
               >
-                Enter student workspace <ArrowRight className="h-4 w-4" />
-              </Link>
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <span className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white" />
+                    Signing in…
+                  </span>
+                ) : (
+                  <>
+                    Sign in
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </button>
             </form>
 
-            <p className="mt-5 text-xs leading-6 text-muted-foreground">
-              Need a course first? You can still browse the catalog from the homepage before signing in.
-            </p>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Don't have an account?
+              </p>
+              <button 
+                type="button" 
+                className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors flex items-center gap-1"
+                onClick={() => {
+                  setError("Registration is currently disabled. Please contact support.");
+                }}
+              >
+                Create account
+                <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
+            <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+              <span className="flex items-center gap-1">
+                <Shield className="h-3.5 w-3.5 text-blue-500" />
+                Secure
+              </span>
+              <span className="w-px h-3 bg-gray-300 dark:bg-gray-600" />
+              <span className="flex items-center gap-1">
+                <CheckCircle className="h-3.5 w-3.5 text-blue-500" />
+                Verified
+              </span>
+            </div>
           </div>
-        </section>
-      </main>
+        </div>
+      </div>
     </div>
   );
 }

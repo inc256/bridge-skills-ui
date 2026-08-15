@@ -1,0 +1,865 @@
+const API_BASE = (import.meta.env?.VITE_API_BASE_URL as string | undefined) ?? "http://localhost:8001/api/v1";
+
+type ApiEnvelope<T> = {
+  count?: number;
+  next?: string | null;
+  previous?: string | null;
+  results?: T[];
+};
+
+export type AuthUser = {
+  id: string;
+  username: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  full_name?: string;
+  role?: string;
+  avatar?: string | null;
+  xp?: number;
+  level?: number;
+  streak_days?: number;
+  courses_completed?: number;
+  is_super_admin?: boolean;
+};
+
+export type AuthSession = {
+  access: string;
+  refresh: string;
+  user: AuthUser;
+};
+
+export type Course = {
+  id: string;
+  slug: string;
+  title: string;
+  instructor: string;
+  instructorTitle: string;
+  category: string;
+  level?: "Beginner" | "Intermediate" | "Advanced";
+  duration: string;
+  students: number;
+  rating: number;
+  reviews: number;
+  certificate: boolean;
+  price: string;
+  image: string;
+  color: string;
+  description: string;
+  progress?: number;
+  modules: number;
+  lessons: number;
+  language?: string;
+  instructorBio?: string;
+  learningOutcomes?: string[];
+  subtitles?: number;
+  introVideoUrl?: string;
+  raw?: Record<string, unknown>;
+};
+
+export type Certificate = {
+  id: string;
+  title: string;
+  issued: string;
+  credentialId: string;
+  instructor: string;
+};
+
+export type QuizChoice = {
+  id: string;
+  label: string;
+  value?: string;
+  raw?: any;
+};
+
+export type QuizQuestion = {
+  id: string;
+  prompt: string;
+  type: string;
+  choices: QuizChoice[];
+  raw?: any;
+};
+
+export type Quiz = {
+  id: string;
+  title: string;
+  description?: string;
+  questions: QuizQuestion[];
+  raw?: any;
+};
+
+export type BlogPost = {
+  id: string;
+  title: string;
+  summary: string;
+  publishedAt?: string;
+  slug?: string;
+  raw?: any;
+};
+
+export type Assignment = {
+  id: string;
+  title: string;
+  course: string;
+  due: string;
+  status: string;
+  type: string;
+  raw?: any;
+};
+
+function getStorageKey() {
+  return "bridge_skills_student_session";
+}
+
+function readSession(): AuthSession | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(getStorageKey());
+    return raw ? (JSON.parse(raw) as AuthSession) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeSession(session: AuthSession | null) {
+  if (typeof window === "undefined") return;
+  if (session) {
+    window.localStorage.setItem(getStorageKey(), JSON.stringify(session));
+  } else {
+    window.localStorage.removeItem(getStorageKey());
+  }
+}
+
+export function getStoredSession() {
+  return readSession();
+}
+
+export function clearStoredSession() {
+  writeSession(null);
+}
+
+async function refreshToken(): Promise<boolean> {
+  const session = readSession();
+  if (!session?.refresh) return false;
+
+  try {
+    const refreshResponse = await fetch(`${API_BASE}/auth/token/refresh/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ refresh: session.refresh }),
+    });
+
+    if (!refreshResponse.ok) return false;
+
+    const data = await refreshResponse.json();
+    if (data?.access) {
+      writeSession({ ...session, access: data.access, refresh: data.refresh ?? session.refresh });
+      return true;
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+export async function apiRequest<T>(path: string, init: RequestInit = {}, retried = false): Promise<T> {
+  const headers = new Headers(init.headers);
+  
+  // Check if this is an auth path - don't send auth header for login/register
+  const isAuthPath = path.includes("/auth/login/") || 
+                     path.includes("/auth/register/") || 
+                     path.includes("/auth/token/");
+  
+  const session = readSession();
+  
+  // Only add Authorization header if we have a session AND it's not an auth path
+  if (session?.access && !isAuthPath) {
+    headers.set("Authorization", `Bearer ${session.access}`);
+  }
+  
+  if (!headers.has("Content-Type") && init.body && typeof init.body === "string") {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const url = `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
+  console.log(`API Request: ${init.method || 'GET'} ${url}`);
+
+  try {
+    const response = await fetch(url, {
+      ...init,
+      headers,
+    });
+
+    if (!response.ok) {
+      // Don't try to refresh token on login/register failures
+      if (response.status === 401 && !retried && !isAuthPath && !path.includes("/auth/token/refresh/")) {
+        console.log("Token expired, attempting refresh...");
+        const refreshed = await refreshToken();
+        if (refreshed) {
+          console.log("Token refreshed, retrying request...");
+          return apiRequest<T>(path, init, true);
+        }
+      }
+
+      let detail = "Request failed";
+      try {
+        const payload = await response.clone().json();
+        detail = typeof payload === "string" ? payload : payload?.detail ?? payload?.message ?? JSON.stringify(payload);
+      } catch {
+        try {
+          detail = await response.clone().text();
+        } catch {
+          detail = "Request failed";
+        }
+      }
+      throw new Error(detail || `Request failed with ${response.status}`);
+    }
+
+    if (response.status === 204) {
+      return null as T;
+    }
+
+    return (await response.json()) as T;
+  } catch (error) {
+    console.error(`API Request failed for ${path}:`, error);
+    throw error;
+  }
+}
+
+export async function getProfile() {
+  try {
+    return await apiRequest<any>("/auth/me/");
+  } catch {
+    return null;
+  }
+}
+
+export async function patchProfile(data: Record<string, any>) {
+  try {
+    return await apiRequest<any>("/auth/me/", {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  } catch {
+    return null;
+  }
+}
+
+export async function login(email: string, password: string) {
+  try {
+    console.log("Attempting login for:", email);
+    
+    // Clean inputs
+    const cleanEmail = email.trim();
+    const cleanPassword = password.trim();
+    
+    if (!cleanEmail || !cleanPassword) {
+      throw new Error("Email and password are required");
+    }
+    
+    // Try with email field first
+    try {
+      const session = await apiRequest<AuthSession>("/auth/login/", {
+        method: "POST",
+        body: JSON.stringify({ 
+          email: cleanEmail, 
+          password: cleanPassword 
+        }),
+      });
+      
+      if (session?.access) {
+        writeSession(session);
+        console.log("Login successful with email");
+        return session;
+      }
+      return null;
+    } catch (emailError: any) {
+      console.log("Email login failed, trying username...", emailError.message);
+      
+      // If email fails, try with username
+      try {
+        const session = await apiRequest<AuthSession>("/auth/login/", {
+          method: "POST",
+          body: JSON.stringify({ 
+            username: cleanEmail, 
+            password: cleanPassword 
+          }),
+        });
+        
+        if (session?.access) {
+          writeSession(session);
+          console.log("Login successful with username");
+          return session;
+        }
+        return null;
+      } catch (usernameError) {
+        console.error("Username login failed too");
+        throw emailError; // Throw the original error
+      }
+    }
+  } catch (error) {
+    console.error("Login error:", error);
+    throw error;
+  }
+}
+
+export async function logout() {
+  try {
+    await apiRequest("/auth/logout/", { method: "POST" });
+  } catch {
+    // ignore logout failures and clear locally
+  }
+  writeSession(null);
+}
+
+export async function register(payload: { 
+  email: string; 
+  username: string; 
+  password: string; 
+  password2: string; 
+  first_name?: string; 
+  last_name?: string; 
+  role?: string 
+}) {
+  try {
+    console.log("Attempting registration for:", payload.email);
+    
+    const resp = await apiRequest<any>("/auth/register/", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    
+    console.log("Registration response:", resp);
+    return resp;
+  } catch (err) {
+    console.error("Registration error:", err);
+    return null;
+  }
+}
+
+function titleCase(value: string) {
+  const lower = (value || "").toLowerCase();
+  return lower.charAt(0).toUpperCase() + lower.slice(1);
+}
+
+function normalizeLevel(value: string | undefined) {
+  const level = (value || "beginner").toLowerCase();
+  if (level === "advanced") return "Advanced" as const;
+  if (level === "intermediate") return "Intermediate" as const;
+  return "Beginner" as const;
+}
+
+function deriveThumbVariant(title: string, category: string) {
+  const text = `${title} ${category}`.toLowerCase();
+  if (text.includes("security") || text.includes("hacking")) return "security";
+  if (text.includes("cloud") || text.includes("network")) return "network";
+  if (text.includes("design") || text.includes("product")) return "design";
+  if (text.includes("ai") || text.includes("machine") || text.includes("learning")) return "ai";
+  if (text.includes("code") || text.includes("software") || text.includes("typescript")) return "code";
+  return "code";
+}
+
+function deriveColor(category: string) {
+  const name = category?.toLowerCase() ?? "";
+  if (name.includes("cloud")) return "#1F6E5C";
+  if (name.includes("security")) return "#0D2922";
+  if (name.includes("ai") || name.includes("machine")) return "#D4A24E";
+  if (name.includes("design")) return "#587267";
+  return "#3B82F6";
+}
+
+function formatDuration(lessons: number, fallback = "8h") {
+  if (!lessons) return fallback;
+  const hours = Math.max(8, Math.round(lessons / 2));
+  return `${hours}h`;
+}
+
+function normalizeCourse(item: any): Course {
+  const category = item?.category?.name ?? item?.category;
+  const instructor = item?.instructor?.full_name ?? item?.instructor?.username ?? item?.instructor;
+  const instructorTitle = item?.instructor?.headline ?? item?.instructor?.role;
+  const lessons = Number(item?.total_lessons ?? item?.lessons ?? 0) || 0;
+  const students = Number(item?.total_students ?? item?.students ?? 0) || 0;
+  const rating = Number(item?.avg_rating ?? item?.rating ?? 0) || 0;
+  const reviews = Number(item?.total_reviews ?? item?.reviews ?? 0) || 0;
+  const currency = String(item?.currency ?? item?.price_currency ?? "UGX").toUpperCase();
+  const rawPrice = Number(item?.price ?? item?.amount ?? 0);
+  const price = item?.pricing === "free" || rawPrice <= 0
+    ? "Free"
+    : rawPrice > 0
+      ? `${currency} ${rawPrice.toLocaleString()}`
+      : "";
+
+  const introVideoUrl = item?.intro_video_url ?? item?.video_url ?? item?.youtube_url ?? item?.course_video_url ?? item?.preview_video_url;
+
+  return {
+    id: item?.id ?? item?.slug ?? `${item?.title ?? "course"}-${Math.random()}`,
+    slug: item?.slug ?? item?.title?.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") ?? "course",
+    title: item?.title ?? "",
+    instructor: instructor ?? "",
+    instructorTitle: instructorTitle ?? "",
+    category: category ?? "",
+    level: item?.level ? normalizeLevel(item?.level) : undefined,
+    duration: item?.duration ?? (lessons > 0 ? formatDuration(lessons) : ""),
+    students,
+    rating,
+    reviews,
+    certificate: Boolean(item?.has_certificate),
+    price,
+    image: deriveThumbVariant(item?.title ?? "", category ?? ""),
+    color: deriveColor(category ?? ""),
+    description: item?.subtitle ?? item?.description ?? "",
+    modules: Math.max(0, Math.ceil(Math.max(lessons, 0) / 6)),
+    lessons,
+    language: item?.language ?? item?.course_language ?? undefined,
+    subtitles: Number(item?.subtitle_count ?? item?.subtitles ?? 0) || undefined,
+    instructorBio: item?.instructor?.bio ?? item?.instructor_bio ?? item?.instructor_description ?? undefined,
+    learningOutcomes: Array.isArray(item?.learning_outcomes)
+      ? item.learning_outcomes
+      : Array.isArray(item?.outcomes)
+        ? item.outcomes
+        : undefined,
+    introVideoUrl: introVideoUrl ? String(introVideoUrl) : undefined,
+    progress: item?.progress,
+    raw: item,
+  };
+}
+
+function normalizeQuizChoice(choice: any): QuizChoice {
+  if (choice == null) {
+    return { id: String(Math.random()), label: "Unknown", raw: choice };
+  }
+
+  const label = typeof choice === "string"
+    ? choice
+    : choice?.label ?? choice?.text ?? choice?.name ?? String(choice);
+  const id = typeof choice === "string"
+    ? choice
+    : choice?.id?.toString() ?? choice?.value?.toString() ?? label;
+
+  return {
+    id,
+    label,
+    value: choice?.value ?? choice?.id,
+    raw: choice,
+  };
+}
+
+function normalizeQuizQuestion(item: any): QuizQuestion {
+  const choices = Array.isArray(item?.choices)
+    ? item.choices.map(normalizeQuizChoice)
+    : Array.isArray(item?.options)
+      ? item.options.map(normalizeQuizChoice)
+      : [];
+
+  return {
+    id: item?.id?.toString() ?? item?.question?.toString() ?? `question-${Math.random()}`,
+    prompt: item?.question ?? item?.prompt ?? item?.text ?? "Question",
+    type: item?.type ?? (choices.length ? "multiple_choice" : "open_ended"),
+    choices,
+    raw: item,
+  };
+}
+
+function normalizeQuiz(item: any): Quiz {
+  return {
+    id: item?.id?.toString() ?? item?.slug ?? `${item?.title ?? "quiz"}-${Math.random()}`,
+    title: item?.title ?? item?.name ?? "Quick check",
+    description: item?.description ?? item?.summary ?? "",
+    questions: Array.isArray(item?.questions) ? item.questions.map(normalizeQuizQuestion) : [],
+    raw: item,
+  };
+}
+
+function normalizeBlogPost(item: any): BlogPost {
+  return {
+    id: item?.id?.toString() ?? item?.slug ?? `${item?.title ?? "post"}-${Math.random()}`,
+    title: item?.title ?? item?.headline ?? "Blog post",
+    summary: item?.summary ?? item?.excerpt ?? item?.description ?? "",
+    publishedAt: item?.published_at ?? item?.date ?? item?.created_at,
+    slug: item?.slug,
+    raw: item,
+  };
+}
+
+function normalizeAssignment(item: any): Assignment {
+  return {
+    id: item?.id?.toString() ?? `${item?.title ?? "assignment"}-${Math.random()}`,
+    title: item?.title ?? item?.name ?? "Assignment",
+    course: item?.course?.title ?? item?.course ?? item?.course_name ?? "Course",
+    due: item?.due_date ?? item?.due ?? item?.deadline ?? "TBD",
+    status: item?.status ?? item?.state ?? "Pending",
+    type: item?.type ?? item?.assignment_type ?? "Task",
+    raw: item,
+  };
+}
+
+// ===================== COURSE FUNCTIONS =====================
+
+export async function getCourses(query?: string | URLSearchParams): Promise<Course[]> {
+  try {
+    const queryString = query ? `?${String(query)}` : "";
+    const payload = await apiRequest<ApiEnvelope<any> | any>(`/courses/${queryString}`);
+    const list = Array.isArray(payload) ? payload : payload?.results ?? [];
+    return (list as any[]).map(normalizeCourse);
+  } catch {
+    return [];
+  }
+}
+
+export async function getCourse(slug: string): Promise<Course | null> {
+  try {
+    const course = await apiRequest<any>(`/courses/${slug}/`);
+    return normalizeCourse(course);
+  } catch {
+    return null;
+  }
+}
+
+// ===================== ENROLLMENT FUNCTIONS =====================
+
+export async function getMyEnrollments() {
+  try {
+    const payload = await apiRequest<ApiEnvelope<any> | any>("/enrollments/");
+    const list = Array.isArray(payload) ? payload : payload?.results ?? [];
+    return (list as any[]).map((item) => ({
+      id: item?.id,
+      course: item?.course ? normalizeCourse(item.course) : null,
+      status: item?.status,
+      progress: item?.progress,
+      enrolledAt: item?.enrolled_at,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+// ===================== CERTIFICATE FUNCTIONS =====================
+
+export async function getMyCertificates(): Promise<Certificate[]> {
+  try {
+    const payload = await apiRequest<ApiEnvelope<any> | any>("/certificates/mine/");
+    const list = Array.isArray(payload) ? payload : payload?.results ?? [];
+    return (list as any[]).map((item, index) => ({
+      id: item?.id ?? `${index}`,
+      title: item?.course?.title ?? item?.title ?? "Certificate",
+      issued: item?.issued_at ? new Date(item.issued_at).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "Recent",
+      credentialId: item?.credential_id ?? item?.credentialId ?? `TBS-${index + 1}`,
+      instructor: item?.instructor?.full_name ?? item?.instructor ?? "TechBridge",
+    }));
+  } catch {
+    return [];
+  }
+}
+
+// ===================== WISHLIST FUNCTIONS =====================
+
+export async function getWishlistCourses(): Promise<Course[]> {
+  try {
+    const payload = await apiRequest<ApiEnvelope<any> | any>("/courses/wishlist/");
+    const list = Array.isArray(payload) ? payload : payload?.results ?? [];
+    return (list as any[]).map((item) => normalizeCourse(item?.course ?? item));
+  } catch {
+    return [];
+  }
+}
+
+// ===================== FEATURES FUNCTIONS =====================
+
+export async function getLearningPaths() {
+  try {
+    const payload = await apiRequest<ApiEnvelope<any> | any>("/features/learning-paths/");
+    return (Array.isArray(payload) ? payload : payload?.results ?? []) as any[];
+  } catch {
+    return [];
+  }
+}
+
+export async function getJobs() {
+  try {
+    const payload = await apiRequest<ApiEnvelope<any> | any>("/features/jobs/");
+    return (Array.isArray(payload) ? payload : payload?.results ?? []) as any[];
+  } catch {
+    return [];
+  }
+}
+
+export async function getScholarships() {
+  try {
+    const payload = await apiRequest<ApiEnvelope<any> | any>("/features/scholarships/");
+    return (Array.isArray(payload) ? payload : payload?.results ?? []) as any[];
+  } catch {
+    return [];
+  }
+}
+
+// ===================== BLOG FUNCTIONS =====================
+
+export async function getBlogPosts(query?: string | URLSearchParams): Promise<BlogPost[]> {
+  try {
+    const queryText = query ? String(query).replace(/^\?/, "") : "";
+    const payload = await apiRequest<ApiEnvelope<any> | any>(`/blog/${queryText ? `?${queryText}` : ""}`);
+    const list = Array.isArray(payload) ? payload : payload?.results ?? [];
+    return (list as any[]).map(normalizeBlogPost);
+  } catch {
+    return [];
+  }
+}
+
+// ===================== ASSIGNMENT FUNCTIONS =====================
+
+export async function getAssignments(): Promise<Assignment[]> {
+  try {
+    const payload = await apiRequest<ApiEnvelope<any> | any>("/assignments/");
+    const list = Array.isArray(payload) ? payload : payload?.results ?? [];
+    return (list as any[]).map(normalizeAssignment);
+  } catch {
+    return [];
+  }
+}
+
+// ===================== NOTIFICATION FUNCTIONS =====================
+
+export async function getNotifications() {
+  try {
+    const payload = await apiRequest<ApiEnvelope<any> | any>("/notifications/");
+    return (Array.isArray(payload) ? payload : payload?.results ?? []) as any[];
+  } catch {
+    return [];
+  }
+}
+
+export async function markNotificationsRead() {
+  try {
+    return await apiRequest<any>("/notifications/read/", { method: "POST" });
+  } catch {
+    return null;
+  }
+}
+
+// ===================== GAMIFICATION FUNCTIONS =====================
+
+export async function getGamificationSummary() {
+  try {
+    const payload = await apiRequest<any>("/gamification/badges/mine/");
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+export async function getLeaderboard() {
+  try {
+    const payload = await apiRequest<any>("/gamification/leaderboard/");
+    return (Array.isArray(payload) ? payload : payload?.results ?? []) as any[];
+  } catch {
+    return [];
+  }
+}
+
+// ===================== QUIZ FUNCTIONS =====================
+
+export async function getQuizzesForCourse(courseSlug: string): Promise<Quiz[]> {
+  try {
+    const payload = await apiRequest<any>(`/quizzes/course/${courseSlug}/`);
+    const list = Array.isArray(payload) ? payload : payload?.results ?? [];
+    return (list as any[]).map(normalizeQuiz);
+  } catch {
+    return [];
+  }
+}
+
+export async function getQuiz(quizId: string): Promise<Quiz | null> {
+  try {
+    const quiz = await apiRequest<any>(`/quizzes/${quizId}/`);
+    return normalizeQuiz(quiz);
+  } catch {
+    return null;
+  }
+}
+
+export async function submitQuizAnswers(quizId: string, answers: Record<string, unknown>) {
+  try {
+    return await apiRequest<any>(`/quizzes/${quizId}/submit/`, {
+      method: "POST",
+      body: JSON.stringify(answers),
+    });
+  } catch {
+    return null;
+  }
+}
+
+// ===================== PAYMENT FUNCTIONS =====================
+
+export async function getPaymentHistory() {
+  try {
+    const payload = await apiRequest<any>("/payments/history/");
+    return (Array.isArray(payload) ? payload : payload?.results ?? []) as any[];
+  } catch {
+    return [];
+  }
+}
+
+export async function initiatePayment(provider: "mtn" | "stripe", payload: Record<string, unknown>) {
+  try {
+    return await apiRequest<any>(`/payments/${provider}/`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    return null;
+  }
+}
+
+// ===================== CERTIFICATE VERIFICATION =====================
+
+export async function verifyCertificate(number: string) {
+  try {
+    return await apiRequest<any>(`/certificates/verify/${number}/`);
+  } catch {
+    return null;
+  }
+}
+
+// ===================== LESSON FUNCTIONS =====================
+
+export async function markLessonComplete(lessonId: string) {
+  try {
+    return await apiRequest<any>(`/lessons/${lessonId}/complete/`, {
+      method: "POST",
+    });
+  } catch {
+    return null;
+  }
+}
+
+export async function syncLessonProgress(lessonId: string, position: number, watchTime: number) {
+  try {
+    return await apiRequest<any>(`/lessons/${lessonId}/sync/`, {
+      method: "POST",
+      body: JSON.stringify({ position, watch_time: watchTime }),
+    });
+  } catch {
+    return null;
+  }
+}
+
+// ===================== USER FUNCTIONS =====================
+
+export async function getMeStats() {
+  try {
+    const stats = await apiRequest<any>("/auth/me/stats/");
+    return stats;
+  } catch {
+    return null;
+  }
+}
+
+export async function getMe() {
+  try {
+    return await apiRequest<any>("/auth/me/");
+  } catch {
+    return null;
+  }
+}
+
+// ===================== COURSE MODULES =====================
+
+export async function getCourseModules(slug: string) {
+  try {
+    const payload = await apiRequest<any>(`/courses/${slug}/sections/`);
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.results)) return payload.results;
+    if (Array.isArray(payload?.sections)) return payload.sections;
+    return [];
+  } catch {
+    try {
+      const modules = await apiRequest<any>(`/lessons/course/${slug}/`);
+      return Array.isArray(modules) ? modules : modules?.results ?? [];
+    } catch {
+      return [];
+    }
+  }
+}
+
+// ===================== COURSE PROGRESS =====================
+
+export async function getCourseProgress(courseSlug: string) {
+  try {
+    return await apiRequest<any>(`/courses/${courseSlug}/progress/`);
+  } catch {
+    return null;
+  }
+}
+
+// ===================== REVIEW FUNCTIONS =====================
+
+export async function getCourseReviews(courseSlug: string) {
+  try {
+    const payload = await apiRequest<any>(`/courses/${courseSlug}/reviews/`);
+    return (Array.isArray(payload) ? payload : payload?.results ?? []) as any[];
+  } catch {
+    return [];
+  }
+}
+
+export async function createCourseReview(courseSlug: string, data: { rating: number; comment: string }) {
+  try {
+    return await apiRequest<any>(`/courses/${courseSlug}/reviews/`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  } catch {
+    return null;
+  }
+}
+
+// ===================== WISHLIST MANAGEMENT =====================
+
+export async function addToWishlist(courseSlug: string) {
+  try {
+    return await apiRequest<any>(`/courses/${courseSlug}/wishlist/`, {
+      method: "POST",
+    });
+  } catch {
+    return null;
+  }
+}
+
+export async function removeFromWishlist(courseSlug: string) {
+  try {
+    return await apiRequest<any>(`/courses/${courseSlug}/wishlist/`, {
+      method: "DELETE",
+    });
+  } catch {
+    return null;
+  }
+}
+
+// ===================== ENROLLMENT MANAGEMENT =====================
+
+export async function enrollInCourse(courseSlug: string) {
+  try {
+    return await apiRequest<any>(`/courses/${courseSlug}/enroll/`, {
+      method: "POST",
+    });
+  } catch {
+    return null;
+  }
+}
+
+// ===================== CERTIFICATE DOWNLOAD =====================
+
+export async function downloadCertificate(certificateId: string) {
+  try {
+    const response = await apiRequest<any>(`/certificates/${certificateId}/download/`, {
+      method: "GET",
+    });
+    return response;
+  } catch {
+    return null;
+  }
+}

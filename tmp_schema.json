@@ -1,0 +1,2788 @@
+﻿openapi: 3.0.3
+info:
+  title: TechBridge Skills Hub API
+  version: 1.0.0
+  description: |-
+    Complete REST API for TechBridge Skills Hub e-learning platform.
+
+    ## Authentication
+    Use JWT tokens. Login at `/api/v1/auth/login/` to get `access` and `refresh` tokens.
+    Include in requests: `Authorization: Bearer <access_token>`
+
+    ## Base URL
+    `/api/v1/`
+paths:
+  /api/v1/ai/chat/:
+    post:
+      operationId: v1_ai_chat_create
+      summary: Free-form AI chat for instructors
+      tags:
+      - ai
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/ai/course/desc/:
+    post:
+      operationId: v1_ai_course_desc_create
+      summary: Generate course description
+      tags:
+      - ai
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/ai/course/full/:
+    post:
+      operationId: v1_ai_course_full_create
+      summary: Generate full course draft in one call
+      tags:
+      - ai
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/ai/course/outcomes/:
+    post:
+      operationId: v1_ai_course_outcomes_create
+      summary: Generate learning outcomes
+      tags:
+      - ai
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/ai/course/outline/:
+    post:
+      operationId: v1_ai_course_outline_create
+      summary: Generate course outline / section structure
+      tags:
+      - ai
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/ai/course/reqs/:
+    post:
+      operationId: v1_ai_course_reqs_create
+      summary: Generate course requirements
+      tags:
+      - ai
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/ai/course/seo/:
+    post:
+      operationId: v1_ai_course_seo_create
+      summary: Generate SEO keywords and meta description
+      tags:
+      - ai
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/ai/course/title/:
+    post:
+      operationId: v1_ai_course_title_create
+      summary: Generate course title suggestions
+      tags:
+      - ai
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIResponse'
+          description: ''
+  /api/v1/ai/lesson/content/:
+    post:
+      operationId: v1_ai_lesson_content_create
+      summary: Generate lesson content (HTML)
+      tags:
+      - ai
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/ai/lesson/quiz/:
+    post:
+      operationId: v1_ai_lesson_quiz_create
+      summary: Generate quiz questions (JSON)
+      tags:
+      - ai
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AIGenerateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/ai/providers/:
+    get:
+      operationId: v1_ai_providers_retrieve
+      summary: List configured AI providers
+      tags:
+      - ai
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/ai/usage/:
+    get:
+      operationId: v1_ai_usage_retrieve
+      summary: AI usage statistics (admin only)
+      tags:
+      - ai
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/analytics/daily/:
+    get:
+      operationId: v1_analytics_daily_retrieve
+      summary: Daily stats (admin only)
+      tags:
+      - analytics
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/analytics/stats/:
+    get:
+      operationId: v1_analytics_stats_retrieve
+      summary: Platform overview stats (admin only)
+      tags:
+      - analytics
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/login/:
+    post:
+      operationId: v1_auth_login_create
+      description: Login with email+password ΓåÆ JWT tokens.
+      summary: Login
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+              required:
+              - email
+              - password
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: JWT tokens + user info
+          description: ''
+  /api/v1/auth/logout/:
+    post:
+      operationId: v1_auth_logout_create
+      summary: Logout
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh:
+                  type: string
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: Logged out
+  /api/v1/auth/me/:
+    get:
+      operationId: v1_auth_me_retrieve
+      description: Get or update the current user's profile.
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: v1_auth_me_update
+      description: Get or update the current user's profile.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: v1_auth_me_partial_update
+      description: Get or update the current user's profile.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/auth/me/password/:
+    post:
+      operationId: v1_auth_me_password_create
+      summary: Change password
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: Password changed
+  /api/v1/auth/me/stats/:
+    get:
+      operationId: v1_auth_me_stats_retrieve
+      description: Returns role-specific quick stats for the dashboard.
+      summary: Dashboard stats for current user
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/register/:
+    post:
+      operationId: v1_auth_register_create
+      description: Create a student or instructor account.
+      summary: Register new user
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/auth/token/refresh/:
+    post:
+      operationId: v1_auth_token_refresh_create
+      description: Pass a valid refresh token to receive a new access token. Returns
+        401 if expired or user deleted.
+      summary: Refresh JWT access token
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh:
+                  type: string
+              required:
+              - refresh
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: New access token issued
+        '401':
+          description: Token invalid or expired
+  /api/v1/blog/:
+    get:
+      operationId: v1_blog_retrieve
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/blog/{slug}/:
+    get:
+      operationId: v1_blog_retrieve_2
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/certificates/mine/:
+    get:
+      operationId: v1_certificates_mine_retrieve
+      summary: Get my certificates
+      tags:
+      - certificates
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/certificates/verify/{number}/:
+    get:
+      operationId: v1_certificates_verify_retrieve
+      summary: Verify a certificate by number
+      parameters:
+      - in: path
+        name: number
+        schema:
+          type: string
+        required: true
+      tags:
+      - certificates
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/courses/:
+    get:
+      operationId: v1_courses_list
+      parameters:
+      - in: query
+        name: category__slug
+        schema:
+          type: string
+      - in: query
+        name: is_bestseller
+        schema:
+          type: boolean
+      - in: query
+        name: is_featured
+        schema:
+          type: boolean
+      - in: query
+        name: level
+        schema:
+          type: string
+          enum:
+          - advanced
+          - beginner
+          - intermediate
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: pricing
+        schema:
+          type: string
+          enum:
+          - free
+          - paid
+          - subscription
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCourseListList'
+          description: ''
+  /api/v1/courses/{slug}/:
+    get:
+      operationId: v1_courses_retrieve
+      summary: Get course details by slug
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - courses
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseDetail'
+          description: ''
+    put:
+      operationId: v1_courses_update
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseCreateUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CourseCreateUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CourseCreateUpdateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseCreateUpdate'
+          description: ''
+    patch:
+      operationId: v1_courses_partial_update
+      summary: Update course
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - courses
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCourseCreateUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCourseCreateUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCourseCreateUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseCreateUpdate'
+          description: ''
+    delete:
+      operationId: v1_courses_destroy
+      summary: Delete course
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - courses
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/courses/{slug}/reviews/:
+    get:
+      operationId: v1_courses_reviews_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCourseReviewList'
+          description: ''
+    post:
+      operationId: v1_courses_reviews_create
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseReviewRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CourseReviewRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CourseReviewRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseReview'
+          description: ''
+  /api/v1/courses/{slug}/wishlist/:
+    post:
+      operationId: v1_courses_wishlist_create
+      summary: Toggle course in wishlist
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - courses
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/courses/categories/:
+    get:
+      operationId: v1_courses_categories_list
+      summary: List top-level categories
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - courses
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCategoryList'
+          description: ''
+  /api/v1/courses/create/:
+    post:
+      operationId: v1_courses_create_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseCreateUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CourseCreateUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CourseCreateUpdateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseCreateUpdate'
+          description: ''
+  /api/v1/courses/mine/:
+    get:
+      operationId: v1_courses_mine_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCourseListList'
+          description: ''
+  /api/v1/courses/wishlist/:
+    get:
+      operationId: v1_courses_wishlist_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedWishlistList'
+          description: ''
+  /api/v1/enrollments/:
+    get:
+      operationId: v1_enrollments_list
+      description: List all enrollments for the current user.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEnrollmentList'
+          description: ''
+  /api/v1/enrollments/{enrollment_id}/progress/:
+    get:
+      operationId: v1_enrollments_progress_retrieve
+      description: Get lesson-level progress for the current user within a course.
+      summary: Get lesson progress list for an enrollment
+      parameters:
+      - in: path
+        name: enrollment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - enrollments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: Lesson progress
+          description: ''
+  /api/v1/enrollments/{slug}/check/:
+    get:
+      operationId: v1_enrollments_check_retrieve
+      description: Check if the current user is enrolled in a specific course.
+      summary: Check enrollment status for a course
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - enrollments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: Enrollment check result
+          description: ''
+  /api/v1/enrollments/{slug}/enroll/:
+    post:
+      operationId: v1_enrollments_enroll_create
+      description: Enroll in a free course.
+      summary: Enroll in a free course
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - enrollments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: Enrollment result
+          description: ''
+  /api/v1/features/jobs/:
+    get:
+      operationId: v1_features_jobs_retrieve
+      description: Return all active job postings. Optionally filter by ?type=full_time
+        etc.
+      summary: List active job postings
+      tags:
+      - features
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/features/jobs/{id}/:
+    get:
+      operationId: v1_features_jobs_retrieve_2
+      description: Return a single job post and increment its view counter.
+      summary: Get job detail
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - features
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/features/learning-paths/:
+    get:
+      operationId: v1_features_learning_paths_retrieve
+      description: Return all published learning paths.
+      summary: List learning paths
+      tags:
+      - features
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/features/learning-paths/{slug}/:
+    get:
+      operationId: v1_features_learning_paths_retrieve_2
+      description: Return a single learning path by slug.
+      summary: Get learning path detail
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - features
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/features/scholarships/:
+    get:
+      operationId: v1_features_scholarships_retrieve
+      description: Return all open scholarships.
+      summary: List active scholarships
+      tags:
+      - features
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/features/scholarships/{id}/:
+    get:
+      operationId: v1_features_scholarships_retrieve_2
+      description: Return a single scholarship by ID.
+      summary: Get scholarship detail
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - features
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/forums/{course_slug}/threads/:
+    get:
+      operationId: v1_forums_threads_retrieve
+      summary: Get forum threads for a course
+      parameters:
+      - in: path
+        name: course_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - forums
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/gamification/badges/mine/:
+    get:
+      operationId: v1_gamification_badges_mine_retrieve
+      description: Returns the current user's XP, level and streak (no separate badge
+        table).
+      summary: Get my XP and level
+      tags:
+      - gamification
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/gamification/leaderboard/:
+    get:
+      operationId: v1_gamification_leaderboard_retrieve
+      summary: Get leaderboard
+      tags:
+      - gamification
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/lessons/{id}/complete/:
+    post:
+      operationId: v1_lessons_complete_create
+      description: Mark a lesson completed and recalculate enrollment progress.
+      summary: Mark lesson as complete
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - lessons
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/lessons/{id}/progress/:
+    get:
+      operationId: v1_lessons_progress_retrieve
+      summary: Get lesson progress for current user
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - lessons
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/lessons/{id}/sync/:
+    post:
+      operationId: v1_lessons_sync_create
+      description: Save last watched position + cumulative watch time.
+      summary: Sync video playback position
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - lessons
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/lessons/{slug}/:
+    get:
+      operationId: v1_lessons_retrieve
+      description: |-
+        Get full lesson detail including video_url_resolved.
+        Free lessons are public; paid lessons require enrollment.
+      summary: Get lesson detail by slug
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - lessons
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/lessons/course/{slug}/:
+    get:
+      operationId: v1_lessons_course_retrieve
+      description: List all published lessons in a course, ordered by lesson_order.
+      summary: List lessons for a course
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - lessons
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/notifications/:
+    get:
+      operationId: v1_notifications_retrieve
+      summary: Get my notifications
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/notifications/read/:
+    post:
+      operationId: v1_notifications_read_create
+      summary: Mark all notifications as read
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/payments/history/:
+    get:
+      operationId: v1_payments_history_retrieve
+      summary: Get payment history
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/payments/mtn/:
+    post:
+      operationId: v1_payments_mtn_create
+      summary: Initiate MTN Mobile Money payment
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/payments/stripe/:
+    post:
+      operationId: v1_payments_stripe_create
+      summary: Initiate Stripe payment intent
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/quizzes/{id}/:
+    get:
+      operationId: v1_quizzes_retrieve
+      summary: Get quiz with questions
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - quizzes
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/quizzes/{id}/attempts/:
+    get:
+      operationId: v1_quizzes_attempts_retrieve
+      summary: My attempt history for a quiz
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - quizzes
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/quizzes/{id}/submit/:
+    post:
+      operationId: v1_quizzes_submit_create
+      description: |-
+        answers: {'<question_uuid>': '<answer_uuid>'}  or  {'<q>': ['<a1>', '<a2>']}
+        Responses stored as JSON in QuizAttempt.responses (db_refine schema).
+      summary: Submit quiz answers (JSON)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - quizzes
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/quizzes/course/{course_slug}/:
+    get:
+      operationId: v1_quizzes_course_retrieve
+      summary: List quizzes for a course
+      parameters:
+      - in: path
+        name: course_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - quizzes
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/users/:
+    get:
+      operationId: v1_users_list
+      description: List all users ΓÇö admin only.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserList'
+          description: ''
+  /api/v1/users/{id}/:
+    get:
+      operationId: v1_users_retrieve
+      description: Public profile of any user.
+      summary: Get public user profile
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPublic'
+          description: ''
+components:
+  schemas:
+    AIGenerateRequest:
+      type: object
+      description: Request body for all AI generation endpoints.
+      properties:
+        topic:
+          type: string
+          minLength: 1
+          default: ''
+        title:
+          type: string
+          minLength: 1
+          default: ''
+        description:
+          type: string
+          minLength: 1
+          default: ''
+        category:
+          type: string
+          minLength: 1
+          default: ''
+        level:
+          type: string
+          minLength: 1
+          default: ''
+        keywords:
+          type: string
+          minLength: 1
+          default: ''
+        lesson_title:
+          type: string
+          minLength: 1
+          default: ''
+        lesson_content:
+          type: string
+          minLength: 1
+          default: ''
+        section_title:
+          type: string
+          minLength: 1
+          default: ''
+        course_title:
+          type: string
+          minLength: 1
+          default: ''
+        num_sections:
+          type: integer
+          maximum: 12
+          minimum: 2
+          default: 5
+        num_questions:
+          type: integer
+          maximum: 20
+          minimum: 2
+          default: 5
+        target_audience:
+          type: string
+          minLength: 1
+          default: ''
+        message:
+          type: string
+          minLength: 1
+          default: ''
+        system:
+          type: string
+          minLength: 1
+          default: ''
+        provider:
+          allOf:
+          - $ref: '#/components/schemas/ProviderEnum'
+          default: ''
+        model:
+          type: string
+          minLength: 1
+          default: ''
+    AIResponse:
+      type: object
+      description: Standard AI response.
+      properties:
+        ok:
+          type: boolean
+        text:
+          type: string
+        provider:
+          type: string
+        model:
+          type: string
+        tokens:
+          type: integer
+        task:
+          type: string
+      required:
+      - model
+      - ok
+      - provider
+      - task
+      - text
+      - tokens
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 80
+        slug:
+          type: string
+          maxLength: 50
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+        icon:
+          type: string
+          maxLength: 50
+        image:
+          type: string
+          format: uri
+          nullable: true
+        display_order:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        is_featured:
+          type: boolean
+        parent:
+          type: integer
+          nullable: true
+        children_count:
+          type: integer
+          readOnly: true
+      required:
+      - children_count
+      - id
+      - name
+      - slug
+    ChangePasswordRequest:
+      type: object
+      properties:
+        old_password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        new_password:
+          type: string
+          writeOnly: true
+          minLength: 8
+      required:
+      - new_password
+      - old_password
+    CourseCreateUpdate:
+      type: object
+      description: Used for POST /courses/create/ and PATCH /courses/{slug}/.
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        slug:
+          type: string
+          maxLength: 220
+          pattern: ^[-a-zA-Z0-9_]+$
+        subtitle:
+          type: string
+          maxLength: 300
+        description:
+          type: string
+        thumbnail:
+          type: string
+          format: uri
+          nullable: true
+        promo_video:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
+        category:
+          type: integer
+          nullable: true
+        level:
+          $ref: '#/components/schemas/LevelEnum'
+        language:
+          type: string
+          maxLength: 50
+        status:
+          $ref: '#/components/schemas/StatusDaeEnum'
+        pricing:
+          $ref: '#/components/schemas/PricingEnum'
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        sale_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        outcomes: {}
+        requirements: {}
+        has_certificate:
+          type: boolean
+        drip_enabled:
+          type: boolean
+        allow_download:
+          type: boolean
+        is_featured:
+          type: boolean
+        is_bestseller:
+          type: boolean
+        is_private:
+          type: boolean
+      required:
+      - slug
+      - title
+    CourseCreateUpdateRequest:
+      type: object
+      description: Used for POST /courses/create/ and PATCH /courses/{slug}/.
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 220
+          pattern: ^[-a-zA-Z0-9_]+$
+        subtitle:
+          type: string
+          maxLength: 300
+        description:
+          type: string
+        thumbnail:
+          type: string
+          format: binary
+          nullable: true
+        promo_video:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
+        category:
+          type: integer
+          nullable: true
+        level:
+          $ref: '#/components/schemas/LevelEnum'
+        language:
+          type: string
+          minLength: 1
+          maxLength: 50
+        status:
+          $ref: '#/components/schemas/StatusDaeEnum'
+        pricing:
+          $ref: '#/components/schemas/PricingEnum'
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        sale_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        outcomes: {}
+        requirements: {}
+        has_certificate:
+          type: boolean
+        drip_enabled:
+          type: boolean
+        allow_download:
+          type: boolean
+        is_featured:
+          type: boolean
+        is_bestseller:
+          type: boolean
+        is_private:
+          type: boolean
+      required:
+      - slug
+      - title
+    CourseDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+          maxLength: 200
+        slug:
+          type: string
+          maxLength: 220
+          pattern: ^[-a-zA-Z0-9_]+$
+        subtitle:
+          type: string
+          maxLength: 300
+        thumbnail:
+          type: string
+          format: uri
+          nullable: true
+        promo_video:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
+        instructor:
+          allOf:
+          - $ref: '#/components/schemas/UserPublic'
+          readOnly: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/Category'
+          readOnly: true
+        level:
+          $ref: '#/components/schemas/LevelEnum'
+        language:
+          type: string
+          maxLength: 50
+        status:
+          $ref: '#/components/schemas/StatusDaeEnum'
+        pricing:
+          $ref: '#/components/schemas/PricingEnum'
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        sale_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        has_certificate:
+          type: boolean
+        is_featured:
+          type: boolean
+        is_bestseller:
+          type: boolean
+        total_students:
+          type: integer
+          readOnly: true
+        total_lessons:
+          type: integer
+          readOnly: true
+        avg_rating:
+          type: string
+          readOnly: true
+        total_reviews:
+          type: integer
+          readOnly: true
+        is_wishlisted:
+          type: boolean
+          readOnly: true
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        description:
+          type: string
+        outcomes: {}
+        requirements: {}
+        drip_enabled:
+          type: boolean
+        allow_download:
+          type: boolean
+        is_private:
+          type: boolean
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - avg_rating
+      - category
+      - created_at
+      - id
+      - instructor
+      - is_wishlisted
+      - outcomes
+      - requirements
+      - slug
+      - title
+      - total_lessons
+      - total_reviews
+      - total_students
+      - updated_at
+    CourseList:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+          maxLength: 200
+        slug:
+          type: string
+          maxLength: 220
+          pattern: ^[-a-zA-Z0-9_]+$
+        subtitle:
+          type: string
+          maxLength: 300
+        thumbnail:
+          type: string
+          format: uri
+          nullable: true
+        promo_video:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
+        instructor:
+          allOf:
+          - $ref: '#/components/schemas/UserPublic'
+          readOnly: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/Category'
+          readOnly: true
+        level:
+          $ref: '#/components/schemas/LevelEnum'
+        language:
+          type: string
+          maxLength: 50
+        status:
+          $ref: '#/components/schemas/StatusDaeEnum'
+        pricing:
+          $ref: '#/components/schemas/PricingEnum'
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        sale_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        has_certificate:
+          type: boolean
+        is_featured:
+          type: boolean
+        is_bestseller:
+          type: boolean
+        total_students:
+          type: integer
+          readOnly: true
+        total_lessons:
+          type: integer
+          readOnly: true
+        avg_rating:
+          type: string
+          readOnly: true
+        total_reviews:
+          type: integer
+          readOnly: true
+        is_wishlisted:
+          type: boolean
+          readOnly: true
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - avg_rating
+      - category
+      - created_at
+      - id
+      - instructor
+      - is_wishlisted
+      - slug
+      - title
+      - total_lessons
+      - total_reviews
+      - total_students
+    CourseReview:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/UserPublic'
+          readOnly: true
+        rating:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        comment:
+          type: string
+        is_approved:
+          type: boolean
+        helpful_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - rating
+      - user
+    CourseReviewRequest:
+      type: object
+      properties:
+        rating:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        comment:
+          type: string
+        is_approved:
+          type: boolean
+        helpful_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+      required:
+      - rating
+    Enrollment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        course:
+          allOf:
+          - $ref: '#/components/schemas/CourseList'
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/EnrollmentStatusEnum'
+        progress:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          readOnly: true
+        source:
+          $ref: '#/components/schemas/SourceEnum'
+        enrolled_at:
+          type: string
+          format: date-time
+          readOnly: true
+        completed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        last_accessed_at:
+          type: string
+          format: date-time
+          nullable: true
+        current_lesson:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - completed_at
+      - course
+      - enrolled_at
+      - id
+      - progress
+    EnrollmentStatusEnum:
+      enum:
+      - active
+      - completed
+      - dropped
+      type: string
+    LevelEnum:
+      enum:
+      - beginner
+      - intermediate
+      - advanced
+      type: string
+    PaginatedCategoryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+    PaginatedCourseListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CourseList'
+    PaginatedCourseReviewList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CourseReview'
+    PaginatedEnrollmentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Enrollment'
+    PaginatedUserList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+    PaginatedWishlistList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Wishlist'
+    PatchedCourseCreateUpdateRequest:
+      type: object
+      description: Used for POST /courses/create/ and PATCH /courses/{slug}/.
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 220
+          pattern: ^[-a-zA-Z0-9_]+$
+        subtitle:
+          type: string
+          maxLength: 300
+        description:
+          type: string
+        thumbnail:
+          type: string
+          format: binary
+          nullable: true
+        promo_video:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
+        category:
+          type: integer
+          nullable: true
+        level:
+          $ref: '#/components/schemas/LevelEnum'
+        language:
+          type: string
+          minLength: 1
+          maxLength: 50
+        status:
+          $ref: '#/components/schemas/StatusDaeEnum'
+        pricing:
+          $ref: '#/components/schemas/PricingEnum'
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        sale_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        outcomes: {}
+        requirements: {}
+        has_certificate:
+          type: boolean
+        drip_enabled:
+          type: boolean
+        allow_download:
+          type: boolean
+        is_featured:
+          type: boolean
+        is_bestseller:
+          type: boolean
+        is_private:
+          type: boolean
+    PatchedUserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        avatar:
+          type: string
+          format: binary
+          nullable: true
+        bio:
+          type: string
+        headline:
+          type: string
+          maxLength: 200
+        phone:
+          type: string
+          maxLength: 30
+        website:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
+        linkedin:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
+        twitter:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
+        youtube:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
+        facebook:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
+        last_activity:
+          type: string
+          format: date
+          nullable: true
+        expertise:
+          type: string
+        experience:
+          type: string
+        momo_number:
+          type: string
+          maxLength: 30
+        momo_provider:
+          type: string
+          maxLength: 20
+        bank_name:
+          type: string
+          maxLength: 100
+        bank_account:
+          type: string
+          maxLength: 50
+        bank_account_name:
+          type: string
+          maxLength: 100
+    PricingEnum:
+      enum:
+      - free
+      - paid
+      - subscription
+      type: string
+    ProviderEnum:
+      enum:
+      - openai
+      - anthropic
+      - gemini
+      - mistral
+      - groq
+      - openrouter
+      type: string
+    RegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        username:
+          type: string
+          minLength: 1
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+        password2:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+      - password
+      - password2
+      - username
+    RoleEnum:
+      enum:
+      - student
+      - instructor
+      - admin
+      type: string
+    SourceEnum:
+      enum:
+      - free
+      - paid
+      - coupon
+      - admin
+      type: string
+    StatusDaeEnum:
+      enum:
+      - draft
+      - published
+      - archived
+      type: string
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          readOnly: true
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        full_name:
+          type: string
+          readOnly: true
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          readOnly: true
+        avatar:
+          type: string
+          format: uri
+          nullable: true
+        avatar_url:
+          type: string
+          readOnly: true
+        bio:
+          type: string
+        headline:
+          type: string
+          maxLength: 200
+        phone:
+          type: string
+          maxLength: 30
+        website:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
+        linkedin:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
+        twitter:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
+        youtube:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
+        facebook:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
+        xp:
+          type: integer
+          readOnly: true
+        level:
+          type: integer
+          readOnly: true
+        streak_days:
+          type: integer
+          readOnly: true
+        courses_completed:
+          type: integer
+          readOnly: true
+        last_activity:
+          type: string
+          format: date
+          nullable: true
+        expertise:
+          type: string
+        experience:
+          type: string
+        momo_number:
+          type: string
+          maxLength: 30
+        momo_provider:
+          type: string
+          maxLength: 20
+        bank_name:
+          type: string
+          maxLength: 100
+        bank_account:
+          type: string
+          maxLength: 50
+        bank_account_name:
+          type: string
+          maxLength: 100
+        total_students:
+          type: integer
+          readOnly: true
+        total_revenue:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        avg_rating:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,1}(?:\.\d{0,2})?$
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+          title: Active
+          description: Designates whether this user should be treated as active. Unselect
+            this instead of deleting accounts.
+        is_verified:
+          type: boolean
+          readOnly: true
+        is_email_verified:
+          type: boolean
+          readOnly: true
+        is_super_admin:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - avatar_url
+      - avg_rating
+      - courses_completed
+      - created_at
+      - email
+      - full_name
+      - id
+      - is_active
+      - is_email_verified
+      - is_super_admin
+      - is_verified
+      - level
+      - role
+      - streak_days
+      - total_revenue
+      - total_students
+      - updated_at
+      - username
+      - xp
+    UserPublic:
+      type: object
+      description: Minimal public profile ΓÇö safe to expose in course listings.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        full_name:
+          type: string
+          readOnly: true
+        avatar_url:
+          type: string
+          readOnly: true
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        headline:
+          type: string
+          maxLength: 200
+        total_students:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        avg_rating:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,1}(?:\.\d{0,2})?$
+      required:
+      - avatar_url
+      - full_name
+      - id
+      - username
+    UserPublicRequest:
+      type: object
+      description: Minimal public profile ΓÇö safe to expose in course listings.
+      properties:
+        username:
+          type: string
+          minLength: 1
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        headline:
+          type: string
+          maxLength: 200
+        total_students:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        avg_rating:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,1}(?:\.\d{0,2})?$
+      required:
+      - username
+    UserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        avatar:
+          type: string
+          format: binary
+          nullable: true
+        bio:
+          type: string
+        headline:
+          type: string
+          maxLength: 200
+        phone:
+          type: string
+          maxLength: 30
+        website:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
+        linkedin:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
+        twitter:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
+        youtube:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
+        facebook:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
+        last_activity:
+          type: string
+          format: date
+          nullable: true
+        expertise:
+          type: string
+        experience:
+          type: string
+        momo_number:
+          type: string
+          maxLength: 30
+        momo_provider:
+          type: string
+          maxLength: 20
+        bank_name:
+          type: string
+          maxLength: 100
+        bank_account:
+          type: string
+          maxLength: 50
+        bank_account_name:
+          type: string
+          maxLength: 100
+      required:
+      - username
+    Wishlist:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        course:
+          allOf:
+          - $ref: '#/components/schemas/CourseList'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - course
+      - created_at
+      - id
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+tags:
+- name: auth
+  description: Authentication & JWT tokens
+- name: users
+  description: User profiles & settings
+- name: courses
+  description: Course catalog & management
+- name: lessons
+  description: Lessons & video content
+- name: quizzes
+  description: Quizzes & assessments
+- name: enrollments
+  description: Course enrollments & progress
+- name: payments
+  description: Payments (MTN, Airtel, Stripe)
+- name: certificates
+  description: Certificates & diplomas
+- name: gamification
+  description: XP, badges & leaderboard
+- name: forums
+  description: Discussion forums
+- name: blog
+  description: Blog & news
+- name: notifications
+  description: Notifications
+- name: analytics
+  description: Usage analytics
+- name: ai
+  description: AI course generation
+- name: features
+  description: Jobs, scholarships, learning paths

@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+// apps/tutor/src/routes/index.tsx
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { TutorAuthPage } from "@/components/tutor-auth-page";
 
 export const Route = createFileRoute("/")({

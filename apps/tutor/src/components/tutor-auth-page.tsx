@@ -1,104 +1,187 @@
-import { Link } from "@tanstack/react-router";
-import { ArrowRight, BarChart3, BriefcaseBusiness, PlusSquare } from "lucide-react";
-import { Logo } from "@/components/logo";
+import { useRouter } from "@tanstack/react-router";
+import { ArrowRight, Mail, Lock, Eye, EyeOff, BriefcaseBusiness, AlertCircle } from "lucide-react";
+import { useState } from "react";
+import { login } from "@/lib/api";
 
 export function TutorAuthPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    setLoading(true);
+    
+    try {
+      // Validate inputs
+      if (!email.trim() || !password.trim()) {
+        setError("Please enter both email and password.");
+        setLoading(false);
+        return;
+      }
+
+      console.log("Attempting login for:", email.trim());
+      
+      // Call the login function
+      const session = await login(email.trim(), password);
+      
+      if (!session) {
+        setError("Invalid credentials. Please check your email and password.");
+        setLoading(false);
+        return;
+      }
+
+      if (!session.access) {
+        setError("Authentication failed. No access token received.");
+        setLoading(false);
+        return;
+      }
+
+      console.log("Login successful, navigating to tutor dashboard...");
+      await router.navigate({ to: "/tutor/dashboard" });
+    } catch (err: any) {
+      console.error("Login error:", err);
+      
+      // Handle specific error messages
+      const errorMessage = err.message || "Unable to sign in right now. Please try again.";
+      
+      if (errorMessage.includes("401") || errorMessage.includes("Unauthorized")) {
+        setError("Invalid email or password. Please try again.");
+      } else if (errorMessage.includes("NetworkError") || errorMessage.includes("fetch")) {
+        setError("Network error. Please check your connection and try again.");
+      } else if (errorMessage.includes("token not valid")) {
+        setError("Authentication service error. Please try again later.");
+      } else {
+        setError(errorMessage);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const togglePasswordVisibility = () => setShowPassword(!showPassword);
+
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[linear-gradient(180deg,#f5fbfb_0%,#ffffff_42%,#f7fafc_100%)] text-foreground">
-      <div className="absolute inset-x-0 top-0 -z-10 h-72 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.18),transparent_38%)]" />
-      <div className="absolute right-[-4rem] top-32 -z-10 h-72 w-72 rounded-full bg-sky-600/15 blur-3xl" />
+    <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      {/* Background Decorations */}
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.08),transparent_60%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.05),transparent_50%)]" />
+      <div className="absolute left-[-10rem] top-[-10rem] -z-10 h-[40rem] w-[40rem] rounded-full bg-blue-500/5 blur-3xl" />
+      <div className="absolute bottom-[-10rem] right-[-10rem] -z-10 h-[40rem] w-[40rem] rounded-full bg-blue-500/5 blur-3xl" />
+      <div className="absolute top-20 left-10 w-72 h-72 rounded-full bg-blue-400/10 blur-3xl -z-10" />
+      <div className="absolute bottom-20 right-10 w-80 h-80 rounded-full bg-blue-400/10 blur-3xl -z-10" />
 
-      <header className="mx-auto flex w-full max-w-[1240px] items-center justify-between px-4 py-6 sm:px-6 lg:px-8">
-        <Logo />
-        <Link to="/" className="rounded-full border border-border bg-white/80 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary">
-          Back home
-        </Link>
-      </header>
+      {/* Centered Auth Card */}
+      <div className="w-full max-w-md px-4">
+        <div className="rounded-[32px] border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-blue-50/50 via-white to-purple-50/50 dark:from-gray-800/50 dark:via-gray-800 dark:to-gray-800/50 p-6 shadow-lg sm:p-8">
+          <div className="rounded-[28px] border border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-800/95 p-6 sm:p-8 backdrop-blur-sm">
+            <div className="flex items-center justify-center mb-2">
+              <BriefcaseBusiness className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+            </div>
+            <h2 className="text-[28px] font-bold tracking-tight text-gray-900 dark:text-white text-center">
+              Sign in
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+              Instructor workspace
+            </p>
 
-      <main className="mx-auto grid min-h-[calc(100vh-88px)] max-w-[1240px] gap-8 px-4 pb-10 sm:px-6 lg:grid-cols-[0.98fr_1.02fr] lg:px-8 lg:pb-16">
-        <section className="flex flex-col justify-center py-6 lg:py-0">
-          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-sky-600/20 bg-sky-600/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-700">
-            <BriefcaseBusiness className="h-3.5 w-3.5" />
-            Tutor workspace access
-          </div>
-          <h1 className="mt-6 max-w-xl text-[40px] font-semibold leading-[1.05] tracking-tight sm:text-[54px]">
-            Teach, publish, and review from your own login flow.
-          </h1>
-          <p className="mt-5 max-w-xl text-[16px] leading-7 text-muted-foreground">
-            This page is reserved for instructors. It leads directly into course operations, grading, analytics, and learner communication without mixing with student or admin sign-in.
-          </p>
-
-          <div className="mt-8 space-y-3">
-            {[
-              { icon: PlusSquare, title: "Course builder", copy: "Draft new lessons and update publishing status quickly." },
-              { icon: BarChart3, title: "Performance insights", copy: "See engagement, progress, and completion trends after login." },
-              { icon: BriefcaseBusiness, title: "Learner management", copy: "Handle assignments, messages, and cohorts from one workspace." },
-            ].map((item) => (
-              <div key={item.title} className="rounded-2xl border border-sky-100 bg-white/90 p-4 shadow-[0_18px_40px_-34px_rgba(14,165,233,0.45)]">
-                <div className="flex items-start gap-3">
-                  <div className="grid h-10 w-10 place-items-center rounded-2xl bg-sky-600/10 text-sky-700">
-                    <item.icon className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <h2 className="text-sm font-semibold">{item.title}</h2>
-                    <p className="mt-1 text-sm leading-6 text-muted-foreground">{item.copy}</p>
-                  </div>
+            <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <div className="relative mt-1.5">
+                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    placeholder="instructor@example.com"
+                    className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 pl-10 pr-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                    required
+                    autoComplete="email"
+                  />
                 </div>
               </div>
-            ))}
-          </div>
-        </section>
 
-        <section className="flex items-center">
-          <div className="w-full rounded-[34px] border border-sky-100 bg-white p-6 shadow-[0_36px_90px_-50px_rgba(14,165,233,0.5)] sm:p-8 lg:p-10">
-            <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Instructor sign in</p>
-                <h2 className="mt-1 text-[30px] font-semibold tracking-tight">Welcome back, tutor</h2>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Password <span className="text-red-500">*</span>
+                </label>
+                <div className="relative mt-1.5">
+                  <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    placeholder="Enter your password"
+                    className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 pl-10 pr-12 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                    required
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={togglePasswordVisibility}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
-              <div className="rounded-2xl bg-sky-600 px-3 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-white">
-                Verified
-              </div>
-            </div>
 
-            <form className="mt-8 space-y-5">
-              <label className="block text-sm font-medium text-foreground">
-                Instructor email
-                <input
-                  type="email"
-                  defaultValue="priya.ramanathan@techbridge.io"
-                  className="mt-2 w-full rounded-2xl border border-sky-100 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/15"
-                />
-              </label>
-
-              <label className="block text-sm font-medium text-foreground">
-                Password
-                <input
-                  type="password"
-                  defaultValue="tutor-demo"
-                  className="mt-2 w-full rounded-2xl border border-sky-100 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/15"
-                />
-              </label>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <button type="button" className="rounded-2xl border border-sky-100 px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-sky-50">
-                  Use SSO
-                </button>
-                <button type="button" className="rounded-2xl border border-sky-100 px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-sky-50">
+              <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+                <label className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2" 
+                  />
+                  Keep me signed in
+                </label>
+                <button 
+                  type="button" 
+                  className="font-medium text-blue-600 dark:text-blue-400 transition-colors hover:text-blue-700 dark:hover:text-blue-300"
+                  onClick={() => {
+                    setError("Password reset functionality coming soon.");
+                  }}
+                >
                   Reset password
                 </button>
               </div>
 
-              <Link
-                to="/tutor/dashboard"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-sky-600 px-5 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-sky-700"
+              {error && (
+                <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-400 flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-semibold text-white transition-all hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-70 shadow-sm hover:shadow-md"
               >
-                Enter tutor workspace <ArrowRight className="h-4 w-4" />
-              </Link>
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <span className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white" />
+                    Signing in…
+                  </span>
+                ) : (
+                  <>
+                    Enter workspace
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </button>
             </form>
           </div>
-        </section>
-      </main>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,11 +1,13 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { Award, Clock, Users, Star, Check, ChevronRight, PlayCircle, Globe, Download } from "lucide-react";
-import { courses, modules } from "@/lib/mock-data";
+import { useEffect, useState } from "react";
 import { CourseThumb } from "@/components/course-thumb";
+import { getCourse, getCourseModules } from "@/lib/api";
+import type { Course } from "@/lib/api";
 
 export const Route = createFileRoute("/student/course/$slug")({
-  loader: ({ params }) => {
-    const course = courses.find((c) => c.slug === params.slug);
+  loader: async ({ params }) => {
+    const course = await getCourse(params.slug);
     if (!course) throw notFound();
     return { course };
   },
@@ -15,6 +17,37 @@ export const Route = createFileRoute("/student/course/$slug")({
 
 function CourseDetails() {
   const { course } = Route.useLoaderData();
+  const [modules, setModules] = useState<any[]>([]);
+  const raw = course.raw as Record<string, any>;
+
+  const getYoutubeId = (url: string | undefined) => {
+    if (!url) return null;
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([A-Za-z0-9_-]{11})/);
+    return match ? match[1] : null;
+  };
+
+  const youtubeId = getYoutubeId(course.introVideoUrl ?? raw?.intro_video_url ?? raw?.video_url ?? raw?.youtube_url);
+
+  useEffect(() => {
+    void getCourseModules(course.slug).then((data) => setModules(Array.isArray(data) ? data : []));
+  }, [course.slug]);
+
+  const courseDetails = [
+    course.level ? { l: "Skill level", v: course.level } : null,
+    course.duration ? { l: "Total duration", v: course.duration } : null,
+    course.lessons > 0 ? { l: "Lessons", v: `${course.lessons}` } : null,
+    course.certificate ? { l: "Certificate", v: "Included" } : null,
+    course.language ? { l: "Language", v: course.language } : null,
+  ].filter(Boolean) as Array<{ l: string; v: string }>;
+
+  const instructorName = course.instructor || raw?.instructor?.name || raw?.instructor;
+  const instructorBioText = course.instructorBio || raw?.instructor?.bio || raw?.instructor_bio || raw?.instructor_description;
+  const accessLabel = raw?.access_label ?? raw?.access_type ?? raw?.access;
+  const hasCourseStats = Boolean(course.rating > 0 || course.students > 0 || course.duration || course.language || course.subtitles);
+  const hasLearningOutcomes = Boolean(course.learningOutcomes?.length || Array.isArray(raw?.learning_outcomes) || Array.isArray(raw?.outcomes));
+  const hasCurriculum = modules.length > 0;
+  const hasInstructor = Boolean(instructorName || instructorBioText);
+
   return (
     <div className="space-y-8">
       <nav className="text-xs text-muted-foreground">
@@ -23,103 +56,121 @@ function CourseDetails() {
 
       <div className="grid gap-8 lg:grid-cols-[1.6fr_1fr]">
         <div>
-          <div className="overflow-hidden rounded-3xl">
-            <CourseThumb variant={course.image} color={course.color} />
+          <div className="overflow-hidden rounded-3xl bg-black">
+            {youtubeId ? (
+              <iframe
+                className="h-full w-full min-h-[240px]"
+                src={`https://www.youtube.com/embed/${youtubeId}`}
+                title={course.title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            ) : (
+              <CourseThumb variant={course.image} color={course.color} />
+            )}
           </div>
           <div className="mt-6 flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">{course.category}</span>
-            <span className="rounded-full border border-border px-3 py-1 text-xs font-medium">{course.level}</span>
+            {course.level ? <span className="rounded-full border border-border px-3 py-1 text-xs font-medium">{course.level}</span> : null}
             {course.certificate && <span className="rounded-full bg-[var(--gold)]/15 px-3 py-1 text-xs font-medium text-[var(--gold)]"><Award className="mr-1 inline h-3 w-3" />Certificate</span>}
           </div>
           <h1 className="mt-4 text-[36px] font-semibold leading-tight tracking-tight">{course.title}</h1>
           <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">{course.description}</p>
 
-          <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5"><Star className="h-4 w-4 fill-[var(--gold)] text-[var(--gold)]" /> <span className="text-foreground font-semibold">{course.rating}</span> ({course.reviews.toLocaleString()} reviews)</span>
-            <span className="inline-flex items-center gap-1.5"><Users className="h-4 w-4" /> {course.students.toLocaleString()} students</span>
-            <span className="inline-flex items-center gap-1.5"><Clock className="h-4 w-4" /> {course.duration}</span>
-            <span className="inline-flex items-center gap-1.5"><Globe className="h-4 w-4" /> English + 6 subtitles</span>
-          </div>
-
-          {/* Learning outcomes */}
-          <section className="mt-10 card-surface p-6">
-            <h3 className="text-[18px] font-semibold">What you'll learn</h3>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {[
-                "Design and configure IPv4 and IPv6 networks",
-                "Implement secure routing and switching",
-                "Diagnose and troubleshoot common outages",
-                "Build cloud-connected hybrid infrastructures",
-                "Automate operations with standard tooling",
-                "Prepare for industry certification exams",
-              ].map((t) => (
-                <div key={t} className="flex gap-2.5 text-sm"><Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />{t}</div>
-              ))}
+          {hasCourseStats && (
+            <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-muted-foreground">
+              {course.rating > 0 && (
+                <span className="inline-flex items-center gap-1.5"><Star className="h-4 w-4 fill-[var(--gold)] text-[var(--gold)]" /> <span className="text-foreground font-semibold">{course.rating}</span> ({course.reviews.toLocaleString()} reviews)</span>
+              )}
+              {course.students > 0 && (
+                <span className="inline-flex items-center gap-1.5"><Users className="h-4 w-4" /> {course.students.toLocaleString()} students</span>
+              )}
+              {course.duration && (
+                <span className="inline-flex items-center gap-1.5"><Clock className="h-4 w-4" /> {course.duration}</span>
+              )}
+              {(course.language || course.subtitles) && (
+                <span className="inline-flex items-center gap-1.5"><Globe className="h-4 w-4" />{course.language ? ` ${course.language}` : ""}{course.subtitles ? ` + ${course.subtitles} subtitles` : ""}</span>
+              )}
             </div>
-          </section>
+          )}
 
-          {/* Curriculum */}
-          <section className="mt-8">
-            <div className="flex items-end justify-between">
-              <h3 className="text-[18px] font-semibold">Curriculum</h3>
-              <div className="text-xs text-muted-foreground">{course.modules} modules · {course.lessons} lessons · {course.duration}</div>
-            </div>
-            <div className="mt-4 space-y-3">
-              {modules.map((m, i) => (
-                <details key={m.id} className="group card-surface" open={i === 0}>
-                  <summary className="flex cursor-pointer items-center justify-between gap-3 p-5">
-                    <div className="min-w-0">
-                      <div className="text-xs font-medium text-muted-foreground">Module {i + 1}</div>
-                      <div className="mt-0.5 truncate text-[15px] font-semibold">{m.title}</div>
-                    </div>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span>{m.lessons.length} lessons · {m.duration}</span>
-                      <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
-                    </div>
-                  </summary>
-                  <ul className="divide-y divide-border border-t border-border">
-                    {m.lessons.map((l) => (
-                      <li key={l.id} className="flex items-center justify-between gap-3 px-5 py-3">
-                        <div className="flex min-w-0 items-center gap-3">
-                          <PlayCircle className="h-4 w-4 shrink-0 text-muted-foreground" />
-                          <div className="min-w-0">
-                            <div className="truncate text-sm">{l.title}</div>
-                            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{l.type}</div>
-                          </div>
-                        </div>
-                        <span className="text-xs text-muted-foreground">{l.duration}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              ))}
-            </div>
-          </section>
-
-          {/* Instructor */}
-          <section className="mt-8 card-surface p-6">
-            <h3 className="text-[18px] font-semibold">Your instructor</h3>
-            <div className="mt-4 flex gap-4">
-              <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-primary/10 text-primary text-lg font-semibold">
-                {course.instructor.split(" ").map((n: string) => n[0]).join("")}
+          {hasLearningOutcomes && (
+            <section className="mt-10 card-surface p-6">
+              <h3 className="text-[18px] font-semibold">What you'll learn</h3>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {(
+                  course.learningOutcomes?.length
+                    ? course.learningOutcomes
+                    : Array.isArray(raw?.learning_outcomes)
+                      ? raw.learning_outcomes
+                      : Array.isArray(raw?.outcomes)
+                        ? raw.outcomes
+                        : []
+                ).map((t: any, index: number) => (
+                  <div key={`${String(t)}-${index}`} className="flex gap-2.5 text-sm"><Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />{typeof t === "string" ? t : t.label ?? t.title ?? JSON.stringify(t)}</div>
+                ))}
               </div>
-              <div>
-                <div className="text-[15px] font-semibold">{course.instructor}</div>
-                <div className="text-sm text-muted-foreground">{course.instructorTitle}</div>
-                <p className="mt-3 text-sm text-muted-foreground">
-                  15+ years designing and operating large-scale networks for enterprises and cloud providers.
-                  Author of two books and speaker at Cisco Live.
-                </p>
+            </section>
+          )}
+
+          {hasCurriculum && (
+            <section className="mt-8">
+              <div className="flex items-end justify-between">
+                <h3 className="text-[18px] font-semibold">Curriculum</h3>
+                <div className="text-xs text-muted-foreground">{course.modules} modules · {course.lessons} lessons · {course.duration}</div>
               </div>
-            </div>
-          </section>
+              <div className="mt-4 space-y-3">
+                {modules.map((m, i) => (
+                  <div key={m.id ?? i} className="card-surface p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div className="text-xs font-medium text-muted-foreground">Module {i + 1}</div>
+                        <div className="mt-1 text-[15px] font-semibold">{m.title}</div>
+                      </div>
+                      <span className="text-xs text-muted-foreground">{m.lessons?.length ?? 0} lessons · {m.duration}</span>
+                    </div>
+                    {Array.isArray(m.lessons) && m.lessons.length > 0 ? (
+                      <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
+                        {m.lessons.map((l: any) => (
+                          <li key={l.id ?? l.title} className="flex items-center justify-between gap-3">
+                            <span>{l.title}</span>
+                            <span>{l.duration}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {hasInstructor && (
+            <section className="mt-8 card-surface p-6">
+              <h3 className="text-[18px] font-semibold">Your instructor</h3>
+              <div className="mt-4 flex gap-4">
+                <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-primary/10 text-primary text-lg font-semibold">
+                  {instructorName ? instructorName.split(" ").map((n: string) => n[0]).join("") : "?"}
+                </div>
+                <div>
+                  {instructorName && <div className="text-[15px] font-semibold">{instructorName}</div>}
+                  {course.instructorTitle && <div className="text-sm text-muted-foreground">{course.instructorTitle}</div>}
+                  {instructorBioText && (
+                    <p className="mt-3 text-sm text-muted-foreground">
+                      {instructorBioText}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
         </div>
 
         {/* Sidebar */}
         <aside>
           <div className="sticky top-24 card-surface p-6">
             <div className="text-[28px] font-semibold tracking-tight">{course.price}</div>
-            <div className="text-xs text-muted-foreground">Full access · lifetime</div>
+            {accessLabel ? <div className="text-xs text-muted-foreground">{accessLabel}</div> : null}
             <Link
               to="/student/study/$slug"
               params={{ slug: course.slug }}
@@ -131,13 +182,7 @@ function CourseDetails() {
               Add to bookmarks
             </button>
             <div className="mt-6 space-y-3 text-sm">
-              {[
-                { l: "Skill level", v: course.level },
-                { l: "Total duration", v: course.duration },
-                { l: "Lessons", v: `${course.lessons}` },
-                { l: "Certificate", v: course.certificate ? "Included" : "—" },
-                { l: "Language", v: "English" },
-              ].map((r) => (
+              {courseDetails.map((r) => (
                 <div key={r.l} className="flex items-center justify-between border-b border-border pb-2.5 last:border-0">
                   <span className="text-muted-foreground">{r.l}</span>
                   <span className="font-medium">{r.v}</span>

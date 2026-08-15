@@ -1,30 +1,363 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { FileEdit, ChevronRight } from "lucide-react";
+import { 
+  BookOpen, Users, Award, FileText, Briefcase, GraduationCap, 
+  BarChart2, Bell, ChevronRight, ExternalLink, Layers, 
+  Mail, MessageCircle, Settings, Shield, Sparkles, 
+  Star, TrendingUp, Clock, CheckCircle, Globe, Zap,
+  Database, Server, Code, Layout, Palette, PenTool
+} from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/admin/cms")({
-  component: () => (
-    <div className="space-y-6">
-      <div><h2 className="text-[28px] font-semibold tracking-tight">Content management</h2><p className="mt-1 text-sm text-muted-foreground">Manage the public marketing surface of TechBridge.</p></div>
-      <div className="grid gap-4 md:grid-cols-2">
-        {[
-          { t: "Homepage", d: "Hero, learning paths, featured courses, testimonials.", n: "5 sections" },
-          { t: "Testimonials", d: "Curate learner stories shown on the marketing site.", n: "12 published" },
-          { t: "Partners", d: "Manage the trusted-by logos.", n: "6 partners" },
-          { t: "FAQs", d: "Support and product FAQs.", n: "34 entries" },
-          { t: "Announcements", d: "Platform-wide banners and system notices.", n: "1 active" },
-          { t: "Learning paths", d: "Configure track structure and metadata.", n: "4 paths" },
-        ].map((s) => (
-          <button key={s.t} className="card-surface card-hover flex items-center gap-4 p-5 text-left">
-            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><FileEdit className="h-5 w-5" /></div>
-            <div className="min-w-0 flex-1">
-              <div className="text-sm font-semibold">{s.t}</div>
-              <div className="text-xs text-muted-foreground">{s.d}</div>
-              <div className="mt-1 text-[11px] font-medium text-primary">{s.n}</div>
-            </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-          </button>
-        ))}
+  component: AdminCMS,
+});
+
+// ===================== TYPES =====================
+
+interface Section {
+  key: string;
+  icon: React.ElementType;
+  label: string;
+  desc: string;
+  color: string;
+  bg: string;
+  to: string;
+  badge?: string;
+  stats?: string;
+}
+
+// ===================== DATA =====================
+
+const SECTIONS: Section[] = [
+  { 
+    key: 'courses', 
+    icon: BookOpen, 
+    label: 'Courses', 
+    desc: 'Create, edit, publish and delete courses',
+    color: '#3B82F6', 
+    bg: '#EFF6FF', 
+    to: '/admin/courses',
+    badge: 'Featured'
+  },
+  { 
+    key: 'students', 
+    icon: Users, 
+    label: 'Students', 
+    desc: 'View, add and manage student accounts',
+    color: '#16a34a', 
+    bg: '#F0FDF4', 
+    to: '/admin/students',
+    badge: 'Core'
+  },
+  { 
+    key: 'tutors', 
+    icon: GraduationCap, 
+    label: 'Instructors', 
+    desc: 'Manage instructor accounts and profiles',
+    color: '#2563EB', 
+    bg: '#DBEAFE', 
+    to: '/admin/tutors',
+    badge: 'Core'
+  },
+  { 
+    key: 'certificates', 
+    icon: Award, 
+    label: 'Certificates', 
+    desc: 'View and verify all issued certificates',
+    color: '#F59E0B', 
+    bg: '#FFF7ED', 
+    to: '/admin/certificates',
+    badge: 'Verified'
+  },
+  { 
+    key: 'categories', 
+    icon: Layers, 
+    label: 'Categories', 
+    desc: 'Manage course categories and tags',
+    color: '#8B5CF6', 
+    bg: '#EDE9FE', 
+    to: '/admin/categories',
+    badge: 'Organize'
+  },
+  { 
+    key: 'reports', 
+    icon: BarChart2, 
+    label: 'Analytics', 
+    desc: 'Platform-wide reports and daily stats',
+    color: '#14B8A6', 
+    bg: '#F0FDFA', 
+    to: '/admin/reports',
+    badge: 'Insights'
+  },
+  { 
+    key: 'support', 
+    icon: MessageCircle, 
+    label: 'Support', 
+    desc: 'View and manage support tickets',
+    color: '#F97316', 
+    bg: '#FFF7ED', 
+    to: '/admin/support',
+    badge: 'Help'
+  },
+  { 
+    key: 'blog', 
+    icon: FileText, 
+    label: 'Blog Posts', 
+    desc: 'Create, edit, and publish blog content',
+    color: '#EC4899', 
+    bg: '#FDF2F8', 
+    to: '/admin/blog',
+    badge: 'Content'
+  },
+  { 
+    key: 'jobs', 
+    icon: Briefcase, 
+    label: 'Jobs & Careers', 
+    desc: 'Post and manage job opportunities',
+    color: '#F97316', 
+    bg: '#FFFBEB', 
+    to: '/admin/jobs',
+    badge: 'Careers'
+  },
+  { 
+    key: 'enrollments', 
+    icon: TrendingUp, 
+    label: 'Enrollments', 
+    desc: 'Manage student course enrollments',
+    color: '#8B5CF6', 
+    bg: '#EDE9FE', 
+    to: '/admin/enrollments',
+    badge: 'Active'
+  },
+  { 
+    key: 'quizzes', 
+    icon: Sparkles, 
+    label: 'Quizzes', 
+    desc: 'Create and manage quizzes with questions',
+    color: '#7C3AED', 
+    bg: '#EDE9FE', 
+    to: '/admin/quizzes',
+    badge: 'Interactive'
+  },
+  { 
+    key: 'lessons', 
+    icon: Layers, 
+    label: 'Lessons', 
+    desc: 'Manage lessons across all courses',
+    color: '#06B6D4', 
+    bg: '#ECFEFF', 
+    to: '/admin/lessons',
+    badge: 'Content'
+  },
+  { 
+    key: 'notifications', 
+    icon: Bell, 
+    label: 'Notifications', 
+    desc: 'Send and manage system notifications',
+    color: '#EF4444', 
+    bg: '#FEF2F2', 
+    to: '/admin/notifications',
+    badge: 'Alerts'
+  },
+  { 
+    key: 'content', 
+    icon: Layout, 
+    label: 'Content Management', 
+    desc: 'Manage homepage, testimonials, FAQs',
+    color: '#7C3AED', 
+    bg: '#EDE9FE', 
+    to: '/admin/content',
+    badge: 'CMS'
+  },
+];
+
+// ===================== COMPONENTS =====================
+
+// Section Card Component
+interface SectionCardProps {
+  section: Section;
+  onClick: () => void;
+}
+
+function SectionCard({ section, onClick }: SectionCardProps) {
+  const Icon = section.icon;
+  
+  return (
+    <button
+      onClick={onClick}
+      className="group relative bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-5 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 hover:border-blue-300 dark:hover:border-blue-700 w-full"
+    >
+      {/* Badge */}
+      {section.badge && (
+        <span className="absolute top-3 right-3 text-[8px] sm:text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+          {section.badge}
+        </span>
+      )}
+      
+      <div className="flex items-start gap-3 sm:gap-4">
+        <div 
+          className="grid h-11 w-11 sm:h-12 sm:w-12 shrink-0 place-items-center rounded-xl transition-transform duration-200 group-hover:scale-105"
+          style={{ background: section.bg }}
+        >
+          <Icon className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: section.color }} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+            {section.label}
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
+            {section.desc}
+          </div>
+        </div>
+        <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 dark:text-gray-500 shrink-0 mt-1 transition-transform duration-200 group-hover:translate-x-0.5" />
+      </div>
+    </button>
+  );
+}
+
+// Quick Stats Component
+interface QuickStatProps {
+  icon: React.ElementType;
+  value: string | number;
+  label: string;
+  color?: string;
+}
+
+function QuickStat({ icon: Icon, value, label, color = "blue" }: QuickStatProps) {
+  return (
+    <div className="flex items-center gap-2 sm:gap-3">
+      <div className={`p-2 rounded-lg bg-${color}-50 dark:bg-${color}-900/20`}>
+        <Icon className={`h-4 w-4 text-${color}-600 dark:text-${color}-400`} />
+      </div>
+      <div>
+        <p className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">{value}</p>
+        <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{label}</p>
       </div>
     </div>
-  ),
-});
+  );
+}
+
+// ===================== MAIN COMPONENT =====================
+
+function AdminCMS() {
+  const navigate = useNavigate();
+
+  // Group sections by category
+  const mainSections = SECTIONS.slice(0, 11);
+  const adminSections = SECTIONS.slice(11);
+
+  return (
+    <div className="space-y-4 sm:space-y-6 md:space-y-8 px-3 sm:px-4 md:px-6 lg:px-8 max-w-7xl mx-auto pb-20 sm:pb-0">
+      {/* Header */}
+      <div className="pt-2">
+        <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-3">
+          <div>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+              <Layout className="h-6 w-6 sm:h-7 sm:w-7 text-blue-600 dark:text-blue-400" />
+              <span>Content Management</span>
+              <span className="text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-full">
+                {SECTIONS.length} sections
+              </span>
+            </h1>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Sections Grid */}
+      <div>
+        <div className="flex items-center gap-2 mb-3 sm:mb-4">
+          <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
+          <h2 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">Main Content</h2>
+          <span className="text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
+            {mainSections.length}
+          </span>
+        </div>
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          {mainSections.map((section) => (
+            <SectionCard
+              key={section.key}
+              section={section}
+              onClick={() => navigate({ to: section.to })}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Admin Sections Grid */}
+      <div>
+        <div className="flex items-center gap-2 mb-3 sm:mb-4">
+          <Settings className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 dark:text-purple-400" />
+          <h2 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">Admin & Settings</h2>
+          <span className="text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
+            {adminSections.length}
+          </span>
+        </div>
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          {adminSections.map((section) => (
+            <SectionCard
+              key={section.key}
+              section={section}
+              onClick={() => navigate({ to: section.to })}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* External Admin Links */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+        <div className="p-4 sm:p-5 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-2">
+            <Server className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600 dark:text-gray-400" />
+            <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">External Admin Links</h3>
+            <span className="text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
+              Developer Tools
+            </span>
+          </div>
+        </div>
+        <div className="p-4 sm:p-5">
+          <div className="flex flex-wrap gap-2 sm:gap-3">
+            {[
+              ['Django Admin', 'http://localhost:8001/admin/', 'Database'],
+              ['API Swagger Docs', 'http://localhost:8001/api/docs/', 'API'],
+              ['Elearning Platform', 'http://localhost:8000/dashboard/admin/', 'Frontend'],
+              ['Themes & Plugins', 'http://localhost:8000/dashboard/admin/themes/', 'Design'],
+            ].map(([label, url, badge]) => (
+              <a
+                key={label}
+                href={url}
+                target="_blank"
+                rel="noreferrer"
+                className="group inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-blue-300 dark:hover:border-blue-700 transition-all no-underline"
+              >
+                <ExternalLink className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+                {label}
+                {badge && (
+                  <span className="ml-1 text-[8px] sm:text-[10px] font-medium px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                    {badge}
+                  </span>
+                )}
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="text-center text-xs text-gray-400 dark:text-gray-500 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <p>
+          TechBridge Skills Hub CMS v1.0 · All data is live and synced with the backend API
+        </p>
+      </div>
+
+      {/* Custom CSS */}
+      <style>{`
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+      `}</style>
+    </div>
+  );
+}

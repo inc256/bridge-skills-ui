@@ -1,100 +1,138 @@
-import { Link } from "@tanstack/react-router";
-import { ArrowRight, ClipboardCheck, Shield, ShieldCheck, Users } from "lucide-react";
+import { useRouter } from "@tanstack/react-router";
+import { ArrowRight, Shield, Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
 import { Logo } from "@/components/logo";
+import { login, getCurrentUserRole } from "@/lib/api";
+
+const ALLOWED_ROLES = ["admin", "super_admin", "staff"];
 
 export function AdminAuthPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    if (!email.trim() || !password) {
+      setError("Please enter your email and password.");
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    try {
+      const session = await login(email.trim(), password);
+
+      const role = await getCurrentUserRole(session?.access);
+
+      if (!role) {
+        // Could not resolve role at all (endpoint missing / JWT has no claim).
+        // Log this during setup so you can pinpoint the fix.
+        console.warn("Could not determine user role after login.", session);
+        setError("Unable to verify account permissions. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      if (!ALLOWED_ROLES.includes(role)) {
+        setError("This account does not have admin access.");
+        setLoading(false);
+        return;
+      }
+
+      await router.navigate({ to: "/admin/dashboard" });
+    } catch (err) {
+      setError(err.message || "Invalid email or password.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_38%,#f3f7fb_100%)] text-slate-950">
-      <div className="mx-auto flex w-full max-w-[1280px] items-center justify-between px-4 py-6 sm:px-6 lg:px-8">
-        <Logo />
-        <Link to="/" className="rounded-full border border-slate-200 bg-white/90 px-4 py-2 text-sm font-medium text-slate-900 transition-colors hover:bg-slate-50">
-          Back home
-        </Link>
-      </div>
+    <div className="min-h-screen bg-[#F5F7F2] flex items-center justify-center p-4">
+      <div className="w-full max-w-[380px]">
+        {/* Logo */}
+        <div className="flex justify-center mb-8">
+          <Logo />
+        </div>
 
-      <main className="mx-auto grid min-h-[calc(100vh-88px)] max-w-[1280px] gap-10 px-4 pb-10 sm:px-6 lg:grid-cols-[0.92fr_1.08fr] lg:px-8 lg:pb-16">
-        <section className="flex items-center">
-          <div className="w-full rounded-[36px] border border-slate-200 bg-white/90 p-6 shadow-[0_36px_100px_-60px_rgba(148,163,184,0.45)] sm:p-8 lg:p-10">
-            <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-800">
-              <Shield className="h-3.5 w-3.5" />
-              Administrative access
+        {/* Card */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm">
+          <h1 className="text-[22px] font-bold text-gray-900 mb-1">Admin Sign In</h1>
+          <p className="text-sm text-gray-400 mb-6">Enter your credentials to access the admin portal.</p>
+
+          {error && (
+            <div className="mb-4 p-2.5 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+              {error}
             </div>
-            <h1 className="mt-6 text-[40px] font-semibold leading-[1.05] tracking-tight sm:text-[54px]">
-              Protect operations with a dedicated admin sign-in.
-            </h1>
-            <p className="mt-5 max-w-xl text-[16px] leading-7 text-slate-600">
-              This access point is separated for governance and oversight. Review support queues, audit events, approvals, and platform settings from a page meant only for administrators.
-            </p>
+          )}
 
-            <div className="mt-8 grid gap-4">
-              {[
-                { icon: ClipboardCheck, title: "Approvals", copy: "Review tutor, course, and category changes before publishing." },
-                { icon: Users, title: "Operations", copy: "Manage learners, support issues, roles, and reports after login." },
-                { icon: ShieldCheck, title: "Audit", copy: "Keep privileged activity isolated from standard portal access." },
-              ].map((item) => (
-                <div key={item.title} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="grid h-10 w-10 place-items-center rounded-2xl bg-amber-100 text-amber-800">
-                      <item.icon className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <h2 className="text-sm font-semibold text-slate-950">{item.title}</h2>
-                      <p className="mt-1 text-sm leading-6 text-slate-600">{item.copy}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="flex items-center">
-          <div className="w-full rounded-[36px] border border-slate-200 bg-white p-6 shadow-[0_42px_110px_-60px_rgba(148,163,184,0.45)] sm:p-8 lg:p-10">
-            <p className="text-sm font-medium text-slate-500">Restricted platform control</p>
-            <h2 className="mt-1 text-[30px] font-semibold tracking-tight text-slate-950">Admin sign in</h2>
-
-            <form className="mt-8 space-y-5">
-              <label className="block text-sm font-medium text-slate-800">
-                Admin email
-                <input
-                  type="email"
-                  defaultValue="elena.rossi@techbridge.io"
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-amber-400/40 focus:ring-2 focus:ring-amber-400/15"
-                />
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div>
+              <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                Email
               </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@techbridgeskills.ug"
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+                required
+                autoComplete="email"
+              />
+            </div>
 
-              <label className="block text-sm font-medium text-slate-800">
+            <div>
+              <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
                 Password
-                <input
-                  type="password"
-                  defaultValue="admin-demo"
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-amber-400/40 focus:ring-2 focus:ring-amber-400/15"
-                />
               </label>
-
-              <label className="block text-sm font-medium text-slate-800">
-                Verification code
+              <div className="relative">
                 <input
-                  type="text"
-                  defaultValue="803271"
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-amber-400/40 focus:ring-2 focus:ring-amber-400/15"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 pr-12 text-sm text-gray-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+                  required
+                  autoComplete="current-password"
                 />
-              </label>
-
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-6 text-amber-900">
-                Two-step verification is shown here to keep admin access visually and functionally distinct from the student and tutor flows.
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
+            </div>
 
-              <Link
-                to="/admin/dashboard"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-amber-400 px-5 py-3.5 text-sm font-semibold text-slate-950 transition-colors hover:bg-amber-300"
-              >
-                Enter admin workspace <ArrowRight className="h-4 w-4" />
-              </Link>
-            </form>
-          </div>
-        </section>
-      </main>
+            <button
+              type="submit"
+              disabled={loading}
+              className="mt-2 w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70 flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Signing in…
+                </>
+              ) : (
+                <>
+                  Sign in
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+
+        <p className="text-center text-xs text-gray-400 mt-5">
+          TechBridge Skills Hub © {new Date().getFullYear()}
+        </p>
+      </div>
     </div>
   );
 }
