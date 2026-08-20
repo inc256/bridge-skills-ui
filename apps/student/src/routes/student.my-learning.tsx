@@ -67,7 +67,7 @@ function MyLearning() {
       enrolledAt: e.enrolledAt,
     }));
 
-  const inProgress = courses.filter((c) => (c.progress ?? 0) > 0 && (c.progress ?? 0) < 100);
+  const inProgress = courses.filter((c) => (c.progress ?? 0) < 100);
   const completed = courses.filter((c) => (c.progress ?? 0) >= 100);
   const wishlist = wishlistCourses;
 
@@ -203,13 +203,13 @@ function CourseCard({ course, tab }: { course: Course; tab: string }) {
   const isCompleted = progress >= 100;
   const isInProgress = progress > 0 && progress < 100;
 
-  const getLevelColor = (level: string) => {
+  const getLevelColor = (level?: string) => {
     const colors: Record<string, string> = {
       beginner: 'bg-emerald-50 text-emerald-600',
       intermediate: 'bg-amber-50 text-amber-600',
       advanced: 'bg-red-50 text-red-600'
     };
-    return colors[level?.toLowerCase()] || 'bg-gray-50 text-gray-600';
+    return colors[level?.toLowerCase() ?? ""] || 'bg-gray-50 text-gray-600';
   };
 
   const getStatusBadge = () => {

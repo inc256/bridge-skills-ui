@@ -1,8 +1,8 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { Award, Clock, Users, Star, Check, ChevronRight, PlayCircle, Globe, Download } from "lucide-react";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import { Award, Clock, Users, Star, Check, ChevronRight, PlayCircle, Globe, Download, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CourseThumb } from "@/components/course-thumb";
-import { getCourse, getCourseModules } from "@/lib/api";
+import { checkCourseEnrollment, enrollInCourse, getCourse, getCourseModules, initiatePayment } from "@/lib/api";
 import type { Course } from "@/lib/api";
 
 export const Route = createFileRoute("/student/course/$slug")({
@@ -16,8 +16,12 @@ export const Route = createFileRoute("/student/course/$slug")({
 });
 
 function CourseDetails() {
+  const navigate = useNavigate();
   const { course } = Route.useLoaderData();
   const [modules, setModules] = useState<any[]>([]);
+  const [enrolled, setEnrolled] = useState(course.progress != null);
+  const [enrolling, setEnrolling] = useState(false);
+  const [enrollmentError, setEnrollmentError] = useState<string | null>(null);
   const raw = course.raw as Record<string, any>;
 
   const getYoutubeId = (url: string | undefined) => {
@@ -31,6 +35,48 @@ function CourseDetails() {
   useEffect(() => {
     void getCourseModules(course.slug).then((data) => setModules(Array.isArray(data) ? data : []));
   }, [course.slug]);
+
+  useEffect(() => {
+    void checkCourseEnrollment(course.slug).then((result) => {
+      if (result) setEnrolled(Boolean(result.enrolled ?? result.is_enrolled ?? result.status === "active"));
+    });
+  }, [course.slug]);
+
+  const isFree = course.price.toLowerCase() === "free" || Number(raw?.price ?? 0) === 0;
+
+  async function handleAccessCourse() {
+    if (enrolled) return;
+    setEnrolling(true);
+    setEnrollmentError(null);
+    try {
+      if (isFree) {
+        await enrollInCourse(course.slug);
+        setEnrolled(true);
+        navigate({ to: "/student/study/$slug", params: { slug: course.slug } });
+        return;
+      }
+      const payment = await initiatePayment("stripe", {
+        course: course.slug,
+        course_slug: course.slug,
+        amount: raw?.price ?? course.price,
+      });
+      const redirectUrl = payment?.checkout_url ?? payment?.payment_url ?? payment?.url;
+      if (redirectUrl) {
+        window.location.assign(redirectUrl);
+        return;
+      }
+      if (payment?.enrolled || payment?.status === "paid" || payment?.status === "succeeded") {
+        setEnrolled(true);
+        navigate({ to: "/student/study/$slug", params: { slug: course.slug } });
+        return;
+      }
+      throw new Error("Payment was not started. Please try again.");
+    } catch (error) {
+      setEnrollmentError(error instanceof Error ? error.message : "Unable to enroll in this course.");
+    } finally {
+      setEnrolling(false);
+    }
+  }
 
   const courseDetails = [
     course.level ? { l: "Skill level", v: course.level } : null,
@@ -46,6 +92,14 @@ function CourseDetails() {
   const hasCourseStats = Boolean(course.rating > 0 || course.students > 0 || course.duration || course.language || course.subtitles);
   const hasLearningOutcomes = Boolean(course.learningOutcomes?.length || Array.isArray(raw?.learning_outcomes) || Array.isArray(raw?.outcomes));
   const hasCurriculum = modules.length > 0;
+  const curriculumLessonCount = modules.reduce((total, module) => total + (Array.isArray(module.lessons) ? module.lessons.length : 0), 0);
+  const curriculumDurationMinutes = modules.reduce((total, module) => total + (module.lessons ?? []).reduce((sum: number, lesson: any) => {
+    const match = String(lesson.duration ?? "").match(/(\d+)\s*(h|m)/i);
+    return sum + (match ? Number(match[1]) * (match[2].toLowerCase() === "h" ? 60 : 1) : 0);
+  }, 0), 0);
+  const curriculumDuration = curriculumDurationMinutes >= 60
+    ? `${Math.floor(curriculumDurationMinutes / 60)}h${curriculumDurationMinutes % 60 ? ` ${curriculumDurationMinutes % 60}m` : ""}`
+    : curriculumDurationMinutes ? `${curriculumDurationMinutes} min` : course.duration;
   const hasInstructor = Boolean(instructorName || instructorBioText);
 
   return (
@@ -117,15 +171,14 @@ function CourseDetails() {
             <section className="mt-8">
               <div className="flex items-end justify-between">
                 <h3 className="text-[18px] font-semibold">Curriculum</h3>
-                <div className="text-xs text-muted-foreground">{course.modules} modules · {course.lessons} lessons · {course.duration}</div>
+                <div className="text-xs text-muted-foreground">{modules.length} module{modules.length === 1 ? "" : "s"} · {curriculumLessonCount} lessons · {curriculumDuration}</div>
               </div>
               <div className="mt-4 space-y-3">
                 {modules.map((m, i) => (
                   <div key={m.id ?? i} className="card-surface p-4">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <div className="text-xs font-medium text-muted-foreground">Module {i + 1}</div>
-                        <div className="mt-1 text-[15px] font-semibold">{m.title}</div>
+                        <div className="text-xs font-medium text-muted-foreground">Module {i + 1}: {m.title}</div>
                       </div>
                       <span className="text-xs text-muted-foreground">{m.lessons?.length ?? 0} lessons · {m.duration}</span>
                     </div>
@@ -171,13 +224,26 @@ function CourseDetails() {
           <div className="sticky top-24 card-surface p-6">
             <div className="text-[28px] font-semibold tracking-tight">{course.price}</div>
             {accessLabel ? <div className="text-xs text-muted-foreground">{accessLabel}</div> : null}
-            <Link
-              to="/student/study/$slug"
-              params={{ slug: course.slug }}
-              className="mt-5 flex w-full items-center justify-center gap-2 rounded-[14px] bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
-            >
-              {course.progress != null ? "Continue learning" : "Enroll now"}
-            </Link>
+            {enrolled ? (
+              <Link
+                to="/student/study/$slug"
+                params={{ slug: course.slug }}
+                className="mt-5 flex w-full items-center justify-center gap-2 rounded-[14px] bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                <PlayCircle className="h-4 w-4" /> Continue learning
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void handleAccessCourse()}
+                disabled={enrolling}
+                className="mt-5 flex w-full items-center justify-center gap-2 rounded-[14px] bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors disabled:cursor-wait disabled:opacity-60"
+              >
+                {enrolling && <Loader2 className="h-4 w-4 animate-spin" />}
+                {enrolling ? "Processing..." : isFree ? "Enroll and start" : "Pay and enroll"}
+              </button>
+            )}
+            {enrollmentError && <p className="mt-3 text-xs text-destructive">{enrollmentError}</p>}
             <button className="mt-2 w-full rounded-[14px] border border-border px-4 py-3 text-sm font-medium hover:bg-secondary transition-colors">
               Add to bookmarks
             </button>

@@ -2,7 +2,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { 
   Plus, 
-  MoreHorizontal, 
   Users, 
   Star, 
   Clock,
@@ -15,11 +14,12 @@ import {
   List,
   Eye,
   Edit,
-  Trash2
+  Trash2,
+  RefreshCw
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CourseThumb } from "@/components/course-thumb";
-import { getCourseLessons, getCourseReviews, getCourses } from "@/lib/api";
+import { deleteCourse, deleteTutorLesson, getCourseLessons, getCourseReviews, getCourses } from "@/lib/api";
 
 export const Route = createFileRoute("/tutor/courses")({
   component: TutorCourses,
@@ -35,6 +35,49 @@ function TutorCourses() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [isLoading, setIsLoading] = useState(true);
+  const [deletingSlug, setDeletingSlug] = useState<string | null>(null);
+  const [deletingLessonId, setDeletingLessonId] = useState<string | null>(null);
+
+  async function handleDeleteLesson(lesson: any) {
+    const lessonId = String(lesson?.id ?? "");
+    if (!lessonId || lessonId.startsWith("lesson-") || deletingLessonId) return;
+    if (!window.confirm(`Delete "${lesson.title ?? lesson.name ?? "this lesson"}"?`)) return;
+
+    setDeletingLessonId(lessonId);
+    try {
+      await deleteTutorLesson(lessonId);
+      setLessons((current) => current.filter((item) => String(item.id) !== lessonId));
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Unable to delete lesson.");
+    } finally {
+      setDeletingLessonId(null);
+    }
+  }
+
+  async function handleDeleteCourse(course: any) {
+    if (!course?.slug || deletingSlug) return;
+    const confirmed = window.confirm(`Delete "${course.title || "this course"}"? This action cannot be undone.`);
+    if (!confirmed) return;
+
+    setDeletingSlug(course.slug);
+    try {
+      await deleteCourse(course.slug);
+      const remaining = courses.filter((item) => item.slug !== course.slug);
+      setCourses(remaining);
+      setFilteredCourses(remaining);
+      setSelectedCourse((current: any) => current?.slug === course.slug ? remaining[0] ?? null : current);
+      if (typeof window !== "undefined") {
+        const saved = window.localStorage.getItem("bridge_skills_tutor_last_saved_course");
+        if (saved && JSON.parse(saved)?.slug === course.slug) {
+          window.localStorage.removeItem("bridge_skills_tutor_last_saved_course");
+        }
+      }
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Unable to delete course.");
+    } finally {
+      setDeletingSlug(null);
+    }
+  }
 
   useEffect(() => {
     void (async () => {
@@ -51,9 +94,6 @@ function TutorCourses() {
           } else {
             courseList.unshift(saved);
           }
-          try {
-            window.localStorage.removeItem("bridge_skills_tutor_last_saved_course");
-          } catch {}
         }
       } catch {}
       setCourses(courseList);
@@ -70,7 +110,7 @@ function TutorCourses() {
     if (searchQuery) {
       filtered = filtered.filter(c => 
         c.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.category?.toLowerCase().includes(searchQuery.toLowerCase())
+        String(c.category ?? "").toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
     
@@ -97,6 +137,8 @@ function TutorCourses() {
       setReviews(reviewList);
     })();
   }, [selectedCourse]);
+
+  const selectedLessonCount = lessons.length;
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -322,17 +364,23 @@ function TutorCourses() {
                         <td className="py-3 px-4 sm:px-6 text-right">
                           <div className="flex items-center justify-end gap-1">
                             <Link
-                              to={`/tutor/builder?slug=${c.slug}`}
+                              to="/tutor/builder"
+                              search={{ slug: c.slug }}
                               className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
                               onClick={(e) => e.stopPropagation()}
                             >
                               <Edit className="w-4 h-4" />
                             </Link>
                             <button
-                              className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
-                              onClick={(e) => e.stopPropagation()}
+                              className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void handleDeleteCourse(c);
+                              }}
+                              disabled={deletingSlug === c.slug}
+                              title="Delete course"
                             >
-                              <MoreHorizontal className="w-4 h-4" />
+                              {deletingSlug === c.slug ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                             </button>
                           </div>
                         </td>
@@ -410,11 +458,12 @@ function TutorCourses() {
                     </div>
                     <div className="p-3 bg-gray-50 rounded-xl">
                       <div className="text-xs text-gray-500">Lessons</div>
-                      <div className="font-semibold text-gray-900">{selectedCourse.lessons || 0}</div>
+                      <div className="font-semibold text-gray-900">{selectedLessonCount || selectedCourse.lessons || 0}</div>
                     </div>
                   </div>
                   <Link
-                    to={`/tutor/builder?slug=${selectedCourse.slug}`}
+                    to="/tutor/builder"
+                    search={{ slug: selectedCourse.slug }}
                     className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors text-sm font-medium"
                   >
                     <Edit className="w-4 h-4" />
@@ -432,9 +481,20 @@ function TutorCourses() {
                 lessons.length > 0 ? (
                   <ul className="mt-4 space-y-3">
                     {lessons.slice(0, 5).map((lesson) => (
-                      <li key={lesson.id ?? lesson.slug ?? lesson.title} className="p-3 bg-gray-50 rounded-xl">
-                        <div className="font-semibold text-sm text-gray-900">{lesson.title ?? lesson.name ?? "Untitled lesson"}</div>
-                        <div className="text-xs text-gray-500 mt-0.5">{lesson.duration ?? lesson.estimated_duration ?? "Unknown duration"}</div>
+                      <li key={lesson.id ?? lesson.slug ?? lesson.title} className="flex items-center justify-between gap-3 p-3 bg-gray-50 rounded-xl">
+                        <div className="min-w-0">
+                          <div className="font-semibold text-sm text-gray-900 truncate">{lesson.title ?? lesson.name ?? "Untitled lesson"}</div>
+                          <div className="text-xs text-gray-500 mt-0.5">{lesson.duration ?? lesson.estimated_duration ?? "Unknown duration"}</div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => void handleDeleteLesson(lesson)}
+                          disabled={deletingLessonId === String(lesson.id)}
+                          className="shrink-0 rounded-lg p-2 text-gray-400 transition-colors hover:bg-red-100 hover:text-red-600 disabled:opacity-50"
+                          title="Delete lesson"
+                        >
+                          {deletingLessonId === String(lesson.id) ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                        </button>
                       </li>
                     ))}
                     {lessons.length > 5 && (

@@ -236,8 +236,9 @@ export async function getCourses() {
       image: item?.title?.toLowerCase().includes("network") ? "network" : item?.title?.toLowerCase().includes("security") ? "security" : "code",
       color: "#3B82F6",
       description: item?.subtitle ?? "",
-      modules: Number(item?.total_lessons ?? 1),
-      lessons: Number(item?.total_lessons ?? 1),
+      modules: Number(item?.total_modules ?? item?.module_count ?? item?.sections_count ?? item?.modules_count ?? 0),
+      lessons: Number(item?.total_lessons ?? item?.lesson_count ?? item?.lessons_count ?? 0),
+      raw: item,
     }));
   } catch {
     return [];
@@ -245,18 +246,40 @@ export async function getCourses() {
 }
 
 export async function getStudents() {
+  const normalizeStudent = (item: any, index: number, fallbackCourse: any = {}) => {
+    const user = item?.user ?? item?.student ?? item?.learner ?? item?.profile ?? item?.user_detail ?? item ?? {};
+    const course = item?.course ?? item?.course_detail ?? item?.course_data ?? fallbackCourse ?? {};
+    const progressValue = typeof item?.progress === "object"
+      ? item.progress?.percentage ?? item.progress?.progress ?? item.progress?.completion_percentage
+      : item?.progress ?? item?.completion_percentage ?? item?.completion;
+    const enrolledAt = item?.enrolled_at ?? item?.created_at ?? item?.joined_at;
+    return {
+      id: item?.id ?? user?.id ?? `student-${index}`,
+      name: user?.full_name || [user?.first_name, user?.last_name].filter(Boolean).join(" ") || user?.username || user?.email || "Student",
+      email: user?.email || "",
+      avatar: user?.avatar ?? user?.profile_picture ?? null,
+      course: course?.title || item?.course_title || item?.course_name || fallbackCourse?.title || "Course",
+      courseSlug: course?.slug || item?.course_slug || fallbackCourse?.slug,
+      progress: Math.min(100, Math.max(0, Number(progressValue ?? 0))),
+      grade: item?.grade ?? item?.final_grade ?? "—",
+      status: item?.status ?? "active",
+      enrolled: enrolledAt ? new Date(enrolledAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "Recently",
+      raw: item,
+    };
+  };
+
   try {
     const payload = await apiRequest<any>("/enrollments/");
     const list = Array.isArray(payload) ? payload : payload?.results ?? [];
-    return list.map((item: any) => ({
-      id: item?.id,
-      name: item?.user?.full_name || item?.user?.email || "Student",
-      email: item?.user?.email || "",
-      course: item?.course?.title || "Course",
-      progress: Number(item?.progress || 0),
-      grade: "—",
-      enrolled: item?.enrolled_at ? new Date(item.enrolled_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "Recently",
-    }));
+    if (list.length > 0) return list.map((item: any, index: number) => normalizeStudent(item, index));
+
+    const courses = await getCourses();
+    const embeddedStudents = courses.flatMap((course: any) => {
+      const raw = course.raw ?? {};
+      const records = raw.enrollments ?? raw.students ?? raw.learners ?? raw.enrolled_students ?? [];
+      return Array.isArray(records) ? records.map((item: any) => normalizeStudent(item, 0, course)) : [];
+    });
+    return embeddedStudents.map((student, index) => ({ ...student, id: student.id || `student-${index}` }));
   } catch {
     return [];
   }
@@ -273,7 +296,7 @@ export async function getTutorAnalytics() {
 export async function getCourseCategories() {
   try {
     const payload = await apiRequest<any>("/courses/categories/");
-    return Array.isArray(payload?.results) ? payload.results : [];
+    return Array.isArray(payload) ? payload : payload?.results ?? [];
   } catch {
     return [];
   }
@@ -306,6 +329,12 @@ export async function patchCourse(slug: string, data: Record<string, any>) {
   });
 }
 
+export async function deleteCourse(slug: string) {
+  return await apiRequest<void>(`/courses/${slug}/`, {
+    method: "DELETE",
+  });
+}
+
 export async function getCourse(slug: string) {
   try {
     const payload = await apiRequest<any>(`/courses/${slug}/`);
@@ -316,11 +345,24 @@ export async function getCourse(slug: string) {
 }
 
 export async function getCourseLessons(courseSlug: string) {
-  try {
-    const payload = await apiRequest<any>(`/lessons/course/${courseSlug}/`);
-    return Array.isArray(payload) ? payload : payload?.results ?? [];
-  } catch {
+  const readItems = (payload: any) => {
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.results)) return payload.results;
+    if (Array.isArray(payload?.lessons)) return payload.lessons;
+    if (Array.isArray(payload?.data)) return payload.data;
     return [];
+  };
+
+  try {
+    const adminPayload = await apiRequest<any>(`/lessons/admin/course/${courseSlug}/`);
+    return readItems(adminPayload);
+  } catch {
+    try {
+    const payload = await apiRequest<any>(`/lessons/course/${courseSlug}/`);
+    return readItems(payload);
+    } catch {
+      return [];
+    }
   }
 }
 
@@ -390,4 +432,64 @@ export async function generateCourseDescription(prompt: string) {
   } catch {
     return null;
   }
+}
+
+export async function getCourseModules(slug: string) {
+  try {
+    const payload = await apiRequest<any>(`/courses/${slug}/sections/`);
+    const sections = Array.isArray(payload) ? payload : payload?.results ?? payload?.sections ?? [];
+    if (sections.some((section: any) => Array.isArray(section?.lessons) && section.lessons.length > 0)) return sections;
+  } catch {}
+
+  try {
+    let payload: any;
+    try {
+      payload = await apiRequest<any>(`/lessons/admin/course/${slug}/`);
+    } catch {
+      payload = await apiRequest<any>(`/lessons/course/${slug}/`);
+    }
+    const lessons = Array.isArray(payload) ? payload : payload?.results ?? [];
+    const groups = new Map<string, any>();
+    lessons.forEach((lesson: any, index: number) => {
+      const sourceModule = lesson?.module ?? lesson?.section ?? lesson?.chapter;
+      const moduleId = String(sourceModule?.id ?? lesson?.module_id ?? lesson?.section_id ?? "module-1");
+      const group = groups.get(moduleId) ?? {
+        id: moduleId,
+        title: sourceModule?.title ?? sourceModule?.name ?? lesson?.module_title ?? "Course lessons",
+        description: sourceModule?.description ?? "",
+        lessons: [],
+      };
+      group.lessons.push({
+        id: lesson?.id ?? lesson?.slug ?? `lesson-${index + 1}`,
+        title: lesson?.title ?? lesson?.name ?? `Lesson ${index + 1}`,
+        duration: lesson?.duration ?? lesson?.length ?? "15 min",
+        type: lesson?.type ?? lesson?.lesson_type ?? "Video",
+        videoUrl: lesson?.video_url_resolved ?? lesson?.video_url ?? lesson?.video?.url ?? "",
+      });
+      groups.set(moduleId, group);
+    });
+    return Array.from(groups.values());
+  } catch {
+    return [];
+  }
+}
+
+export async function createTutorLesson(courseSlug: string, data: Record<string, any>) {
+  return await apiRequest<any>(`/lessons/admin/course/${courseSlug}/`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateTutorLesson(lessonId: string, data: Record<string, any>) {
+  return await apiRequest<any>(`/lessons/admin/${lessonId}/`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteTutorLesson(lessonId: string) {
+  return await apiRequest<void>(`/lessons/admin/${lessonId}/`, {
+    method: "DELETE",
+  });
 }

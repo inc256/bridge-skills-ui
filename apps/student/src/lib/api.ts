@@ -381,7 +381,9 @@ function normalizeCourse(item: any): Course {
   const category = item?.category?.name ?? item?.category;
   const instructor = item?.instructor?.full_name ?? item?.instructor?.username ?? item?.instructor;
   const instructorTitle = item?.instructor?.headline ?? item?.instructor?.role;
-  const lessons = Number(item?.total_lessons ?? item?.lessons ?? 0) || 0;
+  const rawModules = Array.isArray(item?.modules) ? item.modules : Array.isArray(item?.sections) ? item.sections : [];
+  const lessons = Number(item?.total_lessons ?? item?.lesson_count ?? item?.lessons_count ?? (Array.isArray(item?.lessons) ? item.lessons.length : 0)) || 0;
+  const moduleCount = Number(item?.total_modules ?? item?.module_count ?? item?.sections_count ?? item?.modules_count ?? rawModules.length) || (lessons > 0 ? Math.ceil(lessons / 6) : 0);
   const students = Number(item?.total_students ?? item?.students ?? 0) || 0;
   const rating = Number(item?.avg_rating ?? item?.rating ?? 0) || 0;
   const reviews = Number(item?.total_reviews ?? item?.reviews ?? 0) || 0;
@@ -412,7 +414,7 @@ function normalizeCourse(item: any): Course {
     image: deriveThumbVariant(item?.title ?? "", category ?? ""),
     color: deriveColor(category ?? ""),
     description: item?.subtitle ?? item?.description ?? "",
-    modules: Math.max(0, Math.ceil(Math.max(lessons, 0) / 6)),
+    modules: Math.max(0, moduleCount),
     lessons,
     language: item?.language ?? item?.course_language ?? undefined,
     subtitles: Number(item?.subtitle_count ?? item?.subtitles ?? 0) || undefined,
@@ -525,15 +527,29 @@ export async function getMyEnrollments() {
   try {
     const payload = await apiRequest<ApiEnvelope<any> | any>("/enrollments/");
     const list = Array.isArray(payload) ? payload : payload?.results ?? [];
-    return (list as any[]).map((item) => ({
-      id: item?.id,
-      course: item?.course ? normalizeCourse(item.course) : null,
-      status: item?.status,
-      progress: item?.progress,
-      enrolledAt: item?.enrolled_at,
-    }));
+    return (list as any[]).map((item) => {
+      const courseData = item?.course ?? item?.course_detail ?? item?.course_data ?? item?.enrolled_course;
+      const progress = typeof item?.progress === "object"
+        ? item.progress?.percentage ?? item.progress?.progress ?? item.progress?.completion_percentage
+        : item?.progress ?? item?.completion_percentage ?? item?.completion;
+      return {
+        id: item?.id,
+        course: courseData ? normalizeCourse(courseData) : null,
+        status: item?.status,
+        progress: Number(progress ?? courseData?.progress ?? 0),
+        enrolledAt: item?.enrolled_at ?? item?.created_at,
+      };
+    });
   } catch {
     return [];
+  }
+}
+
+export async function checkCourseEnrollment(courseSlug: string) {
+  try {
+    return await apiRequest<any>(`/enrollments/${courseSlug}/check/`);
+  } catch {
+    return null;
   }
 }
 
@@ -769,20 +785,141 @@ export async function getMe() {
 // ===================== COURSE MODULES =====================
 
 export async function getCourseModules(slug: string) {
-  try {
-    const payload = await apiRequest<any>(`/courses/${slug}/sections/`);
+  const formatLessonDuration = (value: any) => {
+    if (value === null || value === undefined || value === "") return "";
+    if (typeof value === "string" && /[a-z]/i.test(value)) return value;
+    const seconds = Number(value);
+    if (!Number.isFinite(seconds) || seconds <= 0) return "";
+    const minutes = Math.round(seconds / 60);
+    if (minutes < 60) return `${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return remainingMinutes ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+  };
+  const readItems = (payload: any) => {
     if (Array.isArray(payload)) return payload;
     if (Array.isArray(payload?.results)) return payload.results;
-    if (Array.isArray(payload?.sections)) return payload.sections;
+    if (Array.isArray(payload?.lessons)) return payload.lessons;
+    if (Array.isArray(payload?.data)) return payload.data;
     return [];
-  } catch {
+  };
+  const getPersistedModuleTitle = (lesson: any) => {
+    if (lesson?.module_title) return String(lesson.module_title);
+    const rawContent = String(lesson?.content ?? lesson?.body ?? lesson?.text ?? "");
+    const marker = rawContent.match(/\[\[bridge-module:([^\]]+)\]\]/i);
+    if (!marker) return "";
     try {
-      const modules = await apiRequest<any>(`/lessons/course/${slug}/`);
-      return Array.isArray(modules) ? modules : modules?.results ?? [];
+      return decodeURIComponent(marker[1]);
     } catch {
-      return [];
+      return marker[1];
     }
+  };
+  const normalizeLesson = (lesson: any, index: number) => ({
+    ...lesson,
+    id: String(lesson?.id ?? lesson?.slug ?? `lesson-${index + 1}`),
+    title: lesson?.title ?? lesson?.name ?? `Lesson ${index + 1}`,
+    duration: formatLessonDuration(lesson?.duration ?? lesson?.length ?? lesson?.estimated_duration),
+    video_url: lesson?.video_url_resolved
+      ?? lesson?.video_url
+      ?? lesson?.video?.url
+      ?? lesson?.content_url
+      ?? lesson?.media_url
+      ?? "",
+    ...(() => {
+      const rawContent = String(lesson?.content ?? lesson?.body ?? lesson?.text ?? lesson?.description ?? "");
+      const marker = rawContent.match(/\[\[bridge-module:([^\]]+)\]\]/);
+      return {
+        moduleTitle: lesson?.module_title ?? (marker ? (() => {
+          try {
+            return decodeURIComponent(marker[1]);
+          } catch {
+            return marker[1];
+          }
+        })() : ""),
+        content: rawContent.replace(/\[\[bridge-module:[^\]]+\]\]\s*/i, "").trim(),
+      };
+    })(),
+    completed: Boolean(lesson?.completed ?? lesson?.is_completed),
+  });
+
+  const normalizeModules = (items: any[]) => items.map((module, index) => ({
+    ...module,
+    id: String(module?.id ?? module?.slug ?? `module-${index + 1}`),
+    title: module?.title ?? module?.name ?? `Module ${index + 1}`,
+    lessons: (Array.isArray(module?.lessons) ? module.lessons : []).map(normalizeLesson),
+  }));
+
+  const groupLessons = (lessons: any[], declaredModuleCount = 0) => {
+    const groups = new Map<string, any>();
+    [...lessons]
+      .sort((left, right) => Number(left?.lesson_order ?? left?.order ?? 0) - Number(right?.lesson_order ?? right?.order ?? 0))
+      .forEach((lesson, index) => {
+      const sourceModule = lesson?.module ?? lesson?.section ?? lesson?.chapter;
+      const moduleTitle = getPersistedModuleTitle(lesson);
+      const fallbackModuleIndex = declaredModuleCount > 1
+        ? Math.min(declaredModuleCount - 1, Math.floor(index * declaredModuleCount / lessons.length) + 1)
+        : 1;
+      const moduleId = String(sourceModule?.id ?? lesson?.module_id ?? lesson?.section_id ?? (moduleTitle ? `module-${moduleTitle}` : `module-${fallbackModuleIndex}`));
+      const existing = groups.get(moduleId);
+      const group = existing ?? {
+        id: moduleId,
+        title: sourceModule?.title ?? sourceModule?.name ?? moduleTitle ?? lesson?.section_title ?? `Module ${fallbackModuleIndex}`,
+        lessons: [],
+      };
+      group.lessons.push(normalizeLesson(lesson, index));
+      groups.set(moduleId, group);
+      });
+    return Array.from(groups.values());
+  };
+
+  let lessons: any[] = [];
+  let sections: any[] = [];
+  let courseModules: any[] = [];
+  let declaredModuleCount = 0;
+  try {
+    const [lessonPayload, sectionPayload, coursePayload] = await Promise.all([
+      apiRequest<any>(`/lessons/course/${slug}/`).catch(() => null),
+      apiRequest<any>(`/courses/${slug}/sections/`).catch(() => null),
+      apiRequest<any>(`/courses/${slug}/`).catch(() => null),
+    ]);
+    lessons = readItems(lessonPayload);
+    sections = Array.isArray(sectionPayload) ? sectionPayload : sectionPayload?.results ?? sectionPayload?.sections ?? sectionPayload?.data ?? [];
+    courseModules = Array.isArray(coursePayload?.modules) ? coursePayload.modules : Array.isArray(coursePayload?.sections) ? coursePayload.sections : [];
+    declaredModuleCount = Number(coursePayload?.total_modules ?? coursePayload?.module_count ?? coursePayload?.sections_count ?? courseModules.length) || 0;
+  } catch {}
+
+  if (courseModules.length > 0) sections = courseModules;
+  if (lessons.length === 0) return normalizeModules(sections);
+  if (lessons.some((lesson) => lesson?.module_title || /\[\[bridge-module:[^\]]+\]\]/.test(String(lesson?.content ?? "")))) {
+    return groupLessons(lessons, declaredModuleCount);
   }
+  if (sections.length > 0) {
+    const normalizedSections = normalizeModules(sections);
+    const sectionById = new Map(normalizedSections.map((section) => [String(section.id), section]));
+    const knownLessonIds = new Set(normalizedSections.flatMap((section) => section.lessons.map((lesson: any) => String(lesson.id))));
+    const unassignedLessons = lessons.filter((lesson) => {
+      if (knownLessonIds.has(String(lesson?.id ?? lesson?.slug))) return false;
+      const moduleId = lesson?.module?.id ?? lesson?.section?.id ?? lesson?.chapter?.id ?? lesson?.module_id ?? lesson?.section_id;
+      return !moduleId || !sectionById.has(String(moduleId));
+    });
+
+    lessons.forEach((lesson, index) => {
+      if (knownLessonIds.has(String(lesson?.id ?? lesson?.slug))) return;
+      const moduleId = lesson?.module?.id ?? lesson?.section?.id ?? lesson?.chapter?.id ?? lesson?.module_id ?? lesson?.section_id;
+      if (moduleId && sectionById.has(String(moduleId))) {
+        sectionById.get(String(moduleId)).lessons.push(normalizeLesson(lesson, index));
+      }
+    });
+
+    // Older lesson rows have no module relation. Keep the named section shells
+    // and distribute those rows in lesson order instead of collapsing to one module.
+    unassignedLessons.forEach((lesson, index) => {
+      const sectionIndex = Math.min(normalizedSections.length - 1, Math.floor(index * normalizedSections.length / unassignedLessons.length));
+      normalizedSections[sectionIndex].lessons.push(normalizeLesson(lesson, index));
+    });
+    return normalizedSections;
+  }
+  return groupLessons(lessons, declaredModuleCount);
 }
 
 // ===================== COURSE PROGRESS =====================
@@ -842,13 +979,7 @@ export async function removeFromWishlist(courseSlug: string) {
 // ===================== ENROLLMENT MANAGEMENT =====================
 
 export async function enrollInCourse(courseSlug: string) {
-  try {
-    return await apiRequest<any>(`/courses/${courseSlug}/enroll/`, {
-      method: "POST",
-    });
-  } catch {
-    return null;
-  }
+  return await apiRequest<any>(`/enrollments/${courseSlug}/enroll/`, { method: "POST" });
 }
 
 // ===================== CERTIFICATE DOWNLOAD =====================

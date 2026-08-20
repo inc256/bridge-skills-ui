@@ -26,13 +26,25 @@ import {
   RefreshCw
 } from "lucide-react";
 import { toast } from "sonner";
-import { createCourse, patchCourse, getCourse, getCourseCategories, generateCourseDescription, generateCourseTitle } from "@/lib/api";
+import { createCourse, patchCourse, getCourse, getCourseModules, getCourseCategories, createTutorLesson, updateTutorLesson, generateCourseDescription, generateCourseTitle } from "@/lib/api";
 
 export const Route = createFileRoute("/tutor/builder")({
   component: Builder,
 });
 
 const steps = ["Details", "Outcomes", "Curriculum", "Resources", "Preview"];
+const savedCourseKey = "bridge_skills_tutor_last_saved_course";
+
+function readSavedCourse(slug: string) {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(savedCourseKey);
+    const saved = raw ? JSON.parse(raw) : null;
+    return saved?.slug === slug ? saved : null;
+  } catch {
+    return null;
+  }
+}
 
 function Builder() {
   const navigate = useNavigate();
@@ -101,7 +113,18 @@ function Builder() {
       
       void (async () => {
         try {
-          const course = await getCourse(editSlug);
+          const [serverCourse, serverModules] = await Promise.all([
+            getCourse(editSlug),
+            getCourseModules(editSlug),
+          ]);
+          const savedCourse = readSavedCourse(editSlug);
+          if (!serverCourse && !savedCourse) {
+            toast.error("Course not found");
+            setLoadingCourse(false);
+            return;
+          }
+          const course = { ...(serverCourse ?? {}), ...(savedCourse ?? {}) };
+          const curriculum = Array.isArray(course.modules) && course.modules.length > 0 ? course.modules : serverModules;
           if (!course) {
             toast.error("Course not found");
             setLoadingCourse(false);
@@ -139,8 +162,8 @@ function Builder() {
           if (Array.isArray(course.requirements)) setRequirements(course.requirements);
           
           // Handle modules and lessons if they exist
-          if (Array.isArray(course.modules) && course.modules.length > 0) {
-            setModules(course.modules.map((m: any) => ({
+          if (Array.isArray(curriculum) && curriculum.length > 0) {
+            setModules(curriculum.map((m: any) => ({
               id: m.id || getNewId(),
               title: m.title || "Module",
               description: m.description || "",
@@ -479,21 +502,6 @@ function Builder() {
         price: pricing === "free" ? "0" : price.trim() || "0",
         outcomes: outcomes.length > 0 ? outcomes : undefined,
         requirements: requirements.length > 0 ? requirements : undefined,
-        modules: modules.map(m => ({
-          title: m.title,
-          description: m.description,
-          lessons: m.lessons.map(l => ({
-            title: l.title,
-            duration: l.duration,
-            type: l.type,
-            video_url: l.videoUrl || "",
-          }))
-        })),
-        resources: resources.map(r => ({
-          label: r.label,
-          url: r.url,
-          type: r.type,
-        })),
       };
 
       let saved: any = null;
@@ -505,8 +513,59 @@ function Builder() {
         toast.success("Course updated successfully! 🎉");
       } else {
         // Create new course
-        saved = await createCourse(payload as any);
+        saved = await createCourse(payload);
         toast.success("Course created successfully! 🎉");
+      }
+
+      const courseSlug = saved?.slug ?? newSlug;
+      const lessonPayloads = modules.flatMap((module, moduleIndex) =>
+        module.lessons.map((lesson, lessonIndex) => ({
+          id: lesson.id,
+          title: lesson.title.trim(),
+          type: lesson.type.toLowerCase(),
+          video_url: lesson.videoUrl?.trim() || "",
+          video_source: lesson.videoUrl?.includes("youtube") || lesson.videoUrl?.includes("youtu.be") ? "youtube" : "",
+          description: "",
+          content: `[[bridge-module:${encodeURIComponent(module.title.trim())}]]`,
+          duration: (() => {
+            const value = lesson.duration.trim().toLowerCase();
+            const hours = value.match(/(\d+(?:\.\d+)?)\s*h/);
+            const minutes = value.match(/(\d+(?:\.\d+)?)\s*m/);
+            if (hours || minutes) {
+              return Math.round((hours ? Number(hours[1]) * 3600 : 0) + (minutes ? Number(minutes[1]) * 60 : 0));
+            }
+            return Number.parseInt(value, 10) || 0;
+          })(),
+          xp_reward: 10,
+          is_free: moduleIndex === 0 && lessonIndex === 0,
+          is_published: status === "published",
+          lesson_order: modules.slice(0, moduleIndex).reduce((total, item) => total + item.lessons.length, 0) + lessonIndex + 1,
+        })),
+      );
+
+      await Promise.all(lessonPayloads.map(async (lesson) => {
+        const { id, ...payload } = lesson;
+        const isPersistedLesson = typeof id === "string" && id.length >= 20 && !id.startsWith("lesson-");
+        if (isEdit && isPersistedLesson) {
+          await updateTutorLesson(id, payload);
+        } else {
+          await createTutorLesson(courseSlug, payload);
+        }
+      }));
+
+      const categoryName = categories.find((item) => item.id === categoryId)?.name ?? "General";
+      const savedCourse = {
+        ...(saved ?? {}),
+        ...payload,
+        id: saved?.id ?? originalSlug ?? newSlug,
+        slug: saved?.slug ?? newSlug,
+        category: typeof saved?.category === "object" ? saved.category?.name ?? categoryName : saved?.category ?? categoryName,
+        modules,
+        resources,
+      };
+
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(savedCourseKey, JSON.stringify(savedCourse));
       }
 
       // Clear draft

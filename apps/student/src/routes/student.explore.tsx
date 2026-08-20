@@ -3,35 +3,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Search, SlidersHorizontal, ChevronDown, X, Filter, Sparkles, TrendingUp, Clock, Users, Star } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { getCourses, enrollInCourse, getMyEnrollments } from "@/lib/api";
+import type { Course } from "@/lib/api";
 
 export const Route = createFileRoute("/student/explore")({
   component: Explore,
 });
 
 // Types
-interface Course {
-  id: string;
-  slug: string;
-  title: string;
-  instructor: string;
-  instructorTitle?: string;
-  category: string;
-  level: string;
-  duration: string;
-  students: number;
-  rating: number;
-  reviews: number;
-  certificate: boolean;
-  price: string;
-  image: string;
-  color: string;
-  description: string;
-  modules: number;
-  lessons: number;
-  progress?: number;
-  status?: string;
-}
-
 const categories = ["All", "Networking", "Cybersecurity", "Software Engineering", "Artificial Intelligence", "Cloud Computing", "Data Science"];
 const levels = ["Any level", "Beginner", "Intermediate", "Advanced"];
 const sortOptions = ["Most popular", "Highest rated", "Newest", "Most students"];
@@ -401,17 +379,21 @@ function CourseCard({
   isEnrolling: boolean;
   onEnroll: () => void;
 }) {
-  const getLevelColor = (level: string) => {
+  const getLevelColor = (level?: string) => {
     const colors: Record<string, string> = {
       beginner: 'bg-emerald-50 text-emerald-600',
       intermediate: 'bg-amber-50 text-amber-600',
       advanced: 'bg-red-50 text-red-600'
     };
-    return colors[level?.toLowerCase()] || 'bg-gray-50 text-gray-600';
+    return colors[level?.toLowerCase() ?? ""] || 'bg-gray-50 text-gray-600';
   };
 
   return (
-    <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all hover:-translate-y-0.5 active:scale-[0.98] touch-manipulation group">
+    <Link
+      to="/student/course/$slug"
+      params={{ slug: course.slug }}
+      className="block bg-white rounded-xl sm:rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all hover:-translate-y-0.5 active:scale-[0.98] touch-manipulation group"
+    >
       {/* Course Image */}
       <div className={`h-32 sm:h-36 md:h-40 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-3xl sm:text-4xl font-bold relative`}>
         {course.title?.[0]?.toUpperCase() || 'C'}
@@ -464,7 +446,11 @@ function CourseCard({
             {course.price || 'Free'}
           </span>
           <button
-            onClick={onEnroll}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onEnroll();
+            }}
             disabled={isEnrolled || isEnrolling}
             className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all active:scale-95 touch-manipulation ${
               isEnrolled
@@ -478,7 +464,7 @@ function CourseCard({
           </button>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
