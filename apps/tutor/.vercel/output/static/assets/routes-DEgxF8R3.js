@@ -1,0 +1,1 @@
+import{t as e}from"./tutor-auth-page-DFkNAM_n.js";var t=e;export{t as component};

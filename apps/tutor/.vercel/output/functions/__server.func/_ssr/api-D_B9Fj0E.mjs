@@ -1,4 +1,4 @@
-//#region node_modules/.nitro/vite/services/ssr/assets/api-D5eVBmsp.js
+//#region node_modules/.nitro/vite/services/ssr/assets/api-D_B9Fj0E.js
 var API_BASE = "https://techbridge-backend-rust.vercel.app/api/v1";
 var LESSON_TYPE_TO_DISPLAY = {
 	video: "Video",
@@ -124,7 +124,7 @@ async function apiRequest(path, init = {}, retried = false) {
 				const rawDetail = typeof payload === "string" ? payload : payload?.detail ?? payload?.message ?? payload;
 				detail = typeof rawDetail === "string" ? rawDetail : JSON.stringify(rawDetail);
 			} catch {
-				detail = rawText || detail;
+				detail = rawText.match(/<pre class="exception_value">([\s\S]*?)<\/pre>/i)?.[1]?.replace(/<[^>]+>/g, "").replace(/&quot;/g, "\"").replace(/&#x27;|&#39;/g, "'").replace(/&amp;/g, "&").trim() || rawText || detail;
 			}
 		} catch {}
 		const httpError = new Error(detail || `Request failed with ${response.status}`);

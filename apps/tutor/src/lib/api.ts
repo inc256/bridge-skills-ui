@@ -230,7 +230,13 @@ async function apiRequest<T>(path: string, init: RequestInit = {}, retried = fal
         detail = typeof rawDetail === "string" ? rawDetail : JSON.stringify(rawDetail);
       } catch {
         // Not JSON (e.g. an HTML error page) - fall back to the raw text.
-        detail = rawText || detail;
+        const exceptionValue = rawText.match(/<pre class="exception_value">([\s\S]*?)<\/pre>/i)?.[1]
+          ?.replace(/<[^>]+>/g, "")
+          .replace(/&quot;/g, '"')
+          .replace(/&#x27;|&#39;/g, "'")
+          .replace(/&amp;/g, "&")
+          .trim();
+        detail = exceptionValue || rawText || detail;
       }
     } catch {
       // Body couldn't be read at all - keep the default message.
