@@ -235,6 +235,9 @@ async function apiRequest<T>(path: string, init: RequestInit = {}, retried = fal
       // Body couldn't be read at all - keep the default message.
     }
     const httpError = new Error(detail || `Request failed with ${response.status}`) as Error & { status?: number };
+    if (detail === "Request failed") {
+      httpError.message = `Request failed with ${response.status}`;
+    }
     httpError.status = response.status;
     throw httpError;
   }

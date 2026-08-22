@@ -1,4 +1,4 @@
-//#region node_modules/.nitro/vite/services/ssr/assets/api-Bcp-cUST.js
+//#region node_modules/.nitro/vite/services/ssr/assets/api-DNWD9kIS.js
 var API_BASE = "https://techbridge-backend-rust.vercel.app/api/v1";
 var LESSON_TYPE_TO_DISPLAY = {
 	video: "Video",
@@ -127,6 +127,7 @@ async function apiRequest(path, init = {}, retried = false) {
 			}
 		} catch {}
 		const httpError = new Error(detail || `Request failed with ${response.status}`);
+		if (detail === "Request failed") httpError.message = `Request failed with ${response.status}`;
 		httpError.status = response.status;
 		throw httpError;
 	}

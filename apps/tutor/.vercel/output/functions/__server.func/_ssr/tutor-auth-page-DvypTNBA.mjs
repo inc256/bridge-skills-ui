@@ -1,9 +1,9 @@
 import { r as __toESM } from "../_runtime.mjs";
-import { T as register, x as login } from "./api-Bcp-cUST.mjs";
+import { T as register, x as login } from "./api-DNWD9kIS.mjs";
 import { n as require_jsx_runtime, r as require_react } from "../_libs/react+tanstack__react-query.mjs";
 import { y as useRouter } from "../_libs/@tanstack/react-router+[...].mjs";
 import { $ as CircleAlert, H as EyeOff, V as Eye, ct as BriefcaseBusiness, ht as ArrowRight, j as Lock, k as Mail } from "../_libs/lucide-react.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/tutor-auth-page-BdtyXAJc.js
+//#region node_modules/.nitro/vite/services/ssr/assets/tutor-auth-page-DvypTNBA.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function TutorAuthPage() {
@@ -33,7 +33,7 @@ function TutorAuthPage() {
 				setLoading(false);
 				return;
 			}
-			console.log("Attempting login for:", email.trim());
+			console.log(isRegistering ? "Attempting registration for:" : "Attempting login for:", email.trim());
 			if (isRegistering) await register({
 				email: email.trim(),
 				username: email.trim().split("@")[0],
@@ -57,9 +57,10 @@ function TutorAuthPage() {
 			console.log("Login successful, navigating to tutor dashboard...");
 			await router.navigate({ to: "/tutor/dashboard" });
 		} catch (err) {
-			console.error("Login error:", err);
+			console.error(isRegistering ? "Registration error:" : "Login error:", err);
 			const errorMessage = err instanceof Error ? err.message : typeof err === "string" ? err : JSON.stringify(err) || "Unable to sign in right now. Please try again.";
-			if (errorMessage.includes("401") || errorMessage.includes("Unauthorized")) setError("Invalid email or password. Please try again.");
+			if (isRegistering) setError(`Account creation failed: ${errorMessage}`);
+			else if (errorMessage.includes("401") || errorMessage.includes("Unauthorized")) setError("Invalid email or password. Please try again.");
 			else if (errorMessage.includes("NetworkError") || errorMessage.includes("fetch")) setError("Network error. Please check your connection and try again.");
 			else if (errorMessage.includes("token not valid")) setError("Authentication service error. Please try again later.");
 			else setError(errorMessage);

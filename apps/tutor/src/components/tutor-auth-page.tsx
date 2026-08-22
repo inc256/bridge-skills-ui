@@ -35,7 +35,7 @@ export function TutorAuthPage() {
         return;
       }
 
-      console.log("Attempting login for:", email.trim());
+      console.log(isRegistering ? "Attempting registration for:" : "Attempting login for:", email.trim());
       
       if (isRegistering) {
         await register({ email: email.trim(), username: email.trim().split("@")[0], password, password2, first_name: firstName.trim(), last_name: lastName.trim(), role: "instructor" });
@@ -58,7 +58,7 @@ export function TutorAuthPage() {
       console.log("Login successful, navigating to tutor dashboard...");
       await router.navigate({ to: "/tutor/dashboard" });
     } catch (err: unknown) {
-      console.error("Login error:", err);
+      console.error(isRegistering ? "Registration error:" : "Login error:", err);
       
       // Handle specific error messages
       const errorMessage = err instanceof Error
@@ -67,7 +67,9 @@ export function TutorAuthPage() {
           ? err
           : JSON.stringify(err) || "Unable to sign in right now. Please try again.";
       
-      if (errorMessage.includes("401") || errorMessage.includes("Unauthorized")) {
+      if (isRegistering) {
+        setError(`Account creation failed: ${errorMessage}`);
+      } else if (errorMessage.includes("401") || errorMessage.includes("Unauthorized")) {
         setError("Invalid email or password. Please try again.");
       } else if (errorMessage.includes("NetworkError") || errorMessage.includes("fetch")) {
         setError("Network error. Please check your connection and try again.");
