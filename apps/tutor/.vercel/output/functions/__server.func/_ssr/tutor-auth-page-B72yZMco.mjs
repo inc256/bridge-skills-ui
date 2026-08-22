@@ -3,7 +3,7 @@ import { T as register, x as login } from "./api-Bcp-cUST.mjs";
 import { n as require_jsx_runtime, r as require_react } from "../_libs/react+tanstack__react-query.mjs";
 import { y as useRouter } from "../_libs/@tanstack/react-router+[...].mjs";
 import { $ as CircleAlert, H as EyeOff, V as Eye, ct as BriefcaseBusiness, ht as ArrowRight, j as Lock, k as Mail } from "../_libs/lucide-react.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/tutor-auth-page-CtWbqthN.js
+//#region node_modules/.nitro/vite/services/ssr/assets/tutor-auth-page-B72yZMco.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function TutorAuthPage() {
@@ -41,7 +41,7 @@ function TutorAuthPage() {
 				password2,
 				first_name: firstName.trim(),
 				last_name: lastName.trim(),
-				role: "tutor"
+				role: "instructor"
 			});
 			const session = await login(email.trim(), password);
 			if (!session) {
@@ -134,15 +134,6 @@ function TutorAuthPage() {
 											autoComplete: "email"
 										})]
 									})] }),
-									isRegistering && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
-										type: "password",
-										value: password2,
-										onChange: (event) => setPassword2(event.target.value),
-										placeholder: "Confirm password",
-										className: "w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm outline-none",
-										required: true,
-										autoComplete: "new-password"
-									}),
 									/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("label", {
 										className: "block text-sm font-medium text-gray-700 dark:text-gray-300",
 										children: ["Password ", /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
@@ -170,6 +161,15 @@ function TutorAuthPage() {
 											})
 										]
 									})] }),
+									isRegistering && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+										type: "password",
+										value: password2,
+										onChange: (event) => setPassword2(event.target.value),
+										placeholder: "Confirm password",
+										className: "w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm outline-none",
+										required: true,
+										autoComplete: "new-password"
+									}),
 									/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 										className: "flex flex-wrap items-center justify-between gap-3 text-sm",
 										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("label", {

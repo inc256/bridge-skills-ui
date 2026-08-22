@@ -131,10 +131,6 @@ export function StudentAuthPage() {
                 </div>
               </div>
 
-              {isRegistering && (
-                <input type="password" value={password2} onChange={(event) => setPassword2(event.target.value)} placeholder="Confirm password" className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm outline-none" required autoComplete="new-password" />
-              )}
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Password <span className="text-red-500">*</span>
@@ -159,6 +155,10 @@ export function StudentAuthPage() {
                   </button>
                 </div>
               </div>
+
+              {isRegistering && (
+                <input type="password" value={password2} onChange={(event) => setPassword2(event.target.value)} placeholder="Confirm password" className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm outline-none" required autoComplete="new-password" />
+              )}
 
               <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
                 <label className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 cursor-pointer">

@@ -102,8 +102,6 @@ export function AdminAuthPage() {
               />
             </div>
 
-            {isRegistering && <input type="password" value={password2} onChange={(event) => setPassword2(event.target.value)} placeholder="Confirm password" className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none" required autoComplete="new-password" />}
-
             <div>
               <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
                 Password
@@ -127,6 +125,8 @@ export function AdminAuthPage() {
                 </button>
               </div>
             </div>
+
+            {isRegistering && <input type="password" value={password2} onChange={(event) => setPassword2(event.target.value)} placeholder="Confirm password" className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none" required autoComplete="new-password" />}
 
             <button
               type="submit"

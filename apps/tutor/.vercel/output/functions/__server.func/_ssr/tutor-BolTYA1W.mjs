@@ -4,8 +4,8 @@ import { n as useAuth } from "./auth-BhbCdnB3.mjs";
 import { f as Outlet, g as Link, l as useRouterState } from "../_libs/@tanstack/react-router+[...].mjs";
 import { A as LogOut, D as MessageCircle, I as LayoutDashboard, J as ClipboardList, L as GraduationCap, O as Menu, X as CircleQuestionMark, _ as Settings, a as User, at as ChartColumn, et as ChevronUp, f as SquarePlus, i as Users, n as X, pt as Award, t as Zap, ut as BookOpen } from "../_libs/lucide-react.mjs";
 import { t as Toaster } from "../_libs/sonner.mjs";
-import { t as TutorAuthPage } from "./tutor-auth-page-CtWbqthN.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/tutor-gpGHrTfF.js
+import { t as TutorAuthPage } from "./tutor-auth-page-B72yZMco.mjs";
+//#region node_modules/.nitro/vite/services/ssr/assets/tutor-BolTYA1W.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var Toaster$1 = ({ ...props }) => {
