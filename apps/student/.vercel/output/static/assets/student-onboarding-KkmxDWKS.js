@@ -1,0 +1,1 @@
+function e(e){typeof window>`u`||window.localStorage.setItem(`tb-selected-course-slug`,e)}export{e as t};
