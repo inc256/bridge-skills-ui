@@ -139,6 +139,19 @@ export function clearStoredSession() {
   writeSession(null);
 }
 
+export function isAccessTokenExpired(token: string | undefined) {
+  if (!token) return true;
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return true;
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const decoded = JSON.parse(atob(normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), "=")));
+    return typeof decoded?.exp === "number" && decoded.exp * 1000 <= Date.now();
+  } catch {
+    return true;
+  }
+}
+
 async function refreshToken(): Promise<boolean> {
   const session = readSession();
   if (!session?.refresh) return false;
@@ -203,6 +216,7 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}, retrie
           console.log("Token refreshed, retrying request...");
           return apiRequest<T>(path, init, true);
         }
+        clearStoredSession();
       }
 
       let detail = "Request failed";

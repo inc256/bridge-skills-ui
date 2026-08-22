@@ -1,6 +1,6 @@
 // apps/student/src/lib/auth.tsx
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
-import { getProfile, login as apiLogin, logout as apiLogout } from "./api";
+import { clearStoredSession, getProfile, getStoredSession, isAccessTokenExpired, login as apiLogin, logout as apiLogout } from "./api";
 
 interface User {
   id?: string;
@@ -33,6 +33,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsClient(true);
     
     const loadUser = async () => {
+      const session = getStoredSession();
+      if (!session?.access || isAccessTokenExpired(session.access)) {
+        clearStoredSession();
+        setUser(null);
+        setIsLoading(false);
+        return;
+      }
+
       try {
         const profile = await getProfile();
         setUser(profile);

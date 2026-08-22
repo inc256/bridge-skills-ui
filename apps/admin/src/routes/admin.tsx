@@ -42,7 +42,7 @@ import {
 } from "lucide-react";
 import { PortalShell } from "@/components/portal-shell";
 import { AdminAuthPage } from "@/components/admin-auth-page";
-import { apiRequest, logout as apiLogout } from "@/lib/api";
+import { apiRequest, clearStoredSession, getStoredSession, isAccessTokenExpired, logout as apiLogout } from "@/lib/api";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -126,6 +126,14 @@ function AdminLayout() {
     // No need to check auth on the login page itself.
     if (onLoginPage) {
       setChecking(false);
+      return;
+    }
+
+    const session = getStoredSession();
+    if (!session?.access || isAccessTokenExpired(session.access)) {
+      clearStoredSession();
+      setChecking(false);
+      void router.navigate({ to: "/admin" });
       return;
     }
 

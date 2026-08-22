@@ -174,6 +174,27 @@ function writeSession(session: any | null) {
   }
 }
 
+export function getStoredSession() {
+  return readSession();
+}
+
+export function clearStoredSession() {
+  writeSession(null);
+}
+
+export function isAccessTokenExpired(token: string | undefined) {
+  if (!token) return true;
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return true;
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const decoded = JSON.parse(atob(normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), "=")));
+    return typeof decoded?.exp === "number" && decoded.exp * 1000 <= Date.now();
+  } catch {
+    return true;
+  }
+}
+
 // Paths that must NEVER get a Bearer header attached, and must never trigger
 // a refresh-and-retry on 401. SimpleJWT's JWTAuthentication raises 401
 // "Given token not valid for any token type" if an Authorization header is
@@ -239,6 +260,7 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}, retrie
       if (refreshed) {
         return apiRequest<T>(path, init, true);
       }
+      clearStoredSession();
     }
 
     let detail = "Request failed";

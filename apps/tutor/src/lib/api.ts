@@ -136,6 +136,27 @@ export function hasStoredSession(): boolean {
   return Boolean(readSession()?.access);
 }
 
+export function getStoredSession() {
+  return readSession();
+}
+
+export function clearStoredSession() {
+  writeSession(null);
+}
+
+export function isAccessTokenExpired(token: string | undefined) {
+  if (!token) return true;
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return true;
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const decoded = JSON.parse(atob(normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), "=")));
+    return typeof decoded?.exp === "number" && decoded.exp * 1000 <= Date.now();
+  } catch {
+    return true;
+  }
+}
+
 async function refreshToken(): Promise<boolean> {
   const session = readSession();
   if (!session?.refresh) return false;
@@ -191,6 +212,7 @@ async function apiRequest<T>(path: string, init: RequestInit = {}, retried = fal
       if (refreshed) {
         return apiRequest<T>(path, init, true);
       }
+      clearStoredSession();
     }
 
     // Read the body exactly once, as text - a Response's body stream can only
