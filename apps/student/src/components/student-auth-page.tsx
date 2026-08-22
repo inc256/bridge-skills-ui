@@ -61,14 +61,18 @@ export function StudentAuthPage() {
         await authLogin(email.trim(), password);
         console.log("Login successful, navigating to dashboard...");
         await router.navigate({ to: "/student/dashboard" });
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Login error:", err);
-        setError(err.message || "Invalid credentials. Please try again.");
+        setError(err instanceof Error
+          ? err.message
+          : typeof err === "string"
+            ? err
+            : JSON.stringify(err) || "Unable to create your account. Please try again.");
         setLoading(false);
       }
     } catch (err: any) {
       console.error("Auth error:", err);
-      setError(err.message || "Unable to sign in right now. Please try again.");
+      setError(err instanceof Error ? err.message : "Unable to sign in right now. Please try again.");
     } finally {
       setLoading(false);
     }

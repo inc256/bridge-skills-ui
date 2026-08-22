@@ -57,11 +57,15 @@ export function TutorAuthPage() {
 
       console.log("Login successful, navigating to tutor dashboard...");
       await router.navigate({ to: "/tutor/dashboard" });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Login error:", err);
       
       // Handle specific error messages
-      const errorMessage = err.message || "Unable to sign in right now. Please try again.";
+      const errorMessage = err instanceof Error
+        ? err.message
+        : typeof err === "string"
+          ? err
+          : JSON.stringify(err) || "Unable to sign in right now. Please try again.";
       
       if (errorMessage.includes("401") || errorMessage.includes("Unauthorized")) {
         setError("Invalid email or password. Please try again.");

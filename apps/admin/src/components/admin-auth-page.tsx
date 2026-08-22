@@ -55,7 +55,11 @@ export function AdminAuthPage() {
 
       await router.navigate({ to: "/admin/dashboard" });
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Invalid email or password.");
+      setError(err instanceof Error
+        ? err.message
+        : typeof err === "string"
+          ? err
+          : JSON.stringify(err) || "Unable to create your account. Please try again.");
     } finally {
       setLoading(false);
     }
