@@ -348,6 +348,9 @@ export async function register(payload: {
     });
     
     console.log("Registration response:", resp);
+      if (resp?.access) {
+        writeSession(resp as AuthSession);
+      }
     return resp;
   } catch (err) {
     console.error("Registration error:", err);

@@ -467,7 +467,7 @@ function TutorQuizzes() {
             <p className="text-sm text-amber-800">
               <strong>💡 Tip:</strong> Full quiz builder with question editor is available in the{' '}
               <a 
-                href="http://localhost:8000/dashboard/instructor/" 
+                href="https://techbridge-tutor.vercel.app/tutor/quizzes" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-amber-700 font-semibold hover:underline"

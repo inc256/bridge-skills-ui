@@ -319,8 +319,8 @@ function AdminCMS() {
             {[
               ['Django Admin', 'https://techbridge-backend-rust.vercel.app/admin/', 'Database'],
               ['API Swagger Docs', 'https://techbridge-backend-rust.vercel.app/api/docs/', 'API'],
-              ['Elearning Platform', 'http://localhost:8000/dashboard/admin/', 'Frontend'],
-              ['Themes & Plugins', 'http://localhost:8000/dashboard/admin/themes/', 'Design'],
+              ['Admin portal', 'https://techbridge-admin.vercel.app/admin/dashboard', 'Frontend'],
+              ['Backend admin', 'https://techbridge-backend-rust.vercel.app/admin/', 'Database'],
             ].map(([label, url, badge]) => (
               <a
                 key={label}

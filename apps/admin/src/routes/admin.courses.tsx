@@ -5,7 +5,7 @@ import {
   Tag, DollarSign, GraduationCap, Layers, Calendar, AlertCircle
 } from "lucide-react";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { getCategories } from "@/lib/api";
+import { apiRequest as sharedApiRequest, getCategories } from "@/lib/api";
 
 export const Route = createFileRoute("/admin/courses")({
   component: AdminCourses,
@@ -63,25 +63,7 @@ interface CourseForm {
 // ===================== API FUNCTIONS =====================
 
 async function apiRequest<T = any>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = localStorage.getItem('tb_access');
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-    ...(options.headers || {})
-  };
-
-  const response = await fetch(`/api/v1${path}`, {
-    ...options,
-    headers,
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.detail || error.message || `API error: ${response.status}`);
-  }
-
-  if (response.status === 204) return null as T;
-  return response.json();
+  return sharedApiRequest<T>(path, options);
 }
 
 async function getFullCourses(): Promise<Course[]> {

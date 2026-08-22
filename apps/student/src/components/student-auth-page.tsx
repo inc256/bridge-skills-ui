@@ -6,11 +6,11 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
-import { register } from "@/lib/api";
+import { getProfile, register } from "@/lib/api";
 
 export function StudentAuthPage() {
   const router = useRouter();
-  const { login: authLogin } = useAuth();
+  const { login: authLogin, setUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +48,7 @@ export function StudentAuthPage() {
       
       try {
         if (isRegistering) {
-          await register({
+          const session = await register({
             email: email.trim(),
             username: email.trim().split("@")[0],
             password,
@@ -57,8 +57,15 @@ export function StudentAuthPage() {
             last_name: lastName.trim(),
             role: "student",
           });
+          if (session?.access) {
+            const profile = await getProfile();
+            setUser(profile);
+          } else {
+            await authLogin(email.trim(), password);
+          }
+        } else {
+          await authLogin(email.trim(), password);
         }
-        await authLogin(email.trim(), password);
         console.log("Login successful, navigating to dashboard...");
         await router.navigate({ to: "/student/dashboard" });
       } catch (err: unknown) {

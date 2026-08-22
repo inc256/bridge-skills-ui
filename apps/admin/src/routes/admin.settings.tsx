@@ -847,11 +847,10 @@ function AdminSettings() {
                       <div>
                         <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Database Engine</label>
                         <select 
-                          value={envForm.DB_ENGINE ?? config.database?.engine ?? 'sqlite3'} 
+                          value={envForm.DB_ENGINE ?? config.database?.engine ?? 'postgresql'} 
                           onChange={handleEnvChange('DB_ENGINE')} 
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                         >
-                          <option value="sqlite3">SQLite3 (local dev — no setup needed)</option>
                           <option value="mysql">MySQL (cPanel / DigitalOcean / AWS RDS)</option>
                           <option value="postgresql">PostgreSQL (Heroku / Supabase / Railway)</option>
                         </select>
