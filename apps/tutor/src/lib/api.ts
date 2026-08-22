@@ -13,6 +13,7 @@ export type Course = {
   certificate: boolean;
   price: string;
   image: string;
+  thumbnail?: string | null;
   color: string;
   description: string;
   modules: number;
@@ -50,7 +51,59 @@ export type TutorProfile = {
   youtube: string;
 };
 
-const API_BASE = (import.meta.env?.VITE_API_BASE_URL as string | undefined) ?? "/api/v1";
+const API_BASE = (import.meta.env?.VITE_API_BASE_URL as string | undefined) ?? "http://localhost:8001/api/v1";
+
+// Maps the backend's lowercase lesson `type` enum to the label used by the
+// builder's <select> options. Keep this in sync with the reverse mapping in
+// builder.tsx's handleSave (display -> backend).
+const LESSON_TYPE_TO_DISPLAY: Record<string, string> = {
+  video: "Video",
+  text: "Article",
+  reading: "Article",
+  quiz: "Quiz",
+  assignment: "Project",
+  project: "Project",
+  live: "Project",
+};
+
+function toDisplayLessonType(rawType: string | undefined | null): string {
+  if (!rawType) return "Video";
+  return LESSON_TYPE_TO_DISPLAY[String(rawType).toLowerCase()] ?? "Video";
+}
+
+// The DB stores lesson duration as an integer number of seconds. The builder
+// UI (and handleSave's parser) work in a human string like "15 min" / "1h 30m".
+// Without this conversion, editing an existing course shows the raw seconds
+// value (e.g. "900") in the Duration field.
+function formatDurationSeconds(totalSeconds: number): string {
+  const seconds = Math.max(0, Math.round(Number(totalSeconds) || 0));
+  const totalMinutes = Math.round(seconds / 60);
+  if (totalMinutes <= 0) return "0 min";
+  if (totalMinutes < 60) return `${totalMinutes} min`;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+}
+
+function lessonDurationSeconds(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) return Math.max(0, value);
+  const text = String(value ?? "").trim().toLowerCase();
+  const hours = Number(text.match(/(\d+(?:\.\d+)?)\s*h/)?.[1] ?? 0);
+  const minutes = Number(text.match(/(\d+(?:\.\d+)?)\s*m/)?.[1] ?? 0);
+  if (hours || minutes) return hours * 3600 + minutes * 60;
+  const numeric = Number(text);
+  return Number.isFinite(numeric) ? Math.max(0, numeric) : 0;
+}
+
+async function getCourseDuration(slug: string, fallback: string) {
+  try {
+    const lessons = await getCourseLessons(slug);
+    const totalSeconds = lessons.reduce((sum: number, lesson: any) => sum + lessonDurationSeconds(lesson?.duration), 0);
+    return lessons.length > 0 ? formatDurationSeconds(totalSeconds) : fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 function getStorageKey() {
   return "bridge_skills_tutor_session";
@@ -73,6 +126,14 @@ function writeSession(session: any | null) {
   } else {
     window.localStorage.removeItem(getStorageKey());
   }
+}
+
+// Cheap, synchronous, no-network check for whether a session is present.
+// Use this to decide whether it's worth calling an authenticated endpoint
+// at all (e.g. on app boot) instead of firing the request and catching the
+// guaranteed 401 when the user is simply logged out.
+export function hasStoredSession(): boolean {
+  return Boolean(readSession()?.access);
 }
 
 async function refreshToken(): Promise<boolean> {
@@ -132,14 +193,28 @@ async function apiRequest<T>(path: string, init: RequestInit = {}, retried = fal
       }
     }
 
+    // Read the body exactly once, as text - a Response's body stream can only
+    // be consumed a single time. Trying response.json() and, on failure,
+    // falling back to response.text() throws ("body stream already read")
+    // because the failed .json() call already consumed the stream. That
+    // secondary TypeError was masking the real error detail from the server
+    // (e.g. an HTML 500 page, which isn't valid JSON).
     let detail = "Request failed";
     try {
-      const payload = await response.json();
-      detail = typeof payload === "string" ? payload : payload?.detail ?? payload?.message ?? JSON.stringify(payload);
+      const rawText = await response.text();
+      try {
+        const payload = JSON.parse(rawText);
+        detail = typeof payload === "string" ? payload : payload?.detail ?? payload?.message ?? JSON.stringify(payload);
+      } catch {
+        // Not JSON (e.g. an HTML error page) - fall back to the raw text.
+        detail = rawText || detail;
+      }
     } catch {
-      detail = await response.text();
+      // Body couldn't be read at all - keep the default message.
     }
-    throw new Error(detail || `Request failed with ${response.status}`);
+    const httpError = new Error(detail || `Request failed with ${response.status}`) as Error & { status?: number };
+    httpError.status = response.status;
+    throw httpError;
   }
   
   if (response.status === 204) return null as T;
@@ -147,66 +222,54 @@ async function apiRequest<T>(path: string, init: RequestInit = {}, retried = fal
 }
 
 export async function login(email: string, password: string) {
+  const cleanEmail = email.trim();
+  const cleanPassword = password.trim();
+
+  if (!cleanEmail || !cleanPassword) {
+    throw new Error("Email and password are required");
+  }
+
+  // Guess the right field from the input shape instead of always trying
+  // both. Previously this fired up to two /auth/login/ requests per click
+  // (email, then username) regardless of outcome - including retrying
+  // after a 500, which never helps (a server error isn't "wrong field
+  // shape") and needlessly doubles django-axes' failed-attempt counter,
+  // which can lock the account out from normal use alone.
+  const looksLikeEmail = cleanEmail.includes("@");
+  const primaryField = looksLikeEmail ? "email" : "username";
+  const fallbackField = looksLikeEmail ? "username" : "email";
+
+  async function attempt(field: "email" | "username") {
+    const session = await apiRequest<any>("/auth/login/", {
+      method: "POST",
+      body: JSON.stringify({ [field]: cleanEmail, password: cleanPassword }),
+    });
+    if (session?.access) {
+      writeSession(session);
+    }
+    return session;
+  }
+
   try {
-    console.log("Attempting login for:", email);
-    
-    // Clean the email
-    const cleanEmail = email.trim();
-    const cleanPassword = password.trim();
-    
-    if (!cleanEmail || !cleanPassword) {
-      throw new Error("Email and password are required");
+    return await attempt(primaryField);
+  } catch (primaryError: any) {
+    // Only retry with the other field shape on an actual 400 (validation
+    // error - "wrong field for this endpoint"). Any other status (401
+    // wrong password, 403/423 locked out, 500 server error) means
+    // retrying won't help and only adds another failed attempt on record.
+    if (primaryError?.status !== 400) {
+      throw primaryError;
     }
-    
-    // First try with email field
     try {
-      const session = await apiRequest<any>("/auth/login/", {
-        method: "POST",
-        body: JSON.stringify({ 
-          email: cleanEmail, 
-          password: cleanPassword 
-        }),
-      });
-      
-      console.log("Login successful with email");
-      
-      if (session?.access) {
-        writeSession(session);
-      }
-      
-      return session;
-    } catch (emailError: any) {
-      console.log("Email login failed, trying username...", emailError.message);
-      
-      // If email fails, try with username
-      try {
-        const session = await apiRequest<any>("/auth/login/", {
-          method: "POST",
-          body: JSON.stringify({ 
-            username: cleanEmail, 
-            password: cleanPassword 
-          }),
-        });
-        
-        console.log("Login successful with username");
-        
-        if (session?.access) {
-          writeSession(session);
-        }
-        
-        return session;
-      } catch (usernameError) {
-        console.error("Username login failed too");
-        throw emailError; // Throw the original error
-      }
+      return await attempt(fallbackField);
+    } catch {
+      throw primaryError;
     }
-  } catch (error) {
-    console.error("Login error:", error);
-    throw error;
   }
 }
 
 // Rest of your api.ts functions remain the same...
+
 export async function logout() {
   try {
     await apiRequest("/auth/logout/", { method: "POST" });
@@ -218,7 +281,7 @@ export async function getCourses() {
   try {
     const payload = await apiRequest<any>("/courses/mine/");
     const list = Array.isArray(payload) ? payload : payload?.results ?? [];
-    return list.map((item: any) => ({
+    return await Promise.all(list.map(async (item: any) => ({
       id: item?.id ?? item?.slug,
       slug: item?.slug,
       title: item?.title,
@@ -226,7 +289,7 @@ export async function getCourses() {
       instructorTitle: item?.instructor?.headline ?? "Instructor",
       category: item?.category?.name ?? "General",
       level: (item?.level || "beginner").toLowerCase() === "advanced" ? "Advanced" : (item?.level || "beginner").toLowerCase() === "intermediate" ? "Intermediate" : "Beginner",
-      duration: item?.duration ?? "8h",
+      duration: await getCourseDuration(item?.slug, item?.duration ?? "8h"),
       students: item?.total_students ?? 0,
       rating: Number(item?.avg_rating ?? 0),
       reviews: Number(item?.total_reviews ?? 0),
@@ -234,12 +297,13 @@ export async function getCourses() {
       price: item?.price ? `GHS ${Number(item.price).toLocaleString()}` : "Free",
       status: item?.status ?? "draft",
       image: item?.title?.toLowerCase().includes("network") ? "network" : item?.title?.toLowerCase().includes("security") ? "security" : "code",
+      thumbnail: item?.thumbnail ?? item?.thumbnail_url ?? null,
       color: "#3B82F6",
       description: item?.subtitle ?? "",
       modules: Number(item?.total_modules ?? item?.module_count ?? item?.sections_count ?? item?.modules_count ?? 0),
       lessons: Number(item?.total_lessons ?? item?.lesson_count ?? item?.lessons_count ?? 0),
       raw: item,
-    }));
+    })));
   } catch {
     return [];
   }
@@ -271,15 +335,29 @@ export async function getStudents() {
   try {
     const payload = await apiRequest<any>("/enrollments/");
     const list = Array.isArray(payload) ? payload : payload?.results ?? [];
-    if (list.length > 0) return list.map((item: any, index: number) => normalizeStudent(item, index));
+    const directStudents = list.length > 0 ? list.map((item: any, index: number) => normalizeStudent(item, index)) : [];
+    if (directStudents.length > 0) return directStudents;
 
     const courses = await getCourses();
     const embeddedStudents = courses.flatMap((course: any) => {
-      const raw = course.raw ?? {};
-      const records = raw.enrollments ?? raw.students ?? raw.learners ?? raw.enrolled_students ?? [];
-      return Array.isArray(records) ? records.map((item: any) => normalizeStudent(item, 0, course)) : [];
+      const raw = course?.raw ?? {};
+      const records = Array.isArray(course?.students) ? course.students
+        : Array.isArray(raw.enrollments) ? raw.enrollments
+          : Array.isArray(raw.students) ? raw.students
+            : Array.isArray(raw.learners) ? raw.learners
+              : Array.isArray(raw.enrolled_students) ? raw.enrolled_students
+                : Array.isArray(raw.participants) ? raw.participants
+                  : [];
+
+      return records.length > 0
+        ? records.map((item: any, idx: number) => normalizeStudent(item, idx, course))
+        : [];
     });
-    return embeddedStudents.map((student, index) => ({ ...student, id: student.id || `student-${index}` }));
+
+    const deduped = embeddedStudents.filter((student: any, index: number, arr: any[]) =>
+      arr.findIndex((entry: any) => entry.id === student.id) === index,
+    );
+    return deduped.map((student: any, index: number) => ({ ...student, id: student.id || `student-${index}` }));
   } catch {
     return [];
   }
@@ -315,17 +393,32 @@ export async function createCourse(course: {
   price: string;
   outcomes?: string[];
   requirements?: string[];
+  thumbnail?: File | null;
 }) {
+  const body = course.thumbnail instanceof File
+    ? Object.entries(course).reduce((form, [key, value]) => {
+      if (value === undefined || value === null || value === "") return form;
+      form.append(key, Array.isArray(value) ? JSON.stringify(value) : value instanceof File ? value : String(value));
+      return form;
+    }, new FormData())
+    : JSON.stringify(course);
   return await apiRequest<any>("/courses/create/", {
     method: "POST",
-    body: JSON.stringify(course),
+    body,
   });
 }
 
 export async function patchCourse(slug: string, data: Record<string, any>) {
+  const body = data.thumbnail instanceof File
+    ? Object.entries(data).reduce((form, [key, value]) => {
+      if (value === undefined || value === null || value === "") return form;
+      form.append(key, Array.isArray(value) ? JSON.stringify(value) : value instanceof File ? value : String(value));
+      return form;
+    }, new FormData())
+    : JSON.stringify(data);
   return await apiRequest<any>(`/courses/${slug}/`, {
     method: "PATCH",
-    body: JSON.stringify(data),
+    body,
   });
 }
 
@@ -436,42 +529,74 @@ export async function generateCourseDescription(prompt: string) {
 
 export async function getCourseModules(slug: string) {
   try {
-    const payload = await apiRequest<any>(`/courses/${slug}/sections/`);
-    const sections = Array.isArray(payload) ? payload : payload?.results ?? payload?.sections ?? [];
-    if (sections.some((section: any) => Array.isArray(section?.lessons) && section.lessons.length > 0)) return sections;
-  } catch {}
-
-  try {
-    let payload: any;
-    try {
-      payload = await apiRequest<any>(`/lessons/admin/course/${slug}/`);
-    } catch {
-      payload = await apiRequest<any>(`/lessons/course/${slug}/`);
-    }
+    const [modulePayload, lessonPayload] = await Promise.all([
+      apiRequest<any>(`/lessons/modules/course/${slug}/`).catch(() => null),
+      apiRequest<any>(`/lessons/admin/course/${slug}/`).catch(() => apiRequest<any>(`/lessons/course/${slug}/`)),
+    ]);
+    const moduleItems = Array.isArray(modulePayload) ? modulePayload : modulePayload?.results ?? modulePayload?.modules ?? modulePayload?.data ?? [];
+    const payload = lessonPayload;
     const lessons = Array.isArray(payload) ? payload : payload?.results ?? [];
-    const groups = new Map<string, any>();
+    // `_persisted: true` marks modules that already exist in the DB (real
+    // char(32) ids) so the builder doesn't have to guess from id shape.
+    const groups = new Map<string, any>(moduleItems.map((module: any, index: number) => [String(module.id), {
+      ...module,
+      id: String(module.id),
+      title: module.title ?? `Module ${index + 1}`,
+      description: module.description ?? "",
+      module_order: Number(module.module_order ?? index + 1),
+      lessons: [],
+      _persisted: true,
+    }]));
     lessons.forEach((lesson: any, index: number) => {
       const sourceModule = lesson?.module ?? lesson?.section ?? lesson?.chapter;
-      const moduleId = String(sourceModule?.id ?? lesson?.module_id ?? lesson?.section_id ?? "module-1");
+      const moduleId = String(typeof sourceModule === "string"
+        ? sourceModule : sourceModule?.id ?? lesson?.module_id ?? lesson?.section_id ?? "module-unassigned");
       const group = groups.get(moduleId) ?? {
         id: moduleId,
-        title: sourceModule?.title ?? sourceModule?.name ?? lesson?.module_title ?? "Course lessons",
-        description: sourceModule?.description ?? "",
+        title: (typeof sourceModule === "object" ? sourceModule?.title ?? sourceModule?.name : undefined) ?? lesson?.module_title ?? "Course lessons",
+        description: typeof sourceModule === "object" ? sourceModule?.description ?? "" : "",
+        module_order: Number(lesson?.module_order ?? groups.size + 1),
         lessons: [],
+        // This synthetic "unassigned" group isn't a real module row, so it
+        // must NOT be treated as persisted - it needs to be created on save.
+        _persisted: false,
       };
       group.lessons.push({
         id: lesson?.id ?? lesson?.slug ?? `lesson-${index + 1}`,
         title: lesson?.title ?? lesson?.name ?? `Lesson ${index + 1}`,
-        duration: lesson?.duration ?? lesson?.length ?? "15 min",
-        type: lesson?.type ?? lesson?.lesson_type ?? "Video",
+        // Preserve slug/description/content so a plain save doesn't
+        // regenerate the slug or wipe out lesson content that the builder
+        // UI has no fields for editing.
+        slug: lesson?.slug ?? undefined,
+        description: lesson?.description ?? "",
+        content: lesson?.content ?? "",
+        duration: typeof lesson?.duration === "number"
+          ? formatDurationSeconds(lesson.duration)
+          : lesson?.duration ?? lesson?.length ?? "15 min",
+        type: toDisplayLessonType(lesson?.type ?? lesson?.lesson_type),
         videoUrl: lesson?.video_url_resolved ?? lesson?.video_url ?? lesson?.video?.url ?? "",
+        _persisted: true,
       });
       groups.set(moduleId, group);
     });
-    return Array.from(groups.values());
+    return Array.from(groups.values()).sort((left, right) => left.module_order - right.module_order);
   } catch {
     return [];
   }
+}
+
+export async function createTutorModule(courseSlug: string, data: Record<string, any>) {
+  return await apiRequest<any>(`/lessons/modules/course/${courseSlug}/`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateTutorModule(moduleId: string, data: Record<string, any>) {
+  return await apiRequest<any>(`/lessons/modules/${moduleId}/`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
 }
 
 export async function createTutorLesson(courseSlug: string, data: Record<string, any>) {

@@ -1,12 +1,15 @@
 // Abstract, elegant SVG course thumbnails — no external assets.
-export function CourseThumb({ variant, color = "#3B82F6", title, className }: { variant: string; color?: string; title?: string; className?: string }) {
+export function CourseThumb({ variant, color = "#3B82F6", thumbnail, title, className }: { variant: string; color?: string; thumbnail?: string | null; title?: string; className?: string }) {
   const bg = typeof color === "string" && color.trim() ? color.trim() : "#3B82F6";
+  const safeThumbnail = typeof thumbnail === "string" && thumbnail.trim() ? thumbnail.trim() : null;
+
   return (
     <div
       className={`relative w-full overflow-hidden ${className ?? "aspect-[16/10]"}`}
       style={{ background: `linear-gradient(135deg, ${bg} 0%, ${shade(bg, -15)} 100%)` }}
     >
-      <svg viewBox="0 0 400 250" className="absolute inset-0 h-full w-full opacity-90">
+      {safeThumbnail ? <img src={safeThumbnail} alt={title ?? "Course thumbnail"} className="absolute inset-0 h-full w-full object-cover" /> : null}
+      {!safeThumbnail && <svg viewBox="0 0 400 250" className="absolute inset-0 h-full w-full opacity-90">
         {variant === "network" && (
           <g stroke="white" strokeOpacity="0.35" fill="none">
             <circle cx="80" cy="80" r="6" fill="white" fillOpacity="0.9" />
@@ -77,7 +80,7 @@ export function CourseThumb({ variant, color = "#3B82F6", title, className }: { 
             <rect x="60" y="170" width="310" height="10" rx="5" fillOpacity="0.35" />
           </g>
         )}
-      </svg>
+      </svg>}
       {title && (
         <div className="absolute inset-x-0 bottom-0 p-4">
           <div className="text-[11px] font-medium uppercase tracking-widest text-white/70">TechBridge</div>

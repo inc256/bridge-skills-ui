@@ -44,6 +44,7 @@ export type Course = {
   certificate: boolean;
   price: string;
   image: string;
+  thumbnail?: string | null;
   color: string;
   description: string;
   progress?: number;
@@ -371,10 +372,39 @@ function deriveColor(category: string) {
   return "#3B82F6";
 }
 
-function formatDuration(lessons: number, fallback = "8h") {
-  if (!lessons) return fallback;
-  const hours = Math.max(8, Math.round(lessons / 2));
-  return `${hours}h`;
+function formatTotalDuration(totalSeconds: number, fallback = "") {
+  if (!totalSeconds) return fallback;
+  const totalMinutes = Math.round(totalSeconds / 60);
+  if (totalMinutes < 60) return `${totalMinutes} min`;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return minutes ? `${hours}h ${minutes}m` : `${hours}h`;
+}
+
+function lessonDurationSeconds(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) return Math.max(0, value);
+  const text = String(value ?? "").trim().toLowerCase();
+  const hours = Number(text.match(/(\d+(?:\.\d+)?)\s*h/)?.[1] ?? 0);
+  const minutes = Number(text.match(/(\d+(?:\.\d+)?)\s*m/)?.[1] ?? 0);
+  if (hours || minutes) return hours * 3600 + minutes * 60;
+  const numeric = Number(text);
+  return Number.isFinite(numeric) ? Math.max(0, numeric) : 0;
+}
+
+function readLessonItems(payload: any) {
+  if (Array.isArray(payload)) return payload;
+  return payload?.results ?? payload?.lessons ?? payload?.data ?? [];
+}
+
+async function getCourseDuration(slug: string, fallback: string) {
+  try {
+    const payload = await apiRequest<any>(`/lessons/course/${slug}/`);
+    const lessons = readLessonItems(payload);
+    const totalSeconds = lessons.reduce((sum: number, lesson: any) => sum + lessonDurationSeconds(lesson?.duration), 0);
+    return lessons.length > 0 ? formatTotalDuration(totalSeconds, "0 min") : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 function normalizeCourse(item: any): Course {
@@ -383,7 +413,7 @@ function normalizeCourse(item: any): Course {
   const instructorTitle = item?.instructor?.headline ?? item?.instructor?.role;
   const rawModules = Array.isArray(item?.modules) ? item.modules : Array.isArray(item?.sections) ? item.sections : [];
   const lessons = Number(item?.total_lessons ?? item?.lesson_count ?? item?.lessons_count ?? (Array.isArray(item?.lessons) ? item.lessons.length : 0)) || 0;
-  const moduleCount = Number(item?.total_modules ?? item?.module_count ?? item?.sections_count ?? item?.modules_count ?? rawModules.length) || (lessons > 0 ? Math.ceil(lessons / 6) : 0);
+  const moduleCount = Number(item?.total_modules ?? item?.module_count ?? item?.sections_count ?? item?.modules_count ?? rawModules.length) || 0;
   const students = Number(item?.total_students ?? item?.students ?? 0) || 0;
   const rating = Number(item?.avg_rating ?? item?.rating ?? 0) || 0;
   const reviews = Number(item?.total_reviews ?? item?.reviews ?? 0) || 0;
@@ -405,13 +435,14 @@ function normalizeCourse(item: any): Course {
     instructorTitle: instructorTitle ?? "",
     category: category ?? "",
     level: item?.level ? normalizeLevel(item?.level) : undefined,
-    duration: item?.duration ?? (lessons > 0 ? formatDuration(lessons) : ""),
+    duration: item?.duration ?? "",
     students,
     rating,
     reviews,
     certificate: Boolean(item?.has_certificate),
     price,
     image: deriveThumbVariant(item?.title ?? "", category ?? ""),
+    thumbnail: item?.thumbnail ?? item?.thumbnail_url ?? null,
     color: deriveColor(category ?? ""),
     description: item?.subtitle ?? item?.description ?? "",
     modules: Math.max(0, moduleCount),
@@ -506,7 +537,10 @@ export async function getCourses(query?: string | URLSearchParams): Promise<Cour
     const queryString = query ? `?${String(query)}` : "";
     const payload = await apiRequest<ApiEnvelope<any> | any>(`/courses/${queryString}`);
     const list = Array.isArray(payload) ? payload : payload?.results ?? [];
-    return (list as any[]).map(normalizeCourse);
+    return await Promise.all((list as any[]).map(async (item) => {
+      const course = normalizeCourse(item);
+      return { ...course, duration: await getCourseDuration(course.slug, course.duration) };
+    }));
   } catch {
     return [];
   }
@@ -515,7 +549,8 @@ export async function getCourses(query?: string | URLSearchParams): Promise<Cour
 export async function getCourse(slug: string): Promise<Course | null> {
   try {
     const course = await apiRequest<any>(`/courses/${slug}/`);
-    return normalizeCourse(course);
+    const normalized = normalizeCourse(course);
+    return { ...normalized, duration: await getCourseDuration(slug, normalized.duration) };
   } catch {
     return null;
   }
@@ -799,6 +834,8 @@ export async function getCourseModules(slug: string) {
   const readItems = (payload: any) => {
     if (Array.isArray(payload)) return payload;
     if (Array.isArray(payload?.results)) return payload.results;
+    if (Array.isArray(payload?.modules)) return payload.modules;
+    if (Array.isArray(payload?.sections)) return payload.sections;
     if (Array.isArray(payload?.lessons)) return payload.lessons;
     if (Array.isArray(payload?.data)) return payload.data;
     return [];
@@ -842,84 +879,79 @@ export async function getCourseModules(slug: string) {
     completed: Boolean(lesson?.completed ?? lesson?.is_completed),
   });
 
-  const normalizeModules = (items: any[]) => items.map((module, index) => ({
-    ...module,
-    id: String(module?.id ?? module?.slug ?? `module-${index + 1}`),
-    title: module?.title ?? module?.name ?? `Module ${index + 1}`,
-    lessons: (Array.isArray(module?.lessons) ? module.lessons : []).map(normalizeLesson),
-  }));
+  const normalizeModules = (items: any[]) => items
+    .map((module, index) => ({
+      ...module,
+      id: String(module?.id ?? module?.slug ?? `module-${index + 1}`),
+      title: module?.title ?? module?.name ?? `Module ${index + 1}`,
+      description: module?.description ?? "",
+      module_order: Number(module?.module_order ?? module?.order ?? index + 1),
+      lessons: (Array.isArray(module?.lessons) ? module.lessons : Array.isArray(module?.lesson_set) ? module.lesson_set : []).map(normalizeLesson),
+    }))
+    .sort((left, right) => left.module_order - right.module_order);
 
-  const groupLessons = (lessons: any[], declaredModuleCount = 0) => {
+  const groupLessons = (lessons: any[]) => {
     const groups = new Map<string, any>();
+    const unassignedLessons: any[] = [];
     [...lessons]
       .sort((left, right) => Number(left?.lesson_order ?? left?.order ?? 0) - Number(right?.lesson_order ?? right?.order ?? 0))
       .forEach((lesson, index) => {
       const sourceModule = lesson?.module ?? lesson?.section ?? lesson?.chapter;
-      const moduleTitle = getPersistedModuleTitle(lesson);
-      const fallbackModuleIndex = declaredModuleCount > 1
-        ? Math.min(declaredModuleCount - 1, Math.floor(index * declaredModuleCount / lessons.length) + 1)
-        : 1;
-      const moduleId = String(sourceModule?.id ?? lesson?.module_id ?? lesson?.section_id ?? (moduleTitle ? `module-${moduleTitle}` : `module-${fallbackModuleIndex}`));
+      const moduleId = typeof sourceModule === "string"
+        ? sourceModule
+        : sourceModule?.id ?? lesson?.module_id ?? lesson?.section_id;
+      if (!moduleId) {
+        unassignedLessons.push(normalizeLesson(lesson, index));
+        return;
+      }
+      const moduleTitle = (typeof sourceModule === "object" ? sourceModule?.title ?? sourceModule?.name : undefined)
+        ?? lesson?.module_title
+        ?? getPersistedModuleTitle(lesson);
       const existing = groups.get(moduleId);
       const group = existing ?? {
-        id: moduleId,
-        title: sourceModule?.title ?? sourceModule?.name ?? moduleTitle ?? lesson?.section_title ?? `Module ${fallbackModuleIndex}`,
+        id: String(moduleId),
+        title: moduleTitle ?? lesson?.section_title ?? "Course module",
+        description: sourceModule?.description ?? "",
+        module_order: Number((typeof sourceModule === "object" ? sourceModule?.module_order ?? sourceModule?.order : undefined)
+          ?? lesson?.module_order
+          ?? groups.size + 1),
         lessons: [],
       };
       group.lessons.push(normalizeLesson(lesson, index));
       groups.set(moduleId, group);
       });
-    return Array.from(groups.values());
+    if (unassignedLessons.length > 0) {
+      groups.set("module-unassigned", {
+        id: "module-unassigned",
+        title: "Course lessons",
+        description: "These lessons have not been assigned to a course module yet.",
+        module_order: Number.MAX_SAFE_INTEGER,
+        lessons: unassignedLessons,
+      });
+    }
+    return Array.from(groups.values()).sort((left, right) => left.module_order - right.module_order);
   };
 
   let lessons: any[] = [];
-  let sections: any[] = [];
   let courseModules: any[] = [];
-  let declaredModuleCount = 0;
   try {
-    const [lessonPayload, sectionPayload, coursePayload] = await Promise.all([
+    const [lessonPayload, coursePayload] = await Promise.all([
       apiRequest<any>(`/lessons/course/${slug}/`).catch(() => null),
-      apiRequest<any>(`/courses/${slug}/sections/`).catch(() => null),
       apiRequest<any>(`/courses/${slug}/`).catch(() => null),
     ]);
     lessons = readItems(lessonPayload);
-    sections = Array.isArray(sectionPayload) ? sectionPayload : sectionPayload?.results ?? sectionPayload?.sections ?? sectionPayload?.data ?? [];
-    courseModules = Array.isArray(coursePayload?.modules) ? coursePayload.modules : Array.isArray(coursePayload?.sections) ? coursePayload.sections : [];
-    declaredModuleCount = Number(coursePayload?.total_modules ?? coursePayload?.module_count ?? coursePayload?.sections_count ?? courseModules.length) || 0;
+    courseModules = readItems(coursePayload).filter((item: any) => Array.isArray(item?.lessons) || Array.isArray(item?.lesson_set) || item?.module_order !== undefined);
   } catch {}
 
-  if (courseModules.length > 0) sections = courseModules;
-  if (lessons.length === 0) return normalizeModules(sections);
-  if (lessons.some((lesson) => lesson?.module_title || /\[\[bridge-module:[^\]]+\]\]/.test(String(lesson?.content ?? "")))) {
-    return groupLessons(lessons, declaredModuleCount);
-  }
-  if (sections.length > 0) {
-    const normalizedSections = normalizeModules(sections);
-    const sectionById = new Map(normalizedSections.map((section) => [String(section.id), section]));
-    const knownLessonIds = new Set(normalizedSections.flatMap((section) => section.lessons.map((lesson: any) => String(lesson.id))));
-    const unassignedLessons = lessons.filter((lesson) => {
-      if (knownLessonIds.has(String(lesson?.id ?? lesson?.slug))) return false;
-      const moduleId = lesson?.module?.id ?? lesson?.section?.id ?? lesson?.chapter?.id ?? lesson?.module_id ?? lesson?.section_id;
-      return !moduleId || !sectionById.has(String(moduleId));
-    });
+  const normalizedModules = normalizeModules(courseModules);
+  const groupedLessons = groupLessons(lessons);
+  if (normalizedModules.length === 0) return groupedLessons;
 
-    lessons.forEach((lesson, index) => {
-      if (knownLessonIds.has(String(lesson?.id ?? lesson?.slug))) return;
-      const moduleId = lesson?.module?.id ?? lesson?.section?.id ?? lesson?.chapter?.id ?? lesson?.module_id ?? lesson?.section_id;
-      if (moduleId && sectionById.has(String(moduleId))) {
-        sectionById.get(String(moduleId)).lessons.push(normalizeLesson(lesson, index));
-      }
-    });
-
-    // Older lesson rows have no module relation. Keep the named section shells
-    // and distribute those rows in lesson order instead of collapsing to one module.
-    unassignedLessons.forEach((lesson, index) => {
-      const sectionIndex = Math.min(normalizedSections.length - 1, Math.floor(index * normalizedSections.length / unassignedLessons.length));
-      normalizedSections[sectionIndex].lessons.push(normalizeLesson(lesson, index));
-    });
-    return normalizedSections;
-  }
-  return groupLessons(lessons, declaredModuleCount);
+  const lessonsByModule = new Map(groupedLessons.map((module) => [String(module.id), module.lessons]));
+  return normalizedModules.map((module) => ({
+    ...module,
+    lessons: lessonsByModule.get(String(module.id)) ?? module.lessons,
+  }));
 }
 
 // ===================== COURSE PROGRESS =====================

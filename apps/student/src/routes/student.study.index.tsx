@@ -55,7 +55,7 @@ function StudyCoursePicker() {
             className="group card-surface flex gap-3 p-3 transition-colors hover:border-primary/40 hover:bg-secondary/40"
           >
             <div className="h-20 w-28 shrink-0 overflow-hidden rounded-xl">
-              <CourseThumb variant={course.image} color={course.color} />
+              <CourseThumb variant={course.image} color={course.color} thumbnail={course.thumbnail} title={course.title} />
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-[11px] font-medium text-muted-foreground">{course.category}</div>

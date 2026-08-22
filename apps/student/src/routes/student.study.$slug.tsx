@@ -93,7 +93,12 @@ function StudyInterface() {
     };
   }, [course.slug, initialModules]);
 
-  const lessonList = useMemo(() => modules.flatMap((module) => Array.isArray(module.lessons) ? module.lessons : []), [modules]);
+  const orderedModules = useMemo(() => [...modules].sort((left, right) => {
+    const leftOrder = Number(left?.module_order ?? left?.order ?? Number.MAX_SAFE_INTEGER);
+    const rightOrder = Number(right?.module_order ?? right?.order ?? Number.MAX_SAFE_INTEGER);
+    return leftOrder - rightOrder;
+  }), [modules]);
+  const lessonList = useMemo(() => orderedModules.flatMap((module) => Array.isArray(module.lessons) ? module.lessons : []), [orderedModules]);
   const [currentLessonId, setCurrentLessonId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -485,7 +490,7 @@ function StudyInterface() {
             </button>
           </div>
           <div className={`p-2 sm:p-3 lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto ${showOutline ? "block" : "hidden lg:block"}`}>
-            {modules.map((m, mi) => (
+            {orderedModules.map((m, mi) => (
               <details key={m.id ?? `${m.title}-${mi}`} open={mi === 0} className="group mb-1 rounded-xl">
                 <summary className="flex cursor-pointer items-center justify-between gap-2 rounded-xl px-2 sm:px-3 py-2.5 hover:bg-secondary">
                   <div className="min-w-0">

@@ -23,7 +23,7 @@ export function CourseCard({ course, href }: { course: Course; href?: string }) 
       className="group mx-auto flex w-full max-w-[340px] flex-col overflow-hidden rounded-[24px] border border-[#e4f0ea] bg-white shadow-[0_2px_10px_rgba(26,110,80,0.02)] transition-all duration-150 hover:-translate-y-[3px] hover:border-[#b6d4c8] hover:shadow-[0_8px_24px_rgba(26,110,80,0.04)]"
     >
       <div className="relative h-[150px] flex-shrink-0 overflow-hidden bg-[#dcebe4]">
-        <CourseThumb variant={course.image} color={course.color} title={course.title} className="h-full transition-transform duration-200 group-hover:scale-[1.02]" />
+        <CourseThumb variant={course.image} color={course.color} thumbnail={course.thumbnail} title={course.title} className="h-full transition-transform duration-200 group-hover:scale-[1.02]" />
         <span className={`absolute right-3 top-3 z-[2] rounded-full px-3 py-[3px] text-[9px] font-semibold uppercase tracking-[0.3px] ${isFree ? "bg-[rgba(212,240,229,0.92)] text-[#0d5c47]" : "bg-[rgba(234,240,237,0.92)] text-[#2d4d42]"}`}>
           {isFree ? "Free" : "Premium"}
         </span>

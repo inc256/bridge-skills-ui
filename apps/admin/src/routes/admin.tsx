@@ -68,8 +68,7 @@ const NAV_SECTIONS = [
   {
     label: "Main",
     items: [
-      { label: "Dashboard", to: "/admin/dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
-      { label: "CMS", to: "/admin/cms", icon: <Layout className="h-4 w-4" /> },
+      { label: "Dashboard", to: "/admin/dashboard", icon: <LayoutDashboard className="h-4 w-4" /> }
     ]
   },
   {

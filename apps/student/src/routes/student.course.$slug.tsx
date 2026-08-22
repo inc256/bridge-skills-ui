@@ -120,7 +120,7 @@ function CourseDetails() {
                 allowFullScreen
               />
             ) : (
-              <CourseThumb variant={course.image} color={course.color} />
+              <CourseThumb variant={course.image} color={course.color} thumbnail={course.thumbnail} title={course.title} />
             )}
           </div>
           <div className="mt-6 flex flex-wrap items-center gap-2">

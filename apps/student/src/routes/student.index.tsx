@@ -88,7 +88,7 @@ function StudentDashboard() {
                 className="group flex flex-col gap-3 rounded-2xl border border-border p-3 hover:border-primary/40 hover:bg-secondary/40 transition-colors sm:flex-row sm:gap-4"
               >
                 <div className="h-28 w-full shrink-0 overflow-hidden rounded-xl sm:h-20 sm:w-32">
-                  <CourseThumb variant={c.image} color={c.color} />
+                  <CourseThumb variant={c.image} color={c.color} thumbnail={c.thumbnail} title={c.title} />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium text-muted-foreground">

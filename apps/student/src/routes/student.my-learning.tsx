@@ -231,8 +231,16 @@ function CourseCard({ course, tab }: { course: Course; tab: string }) {
       className="group bg-white rounded-xl sm:rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all hover:-translate-y-0.5 active:scale-[0.98] touch-manipulation"
     >
       {/* Course Image */}
-      <div className={`h-32 sm:h-36 md:h-40 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-3xl sm:text-4xl font-bold relative`}>
-        {course.title?.[0]?.toUpperCase() || 'C'}
+      <div className={`h-32 sm:h-36 md:h-40 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-3xl sm:text-4xl font-bold relative overflow-hidden`}>
+        {course.thumbnail ? (
+          <img
+            src={course.thumbnail}
+            alt={course.title}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          course.title?.[0]?.toUpperCase() || 'C'
+        )}
         {tab !== "wishlist" && (
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/20">
             <div 

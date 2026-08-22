@@ -1,6 +1,11 @@
 // apps/student/src/routes/student.dashboard.tsx
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Award, ArrowRight, Flame, Calendar, ChevronRight, Target, BookOpen, Sparkles, TrendingUp, Clock, Eye, Play } from "lucide-react";
+import { 
+  Award, ArrowRight, Flame, Calendar, ChevronRight, Target, 
+  BookOpen, Sparkles, TrendingUp, Clock, Eye, Play, 
+  GraduationCap, Trophy, Zap, BarChart3, Users, Star,
+  Bell, MessageSquare, Settings, HelpCircle, Search
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { getCourses, getMeStats, getMyEnrollments, getMyCertificates, getProfile } from "@/lib/api";
 
@@ -14,6 +19,7 @@ interface Course {
   title: string;
   instructor: string;
   category: string;
+  thumbnail?: string | null;
   level: string;
   students: number;
   rating: number;
@@ -139,6 +145,7 @@ function Dashboard() {
   );
 
   const recommended = courses.filter((c: Course) => (c.progress ?? 0) <= 0);
+  const completedCourses = enrollments.filter((e: Enrollment) => (e.progress || 0) >= 100);
 
   const weeklyGoal = stats.weekly_goal_hours || 10;
   const weeklyProgress = Math.min(100, Math.round(((stats.weekly_hours || 0) / weeklyGoal) * 100));
@@ -157,257 +164,335 @@ function Dashboard() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 lg:space-y-8 p-3 sm:p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
-      {/* Welcome Header - Mobile Optimized */}
-      <div className="flex flex-col xs:flex-row xs:items-start justify-between gap-3 sm:gap-4">
-        <div className="min-w-0">
-          <p className="text-[10px] sm:text-xs md:text-sm text-gray-500 truncate">
-            {dayName}, {today.getDate()} {monthName}
-          </p>
-          <h2 className="mt-0.5 sm:mt-1 text-lg sm:text-2xl md:text-3xl font-bold text-gray-900 break-words">
-            {greeting}, {name}! 👋
-          </h2>
-          <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-xs md:text-sm text-gray-500">
-            {stats.streak > 0 
-              ? `🔥 ${stats.streak}-day learning streak!`
-              : 'Start your learning journey today!'}
-          </p>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8">
 
-      {/* Stats Cards - Responsive Grid */}
-      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
-        {[
-          { icon: Flame, label: "Streak", value: stats.streak || 0, unit: "days", color: "orange" },
-          { icon: TrendingUp, label: "Level", value: stats.level || 0, unit: "lvl", color: "blue" },
-          { icon: BookOpen, label: "In progress", value: inProgress.length, unit: "courses", color: "emerald" },
-        ].map((s) => (
-          <div key={s.label} className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4 md:p-5 hover:shadow-md transition-all active:scale-[0.98] touch-manipulation">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl inline-flex ${
-                s.color === 'orange' ? 'bg-orange-50 text-orange-600' :
-                s.color === 'blue' ? 'bg-blue-50 text-blue-600' :
-                'bg-emerald-50 text-emerald-600'
-              }`}>
-                <s.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
+        {/* Welcome Banner */}
+        <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/3"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/4"></div>
+          <div className="relative z-10">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <p className="text-sm sm:text-base text-blue-100 font-medium">
+                  {dayName}, {today.getDate()} {monthName}
+                </p>
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mt-1">
+                  {greeting}, {name}! 👋
+                </h2>
+                <p className="mt-1 text-blue-100 text-sm sm:text-base">
+                  {stats.streak > 0 
+                    ? `🔥 ${stats.streak}-day learning streak! Keep it up!`
+                    : 'Start your learning journey today!'}
+                </p>
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">{s.value}</span>
-                  <span className="text-[10px] sm:text-xs text-gray-500">{s.unit}</span>
+              <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3">
+                <div className="text-center">
+                  <p className="text-2xl font-bold">{stats.xp || 0}</p>
+                  <p className="text-xs text-blue-100">XP</p>
                 </div>
-                <div className="text-[10px] sm:text-xs text-gray-500 truncate">{s.label}</div>
+                <div className="h-10 w-px bg-white/20"></div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold">{stats.level || 0}</p>
+                  <p className="text-xs text-blue-100">Level</p>
+                </div>
+                <div className="h-10 w-px bg-white/20"></div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold">{stats.courses_completed || 0}</p>
+                  <p className="text-xs text-blue-100">Completed</p>
+                </div>
               </div>
             </div>
           </div>
-        ))}
-      </div>
+        </div>
 
-      {/* Main Content - Responsive Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1.55fr_1fr] gap-4 sm:gap-6">
-        {/* Continue Learning Section */}
-        <section className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4 md:p-5 lg:p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <h3 className="text-sm sm:text-base font-semibold text-gray-900">Continue learning</h3>
-            <Link to="/student/my-learning" className="text-[10px] sm:text-xs font-medium text-blue-600 hover:text-blue-700 active:text-blue-800">
-              View all →
-            </Link>
-          </div>
-          <div className="space-y-2 sm:space-y-3">
-            {inProgress.length === 0 ? (
-              <div className="text-center py-6 sm:py-8 md:py-10">
-                <BookOpen className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-2" />
-                <p className="text-xs sm:text-sm text-gray-500">No courses in progress</p>
-                <Link to="/student/explore" className="inline-block mt-2 text-xs sm:text-sm text-blue-600 hover:text-blue-700 font-medium">
-                  Browse courses →
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { 
+              icon: Flame, 
+              label: "Learning Streak", 
+              value: stats.streak || 0, 
+              unit: "days", 
+              color: "orange",
+              bgColor: "bg-orange-50",
+              textColor: "text-orange-600",
+              iconColor: "text-orange-500"
+            },
+            { 
+              icon: Trophy, 
+              label: "Courses Completed", 
+              value: stats.courses_completed || 0, 
+              unit: "courses", 
+              color: "amber",
+              bgColor: "bg-amber-50",
+              textColor: "text-amber-600",
+              iconColor: "text-amber-500"
+            },
+            { 
+              icon: BookOpen, 
+              label: "In Progress", 
+              value: inProgress.length, 
+              unit: "courses", 
+              color: "blue",
+              bgColor: "bg-blue-50",
+              textColor: "text-blue-600",
+              iconColor: "text-blue-500"
+            },
+            { 
+              icon: Award, 
+              label: "Certificates", 
+              value: certificates.length, 
+              unit: "earned", 
+              color: "emerald",
+              bgColor: "bg-emerald-50",
+              textColor: "text-emerald-600",
+              iconColor: "text-emerald-500"
+            },
+          ].map((stat) => (
+            <div key={stat.label} className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-all">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{stat.label}</p>
+                  <p className="text-[10px] text-gray-400 mt-0.5">{stat.unit}</p>
+                </div>
+                <div className={`p-2 rounded-lg ${stat.bgColor}`}>
+                  <stat.icon className={`h-4 w-4 ${stat.iconColor}`} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          
+          {/* Left Column - Continue Learning (spans 2 cols) */}
+          <div className="xl:col-span-2 space-y-6">
+            <section className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-base font-semibold text-gray-900">Continue Learning</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">Pick up where you left off</p>
+                </div>
+                <Link 
+                  to="/student/my-learning" 
+                  className="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                >
+                  View all
+                  <ArrowRight className="h-3 w-3" />
                 </Link>
               </div>
-            ) : (
-              inProgress.slice(0, 3).map((e: Enrollment) => {
-                const course = e.course;
-                const progress = e.progress || 0;
-                if (!course) return null;
-                return (
-                  <Link
-                    key={course.id}
-                    to="/student/study/$slug"
-                    params={{ slug: course.slug }}
-                    className="group flex flex-col xs:flex-row gap-2 sm:gap-3 rounded-xl border border-gray-200 p-2.5 sm:p-3 hover:border-blue-300 hover:bg-blue-50/50 active:bg-blue-100/50 transition-all active:scale-[0.98] touch-manipulation"
-                  >
-                    <div className="w-full xs:w-20 sm:w-24 md:w-28 h-20 xs:h-16 sm:h-20 shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xl sm:text-2xl font-bold">
-                      {course.title?.[0]?.toUpperCase() || 'C'}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-[10px] sm:text-xs font-medium text-gray-500">
-                        <span className="truncate max-w-[80px] xs:max-w-full">{course.category || 'Course'}</span>
-                        <span className="hidden xs:inline">·</span>
-                        <span className="truncate hidden xs:inline">{course.instructor || 'Instructor'}</span>
-                      </div>
-                      <div className="mt-0.5 sm:mt-1 truncate text-xs sm:text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                        {course.title}
-                      </div>
-                      <div className="mt-1.5 sm:mt-2 flex items-center gap-2">
-                        <div className="h-1 sm:h-1.5 flex-1 overflow-hidden rounded-full bg-gray-200">
-                          <div className="h-full rounded-full bg-blue-600 transition-all duration-1000" style={{ width: `${Math.min(progress, 100)}%` }} />
-                        </div>
-                        <span className="text-[10px] sm:text-xs font-semibold text-gray-900 min-w-[32px] text-right">{Math.round(progress)}%</span>
-                      </div>
-                    </div>
-                    <ChevronRight className="hidden xs:block h-4 w-4 shrink-0 self-center text-gray-400 group-hover:text-blue-600" />
-                  </Link>
-                );
-              })
-            )}
-          </div>
-        </section>
-
-        <section className="space-y-3 sm:space-y-4 md:space-y-6">
-          {/* Weekly Goal */}
-          <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4 md:p-5 lg:p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider">Weekly goal</div>
-              <Target className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600" />
-            </div>
-            <div className="mt-2 sm:mt-3 flex items-baseline gap-1.5 sm:gap-2">
-              <span className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">{stats.weekly_hours || 0}</span>
-              <span className="text-[10px] sm:text-xs md:text-sm text-gray-500">/ {weeklyGoal} hrs</span>
-            </div>
-            <div className="mt-2 sm:mt-3 h-1.5 sm:h-2 overflow-hidden rounded-full bg-gray-200">
-              <div className="h-full rounded-full bg-blue-600 transition-all duration-1000" style={{ width: `${weeklyProgress}%` }} />
-            </div>
-            <div className="mt-3 sm:mt-4 grid grid-cols-7 gap-1 sm:gap-1.5">
-              {DAYS.map((d, i) => (
-                <div key={i} className="text-center">
-                  <div className={`mx-auto h-6 sm:h-7 md:h-8 w-full rounded-md transition-colors ${
-                    i < Math.min(3, Math.ceil((stats.weekly_hours || 0) / 2)) ? 'bg-blue-600' : 
-                    i === 3 ? 'bg-blue-400' : 'bg-gray-200'
-                  }`} />
-                  <div className="mt-0.5 sm:mt-1 text-[8px] sm:text-[10px] text-gray-500">{d}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Certificates */}
-          <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4 md:p-5 lg:p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider">Certificates</div>
-              <Award className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-500" />
-            </div>
-            <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-gray-500">
-              {certificates.length > 0 ? (
-                <>You have earned <span className="font-semibold text-gray-900">{certificates.length}</span> certificate{certificates.length > 1 ? 's' : ''}</>
-              ) : (
-                'Complete a course to earn your first certificate'
-              )}
-            </p>
-            <Link to="/student/certificates" className="mt-2 sm:mt-3 inline-flex items-center gap-1 text-[10px] sm:text-xs font-medium text-blue-600 hover:text-blue-700 active:text-blue-800">
-              View certificates <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-            </Link>
-          </div>
-        </section>
-      </div>
-
-      {/* Upcoming Deadlines & Recent Activity */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-        <section className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4 md:p-5 lg:p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <h3 className="text-sm sm:text-base font-semibold text-gray-900 flex items-center gap-1.5 sm:gap-2">
-              <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400" />
-              Upcoming deadlines
-            </h3>
-          </div>
-          <ul className="mt-2 sm:mt-3 divide-y divide-gray-100">
-            {inProgress.length === 0 ? (
-              <li className="py-3 sm:py-4 text-center text-xs sm:text-sm text-gray-500">No active courses</li>
-            ) : (
-              inProgress.slice(0, 3).map((e: Enrollment) => {
-                const course = e.course;
-                const progress = e.progress || 0;
-                if (!course) return null;
-                return (
-                  <li key={course.id} className="flex items-center justify-between gap-2 sm:gap-4 py-2.5 sm:py-3">
-                    <div className="min-w-0">
-                      <div className="truncate text-xs sm:text-sm font-medium text-gray-900">{course.title}</div>
-                      <div className="text-[10px] sm:text-xs text-gray-500">In progress</div>
-                    </div>
-                    <span className="shrink-0 rounded-full bg-gray-100 px-1.5 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-gray-700">
-                      {Math.round(progress)}%
-                    </span>
-                  </li>
-                );
-              })
-            )}
-          </ul>
-        </section>
-
-        <section className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4 md:p-5 lg:p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <h3 className="text-sm sm:text-base font-semibold text-gray-900 flex items-center gap-1.5 sm:gap-2">
-              <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400" />
-              Recent activity
-            </h3>
-          </div>
-          <ul className="mt-2 sm:mt-3 space-y-2 sm:space-y-3">
-            {courses.length === 0 ? (
-              <li className="text-center text-xs sm:text-sm text-gray-500 py-3 sm:py-4">No recent activity</li>
-            ) : (
-              courses.slice(0, 4).map((course: Course) => (
-                <li key={course.id} className="flex gap-2 sm:gap-3">
-                  <div className="mt-0.5 h-1.5 w-1.5 sm:h-2 sm:w-2 shrink-0 rounded-full bg-blue-500" />
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xs sm:text-sm text-gray-900 truncate">{course.title}</div>
-                    <div className="text-[10px] sm:text-xs text-gray-500 truncate">{course.category || 'Course'} · {course.level || 'All levels'}</div>
-                  </div>
-                </li>
-              ))
-            )}
-          </ul>
-        </section>
-      </div>
-
-      {/* Recommended Courses */}
-      <section>
-        <div className="flex flex-wrap items-end justify-between gap-2 sm:gap-3">
-          <div className="min-w-0">
-            <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900">Recommended for you</h3>
-            <p className="text-[10px] sm:text-xs md:text-sm text-gray-500 mt-0.5">Based on your progress and interests</p>
-          </div>
-          <Link to="/student/explore" className="text-[10px] sm:text-xs md:text-sm font-medium text-blue-600 hover:text-blue-700 active:text-blue-800 whitespace-nowrap">
-            Explore all →
-          </Link>
-        </div>
-        <div className="mt-3 sm:mt-4 md:mt-5 grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
-          {recommended.length === 0 ? (
-            <div className="col-span-full text-center py-6 sm:py-8 md:py-10 text-gray-500">
-              <BookOpen className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-2" />
-              <p className="text-xs sm:text-sm">No recommendations available</p>
-            </div>
-          ) : (
-            recommended.slice(0, 3).map((c: Course) => (
-              <div key={c.id} className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 overflow-hidden hover:shadow-md transition-all active:scale-[0.98] touch-manipulation group">
-                <div className="h-32 xs:h-36 sm:h-40 md:h-44 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-3xl sm:text-4xl font-bold">
-                  {c.title?.[0]?.toUpperCase() || 'C'}
-                </div>
-                <div className="p-3 sm:p-4">
-                  <h4 className="font-semibold text-gray-900 truncate text-sm sm:text-base">{c.title}</h4>
-                  <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 truncate">{c.category || 'Course'} · {c.level || 'All levels'}</p>
-                  <div className="flex items-center justify-between mt-2 sm:mt-3">
-                    <span className="text-[10px] sm:text-xs font-medium text-gray-500">{c.students || 0} students</span>
-                    <Link 
-                      to="/student/courses/$slug" 
-                      params={{ slug: c.slug }}
-                      className="text-[10px] sm:text-xs md:text-sm font-medium text-blue-600 hover:text-blue-700 group-hover:underline active:text-blue-800"
-                    >
-                      View course →
+              
+              <div className="space-y-3">
+                {inProgress.length === 0 ? (
+                  <div className="text-center py-8">
+                    <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-sm text-gray-500">No courses in progress</p>
+                    <Link to="/student/explore" className="inline-block mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium">
+                      Browse courses →
                     </Link>
                   </div>
+                ) : (
+                  inProgress.slice(0, 3).map((e: Enrollment) => {
+                    const course = e.course;
+                    const progress = e.progress || 0;
+                    if (!course) return null;
+                    return (
+                      <Link
+                        key={course.id}
+                        to="/student/study/$slug"
+                        params={{ slug: course.slug }}
+                        className="group flex items-center gap-4 p-3 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all active:scale-[0.98]"
+                      >
+                        <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg overflow-hidden shrink-0">
+                          {course.thumbnail ? (
+                            <img src={course.thumbnail} alt={course.title} className="h-full w-full object-cover" />
+                          ) : (
+                            course.title?.[0]?.toUpperCase() || 'C'
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <span className="truncate">{course.category || 'Course'}</span>
+                            <span>·</span>
+                            <span className="truncate">{course.instructor || 'Instructor'}</span>
+                          </div>
+                          <h4 className="text-sm font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors">
+                            {course.title}
+                          </h4>
+                          <div className="mt-2 flex items-center gap-3">
+                            <div className="flex-1 h-1.5 overflow-hidden rounded-full bg-gray-200">
+                              <div className="h-full rounded-full bg-blue-600 transition-all duration-1000" style={{ width: `${Math.min(progress, 100)}%` }} />
+                            </div>
+                            <span className="text-xs font-semibold text-gray-900 min-w-[32px] text-right">
+                              {Math.round(progress)}%
+                            </span>
+                          </div>
+                        </div>
+                        <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                      </Link>
+                    );
+                  })
+                )}
+              </div>
+            </section>
+
+            {/* Recommended Courses */}
+            <section className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 shadow-sm">
+              <div className="flex flex-wrap items-end justify-between gap-2 mb-4">
+                <div>
+                  <h3 className="text-base font-semibold text-gray-900">Recommended for You</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">Based on your learning preferences</p>
+                </div>
+                <Link to="/student/explore" className="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                  Explore all
+                  <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {recommended.length === 0 ? (
+                  <div className="col-span-full text-center py-8">
+                    <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-sm text-gray-500">No recommendations available</p>
+                  </div>
+                ) : (
+                  recommended.slice(0, 3).map((c: Course) => (
+                    <Link
+                      key={c.id}
+                      to="/student/course/$slug"
+                      params={{ slug: c.slug }}
+                      className="group bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all hover:-translate-y-1 active:scale-[0.98]"
+                    >
+                      <div className="h-36 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-3xl font-bold overflow-hidden">
+                        {c.thumbnail ? (
+                          <img src={c.thumbnail} alt={c.title} className="h-full w-full object-cover" />
+                        ) : (
+                          c.title?.[0]?.toUpperCase() || 'C'
+                        )}
+                      </div>
+                      <div className="p-4">
+                        <h4 className="font-semibold text-gray-900 truncate text-sm">{c.title}</h4>
+                        <p className="text-xs text-gray-500 mt-0.5 truncate">{c.category || 'Course'} · {c.level || 'All levels'}</p>
+                        <div className="flex items-center justify-between mt-3">
+                          <span className="text-xs font-medium text-gray-500">{c.students || 0} students</span>
+                          <span className="text-xs font-medium text-blue-600 group-hover:text-blue-700 transition-colors flex items-center gap-1">
+                            View course
+                            <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))
+                )}
+              </div>
+            </section>
+          </div>
+
+          {/* Right Column - Sidebar */}
+          <div className="space-y-6">
+            
+            {/* Weekly Progress */}
+            <section className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-gray-900">Weekly Goal</h3>
+                <Target className="h-4 w-4 text-blue-600" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold text-gray-900">{stats.weekly_hours || 0}</span>
+                <span className="text-sm text-gray-500">/ {weeklyGoal} hrs</span>
+              </div>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-gray-200">
+                <div className="h-full rounded-full bg-blue-600 transition-all duration-1000" style={{ width: `${weeklyProgress}%` }} />
+              </div>
+              <div className="mt-4 grid grid-cols-7 gap-1">
+                {DAYS.map((d, i) => (
+                  <div key={i} className="text-center">
+                    <div className={`h-8 w-full rounded-md transition-colors ${
+                      i < Math.min(3, Math.ceil((stats.weekly_hours || 0) / 2)) ? 'bg-blue-600' : 
+                      i === 3 ? 'bg-blue-400' : 'bg-gray-200'
+                    }`} />
+                    <div className="mt-1 text-[10px] text-gray-500">{d}</div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Quick Actions */}
+            <section className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 shadow-sm">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { icon: Search, label: "Explore", to: "/student/explore", color: "blue" },
+                  { icon: BookOpen, label: "My Learning", to: "/student/my-learning", color: "purple" },
+                  { icon: Award, label: "Certificates", to: "/student/certificates", color: "amber" },
+                  { icon: Settings, label: "Settings", to: "/student/settings", color: "gray" },
+                ].map((action) => (
+                  <Link
+                    key={action.label}
+                    to={action.to}
+                    className="flex flex-col items-center gap-1.5 p-3 rounded-lg hover:bg-gray-50 transition-colors active:scale-[0.98]"
+                  >
+                    <action.icon className={`h-5 w-5 text-${action.color}-500`} />
+                    <span className="text-xs font-medium text-gray-700">{action.label}</span>
+                  </Link>
+                ))}
+              </div>
+            </section>
+
+            {/* Certificates Preview */}
+            <section className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-gray-900">Recent Certificates</h3>
+                <Award className="h-4 w-4 text-amber-500" />
+              </div>
+              {certificates.length > 0 ? (
+                <div className="space-y-2">
+                  {certificates.slice(0, 2).map((cert) => (
+                    <div key={cert.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                      <div className="h-10 w-10 rounded-lg bg-amber-50 flex items-center justify-center">
+                        <Award className="h-5 w-5 text-amber-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{cert.title}</p>
+                        <p className="text-xs text-gray-500 truncate">{cert.instructor}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {certificates.length > 2 && (
+                    <Link to="/student/certificates" className="block text-center text-xs text-blue-600 hover:text-blue-700 font-medium pt-1">
+                      View all {certificates.length} certificates →
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-sm text-gray-500">No certificates yet</p>
+                  <p className="text-xs text-gray-400 mt-1">Complete a course to earn one!</p>
+                </div>
+              )}
+            </section>
+
+            {/* Help & Support */}
+            <section className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100 p-4 sm:p-6">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-blue-100">
+                  <HelpCircle className="h-5 w-5 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold text-gray-900">Need help?</h4>
+                  <p className="text-xs text-gray-600 mt-0.5">Check our FAQs or contact support</p>
+                  <Link to="/student/help" className="inline-block mt-2 text-xs font-medium text-blue-600 hover:text-blue-700">
+                    Get support →
+                  </Link>
                 </div>
               </div>
-            ))
-          )}
+            </section>
+          </div>
         </div>
-      </section>
+      </div>
     </div>
   );
 }

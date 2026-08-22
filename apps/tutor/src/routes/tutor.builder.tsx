@@ -26,7 +26,7 @@ import {
   RefreshCw
 } from "lucide-react";
 import { toast } from "sonner";
-import { createCourse, patchCourse, getCourse, getCourseModules, getCourseCategories, createTutorLesson, updateTutorLesson, generateCourseDescription, generateCourseTitle } from "@/lib/api";
+import { createCourse, patchCourse, getCourse, getCourseModules, getCourseCategories, createTutorModule, updateTutorModule, createTutorLesson, updateTutorLesson, deleteTutorLesson, generateCourseDescription, generateCourseTitle } from "@/lib/api";
 
 export const Route = createFileRoute("/tutor/builder")({
   component: Builder,
@@ -34,6 +34,28 @@ export const Route = createFileRoute("/tutor/builder")({
 
 const steps = ["Details", "Outcomes", "Curriculum", "Resources", "Preview"];
 const savedCourseKey = "bridge_skills_tutor_last_saved_course";
+
+type BuilderLesson = {
+  id: string;
+  title: string;
+  slug?: string;
+  description?: string;
+  content?: string;
+  duration: string;
+  type: string;
+  videoUrl?: string;
+  // True once this lesson exists in the DB. Set explicitly at load/creation
+  // time instead of being guessed from the shape of `id` at save time.
+  _persisted?: boolean;
+};
+
+type BuilderModule = {
+  id: string;
+  title: string;
+  description: string;
+  lessons: BuilderLesson[];
+  _persisted?: boolean;
+};
 
 function readSavedCourse(slug: string) {
   if (typeof window === "undefined") return null;
@@ -57,6 +79,8 @@ function Builder() {
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
+  const [thumbnailUrl, setThumbnailUrl] = useState("");
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [level, setLevel] = useState("beginner");
   const [language, setLanguage] = useState("English");
@@ -64,7 +88,8 @@ function Builder() {
   const [pricing, setPricing] = useState("free");
   const [price, setPrice] = useState("0");
   const [subtitle, setSubtitle] = useState("");
-  const [modules, setModules] = useState<Array<{ id: string; title: string; description: string; lessons: Array<{ id: string; title: string; duration: string; type: string; videoUrl?: string }> }>>([]);
+  const [modules, setModules] = useState<BuilderModule[]>([]);
+  const [originalLessonIds, setOriginalLessonIds] = useState<string[]>([]);
   const [isEdit, setIsEdit] = useState(false);
   const [originalSlug, setOriginalSlug] = useState<string | null>(null);
   const [savedDraft, setSavedDraft] = useState<any | null>(null);
@@ -78,6 +103,13 @@ function Builder() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loadingCourse, setLoadingCourse] = useState(false);
+
+  // Fallback heuristic for drafts saved before `_persisted` existed (e.g. an
+  // old draft sitting in localStorage). Once every draft has gone through a
+  // load/save cycle this can be removed - `_persisted` should always be set.
+  function looksPersistedId(id: unknown) {
+    return typeof id === "string" && id.length >= 20 && !id.startsWith("module-") && !id.startsWith("lesson-");
+  }
 
   // Load categories
   useEffect(() => {
@@ -124,7 +156,11 @@ function Builder() {
             return;
           }
           const course = { ...(serverCourse ?? {}), ...(savedCourse ?? {}) };
-          const curriculum = Array.isArray(course.modules) && course.modules.length > 0 ? course.modules : serverModules;
+          const curriculum = Array.isArray(serverModules) && serverModules.length > 0
+            ? serverModules
+            : Array.isArray(course.modules) && course.modules.length > 0
+              ? course.modules
+              : [];
           if (!course) {
             toast.error("Course not found");
             setLoadingCourse(false);
@@ -136,6 +172,7 @@ function Builder() {
           if (course.slug) setSlug(course.slug);
           if (course.subtitle) setSubtitle(course.subtitle);
           if (course.description) setDescription(course.description ?? course.subtitle ?? "");
+          if (course.thumbnail) setThumbnailUrl(String(course.thumbnail));
           if (course.category && typeof course.category === "object") {
             setCategoryId(course.category.id ?? course.category);
           } else if (course.category_id) {
@@ -163,16 +200,26 @@ function Builder() {
           
           // Handle modules and lessons if they exist
           if (Array.isArray(curriculum) && curriculum.length > 0) {
+            setOriginalLessonIds(curriculum.flatMap((module: any) => Array.isArray(module.lessons)
+              ? module.lessons
+                  .filter((lesson: any) => (lesson._persisted ?? looksPersistedId(lesson.id)))
+                  .map((lesson: any) => String(lesson.id))
+              : []));
             setModules(curriculum.map((m: any) => ({
               id: m.id || getNewId(),
               title: m.title || "Module",
               description: m.description || "",
+              _persisted: m._persisted ?? looksPersistedId(m.id),
               lessons: Array.isArray(m.lessons) ? m.lessons.map((l: any) => ({
                 id: l.id || getNewId(),
                 title: l.title || "Lesson",
+                slug: l.slug || undefined,
+                description: l.description ?? "",
+                content: l.content ?? "",
                 duration: l.duration || "15 min",
                 type: l.type || "Video",
                 videoUrl: l.video_url || l.videoUrl || "",
+                _persisted: l._persisted ?? looksPersistedId(l.id),
               })) : []
             })));
           }
@@ -208,6 +255,7 @@ function Builder() {
       if (!raw) return;
       const draft = JSON.parse(raw);
       setSavedDraft(draft ?? null);
+      if (draft?.thumbnailUrl) setThumbnailUrl(String(draft.thumbnailUrl));
     } catch {
       // ignore draft parse errors
     }
@@ -223,6 +271,7 @@ function Builder() {
       slug,
       subtitle,
       description,
+      thumbnailUrl: thumbnailUrl.startsWith("blob:") ? "" : thumbnailUrl,
       categoryId,
       level,
       language,
@@ -235,7 +284,7 @@ function Builder() {
       resources,
     };
     window.localStorage.setItem("bridge_skills_tutor_course_draft", JSON.stringify(draft));
-  }, [title, slug, subtitle, description, categoryId, level, language, pricing, price, status, modules, outcomes, requirements, resources, isEdit]);
+  }, [title, slug, subtitle, description, thumbnailUrl, categoryId, level, language, pricing, price, status, modules, outcomes, requirements, resources, isEdit]);
 
   function slugify(value: string) {
     return value
@@ -260,14 +309,21 @@ function Builder() {
   }
 
   function getNewId() {
-    return Math.random().toString(36).slice(2, 10);
+    return typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : Math.random().toString(36).slice(2, 10);
   }
 
   function estimateDuration() {
     const total = modules.reduce((moduleSum, module) => {
       return moduleSum + module.lessons.reduce((lessonSum, lesson) => {
-        const match = lesson.duration.match(/\d+/);
-        return lessonSum + (match ? Number(match[0]) : 15);
+        if (typeof lesson.duration === "number" && Number.isFinite(lesson.duration)) {
+          return lessonSum + Math.round(lesson.duration / 60);
+        }
+        const match = String(lesson.duration ?? "").match(/(\d+(?:\.\d+)?)\s*(h|m)?/i);
+        if (!match) return lessonSum + 15;
+        const value = Number(match[1]);
+        return lessonSum + (match[2]?.toLowerCase() === "h" ? value * 60 : value);
       }, 0);
     }, 0);
     if (total === 0) return "TBD";
@@ -279,10 +335,11 @@ function Builder() {
     setModules((prev) => [
       ...prev,
       {
-        id: getNewId(),
+        id: `module-${getNewId()}`,
         title: "New module",
         description: "Describe what this module covers.",
         lessons: [],
+        _persisted: false,
       },
     ]);
     setStep(2);
@@ -292,7 +349,7 @@ function Builder() {
     setModules((prev) => prev.filter((_, idx) => idx !== index));
   }
 
-  function handleUpdateModule(index: number, patch: Partial<{ id: string; title: string; description: string; lessons: Array<{ id: string; title: string; duration: string; type: string }> }>) {
+  function handleUpdateModule(index: number, patch: Partial<BuilderModule>) {
     setModules((prev) => prev.map((module, idx) => (idx === index ? { ...module, ...patch } : module)));
   }
 
@@ -305,11 +362,14 @@ function Builder() {
               lessons: [
                 ...module.lessons,
                 {
-                  id: getNewId(),
+                  id: `lesson-${getNewId()}`,
                   title: "New lesson",
                   duration: "15 min",
                   type: "Video",
                   videoUrl: "",
+                  description: "",
+                  content: "",
+                  _persisted: false,
                 },
               ],
             }
@@ -318,7 +378,7 @@ function Builder() {
     );
   }
 
-  function handleUpdateLesson(moduleIndex: number, lessonIndex: number, patch: Partial<{ id: string; title: string; duration: string; type: string; videoUrl?: string }>) {
+  function handleUpdateLesson(moduleIndex: number, lessonIndex: number, patch: Partial<BuilderLesson>) {
     setModules((prev) =>
       prev.map((module, idx) =>
         idx === moduleIndex
@@ -369,7 +429,7 @@ function Builder() {
     setResources((prev) => [
       ...prev,
       {
-        id: getNewId(),
+        id: `resource-${getNewId()}`,
         label: newResourceLabel.trim(),
         url: newResourceUrl.trim(),
         type: "Link",
@@ -425,30 +485,33 @@ function Builder() {
     const base = title.trim();
     setModules([
       {
-        id: getNewId(),
+        id: `module-${getNewId()}`,
         title: `Introduction to ${base}`,
         description: `Set the stage with objectives and what learners will accomplish in this course.`,
+        _persisted: false,
         lessons: [
-          { id: getNewId(), title: `Why ${base} matters`, duration: "12 min", type: "Video" },
-          { id: getNewId(), title: `Course overview and outcomes`, duration: "15 min", type: "Article" },
+          { id: `lesson-${getNewId()}`, title: `Why ${base} matters`, duration: "12 min", type: "Video", description: "", content: "", _persisted: false },
+          { id: `lesson-${getNewId()}`, title: `Course overview and outcomes`, duration: "15 min", type: "Article", description: "", content: "", _persisted: false },
         ],
       },
       {
-        id: getNewId(),
+        id: `module-${getNewId()}`,
         title: `Core ${base} concepts`,
         description: `Bring together the main knowledge areas with clear examples and exercises.`,
+        _persisted: false,
         lessons: [
-          { id: getNewId(), title: `Core idea #1`, duration: "18 min", type: "Video" },
-          { id: getNewId(), title: `Core idea #2`, duration: "18 min", type: "Video" },
+          { id: `lesson-${getNewId()}`, title: `Core idea #1`, duration: "18 min", type: "Video", description: "", content: "", _persisted: false },
+          { id: `lesson-${getNewId()}`, title: `Core idea #2`, duration: "18 min", type: "Video", description: "", content: "", _persisted: false },
         ],
       },
       {
-        id: getNewId(),
+        id: `module-${getNewId()}`,
         title: `Practice and assessment`,
         description: `Help learners apply skills through guided practice and review.`,
+        _persisted: false,
         lessons: [
-          { id: getNewId(), title: `Hands-on exercise`, duration: "25 min", type: "Project" },
-          { id: getNewId(), title: `Final review`, duration: "10 min", type: "Quiz" },
+          { id: `lesson-${getNewId()}`, title: `Hands-on exercise`, duration: "25 min", type: "Project", description: "", content: "", _persisted: false },
+          { id: `lesson-${getNewId()}`, title: `Final review`, duration: "10 min", type: "Quiz", description: "", content: "", _persisted: false },
         ],
       },
     ]);
@@ -494,6 +557,7 @@ function Builder() {
         slug: newSlug,
         subtitle: subtitle.trim() || undefined,
         description: description.trim(),
+        thumbnail: thumbnailFile ?? undefined,
         category: categoryId ?? 1,
         level,
         language,
@@ -510,25 +574,62 @@ function Builder() {
         // Update existing course
         const targetSlug = originalSlug ?? newSlug;
         saved = await patchCourse(targetSlug, payload);
-        toast.success("Course updated successfully! 🎉");
+        toast.success("Course updated successfully!");
       } else {
         // Create new course
         saved = await createCourse(payload);
-        toast.success("Course created successfully! 🎉");
+        toast.success("Course created successfully!");
       }
 
       const courseSlug = saved?.slug ?? newSlug;
-      const lessonPayloads = modules.flatMap((module, moduleIndex) =>
-        module.lessons.map((lesson, lessonIndex) => ({
+      const persistedModules = await Promise.all(modules.map(async (module, moduleIndex) => {
+        const isPersistedModule = module._persisted ?? looksPersistedId(module.id);
+        const data = {
+          course: saved?.id,
+          title: module.title.trim(),
+          description: module.description.trim(),
+          module_order: moduleIndex + 1,
+          is_published: status === "published",
+        };
+        if (isPersistedModule) {
+          await updateTutorModule(module.id, data);
+          return { ...module, id: module.id, _persisted: true };
+        }
+        const createdModule = await createTutorModule(courseSlug, data);
+        const moduleId = String(createdModule?.id ?? createdModule?.module?.id ?? "");
+        if (!moduleId) throw new Error(`Unable to create module "${module.title}".`);
+        return { ...module, id: moduleId, _persisted: true };
+      }));
+
+      const lessonPayloads = persistedModules.flatMap((module, moduleIndex) =>
+        module.lessons.map((lesson, lessonIndex) => {
+          const videoUrl = lesson.videoUrl?.trim() || "";
+          const type = (() => {
+            const type = lesson.type.toLowerCase();
+            if (type === "article" || type === "reading") return "text";
+            if (type === "project" || type === "live") return "assignment";
+            return type;
+          })();
+          return {
           id: lesson.id,
+          _persisted: lesson._persisted ?? looksPersistedId(lesson.id),
           title: lesson.title.trim(),
-          type: lesson.type.toLowerCase(),
-          video_url: lesson.videoUrl?.trim() || "",
-          video_source: lesson.videoUrl?.includes("youtube") || lesson.videoUrl?.includes("youtu.be") ? "youtube" : "",
-          description: "",
-          content: `[[bridge-module:${encodeURIComponent(module.title.trim())}]]`,
+          slug: lesson.slug || `${slugify(lesson.title)}-${moduleIndex + 1}-${lessonIndex + 1}`,
+          type,
+          ...(videoUrl ? {
+            video_url: videoUrl,
+            video_source: /youtube\.com|youtu\.be/i.test(videoUrl) ? "youtube" : undefined,
+          } : {}),
+          // Preserve existing content/description instead of wiping them -
+          // the builder UI doesn't expose fields to edit these, so blanking
+          // them here would destroy real lesson content on every save.
+          description: lesson.description ?? "",
+          content: lesson.content ?? "",
+          module: module.id,
+          is_drip: false,
+          drip_after: 0,
           duration: (() => {
-            const value = lesson.duration.trim().toLowerCase();
+            const value = String(lesson.duration ?? "").trim().toLowerCase();
             const hours = value.match(/(\d+(?:\.\d+)?)\s*h/);
             const minutes = value.match(/(\d+(?:\.\d+)?)\s*m/);
             if (hours || minutes) {
@@ -539,28 +640,42 @@ function Builder() {
           xp_reward: 10,
           is_free: moduleIndex === 0 && lessonIndex === 0,
           is_published: status === "published",
-          lesson_order: modules.slice(0, moduleIndex).reduce((total, item) => total + item.lessons.length, 0) + lessonIndex + 1,
-        })),
+          lesson_order: lessonIndex + 1,
+          };
+        }),
       );
 
       await Promise.all(lessonPayloads.map(async (lesson) => {
-        const { id, ...payload } = lesson;
-        const isPersistedLesson = typeof id === "string" && id.length >= 20 && !id.startsWith("lesson-");
-        if (isEdit && isPersistedLesson) {
+        const { id, _persisted, ...payload } = lesson;
+        if (isEdit && _persisted) {
           await updateTutorLesson(id, payload);
         } else {
           await createTutorLesson(courseSlug, payload);
         }
       }));
 
+      if (isEdit) {
+        const currentLessonIds = new Set(
+          lessonPayloads
+            .filter((lesson) => lesson._persisted)
+            .map((lesson) => String(lesson.id)),
+        );
+        await Promise.all(
+          originalLessonIds
+            .filter((id) => !currentLessonIds.has(id))
+            .map((id) => deleteTutorLesson(id)),
+        );
+      }
+
       const categoryName = categories.find((item) => item.id === categoryId)?.name ?? "General";
       const savedCourse = {
         ...(saved ?? {}),
         ...payload,
+        thumbnail: saved?.thumbnail ?? "",
         id: saved?.id ?? originalSlug ?? newSlug,
         slug: saved?.slug ?? newSlug,
         category: typeof saved?.category === "object" ? saved.category?.name ?? categoryName : saved?.category ?? categoryName,
-        modules,
+        modules: persistedModules,
         resources,
       };
 
@@ -771,6 +886,31 @@ function Builder() {
                     placeholder="Write a short summary of what this course covers"
                   />
                 </label>
+
+                <div className="space-y-3">
+                  <span className="text-sm font-medium text-gray-700">Course Thumbnail</span>
+                  <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100">
+                    <Upload className="h-4 w-4" />
+                    Upload image
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0] ?? null;
+                        if (!file) return;
+                        setThumbnailFile(file);
+                        setThumbnailUrl(URL.createObjectURL(file));
+                      }}
+                    />
+                  </label>
+                </div>
+                {thumbnailUrl ? (
+                  <div className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+                    <img src={thumbnailUrl} alt="Course thumbnail preview" className="h-40 w-full object-cover" />
+                    <p className="px-3 py-2 text-xs text-gray-500">{thumbnailFile?.name ?? "Current course thumbnail"}</p>
+                  </div>
+                ) : null}
 
                 <div className="grid gap-4 sm:grid-cols-3">
                   <label className="space-y-1.5">

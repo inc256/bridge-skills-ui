@@ -375,6 +375,7 @@ function CourseCard({
   onEnroll 
 }: { 
   course: Course; 
+  thumbnail?: string | null;
   isEnrolled: boolean;
   isEnrolling: boolean;
   onEnroll: () => void;
@@ -390,81 +391,85 @@ function CourseCard({
 
   return (
     <Link
-      to="/student/course/$slug"
-      params={{ slug: course.slug }}
-      className="block bg-white rounded-xl sm:rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all hover:-translate-y-0.5 active:scale-[0.98] touch-manipulation group"
-    >
-      {/* Course Image */}
-      <div className={`h-32 sm:h-36 md:h-40 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-3xl sm:text-4xl font-bold relative`}>
-        {course.title?.[0]?.toUpperCase() || 'C'}
-        {course.progress !== undefined && course.progress > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/20">
-            <div 
-              className="h-full bg-white transition-all duration-1000" 
-              style={{ width: `${Math.min(course.progress, 100)}%` }} 
-            />
-          </div>
-        )}
+  to="/student/course/$slug"
+  params={{ slug: course.slug }}
+  className="block bg-white rounded-xl sm:rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all hover:-translate-y-0.5 active:scale-[0.98] touch-manipulation group"
+>
+  {/* Course Image */}
+  <div className={`h-32 sm:h-36 md:h-40 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-3xl sm:text-4xl font-bold relative overflow-hidden`}>
+    {course.thumbnail ? (
+      <img
+        src={course.thumbnail}
+        alt={course.title}
+        className="h-full w-full object-cover"
+      />
+    ) : (
+      course.title?.[0]?.toUpperCase() || 'C'
+    )}
+    {course.progress !== undefined && course.progress > 0 && (
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/20">
+        <div 
+          className="h-full bg-white transition-all duration-1000" 
+          style={{ width: `${Math.min(course.progress, 100)}%` }} 
+        />
       </div>
+    )}
+  </div>
 
-      {/* Course Info */}
-      <div className="p-3 sm:p-4">
-        <div className="flex items-start justify-between gap-2">
-          <h4 className="font-semibold text-gray-900 truncate text-sm sm:text-base flex-1">
-            {course.title}
-          </h4>
-          <span className={`text-[10px] sm:text-xs font-medium px-1.5 sm:px-2 py-0.5 rounded-full ${getLevelColor(course.level)}`}>
-            {course.level || 'Beginner'}
-          </span>
-        </div>
-        
-        <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 truncate">
-          {course.instructor || 'Instructor'} · {course.category || 'Course'}
-        </p>
-        
-        <p className="text-xs text-gray-600 mt-1.5 sm:mt-2 line-clamp-2 min-h-[2.5rem]">
-          {course.description || 'Learn the fundamentals of this subject'}
-        </p>
+  {/* Course Info */}
+  <div className="p-3 sm:p-4">
+    <div className="flex items-start justify-between gap-2">
+      <h4 className="font-semibold text-gray-900 truncate text-sm sm:text-base flex-1">
+        {course.title}
+      </h4>
+      <span className={`text-[10px] sm:text-xs font-medium px-1.5 sm:px-2 py-0.5 rounded-full ${getLevelColor(course.level)}`}>
+        {course.level || 'Beginner'}
+      </span>
+    </div>
+    
+    <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 truncate">
+      {course.instructor || 'Instructor'} · {course.category || 'Course'}
+    </p>
 
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 sm:mt-3 text-[10px] sm:text-xs text-gray-500">
-          <span className="flex items-center gap-0.5 sm:gap-1">
-            <Users className="h-3 w-3" />
-            {course.students || 0}
-          </span>
-          <span className="flex items-center gap-0.5 sm:gap-1">
-            <Star className="h-3 w-3 text-amber-400 fill-current" />
-            {course.rating?.toFixed(1) || '0.0'}
-          </span>
-          <span className="flex items-center gap-0.5 sm:gap-1">
-            <Clock className="h-3 w-3" />
-            {course.duration || 'TBD'}
-          </span>
-        </div>
+    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 sm:mt-3 text-[10px] sm:text-xs text-gray-500">
+      <span className="flex items-center gap-0.5 sm:gap-1">
+        <Users className="h-3 w-3" />
+        {course.students || 0}
+      </span>
+      <span className="flex items-center gap-0.5 sm:gap-1">
+        <Star className="h-3 w-3 text-amber-400 fill-current" />
+        {course.rating?.toFixed(1) || '0.0'}
+      </span>
+      <span className="flex items-center gap-0.5 sm:gap-1">
+        <Clock className="h-3 w-3" />
+        {course.duration || 'TBD'}
+      </span>
+    </div>
 
-        <div className="flex items-center justify-between mt-3 pt-2 sm:pt-3 border-t border-gray-100">
-          <span className="text-xs sm:text-sm font-semibold text-gray-900">
-            {course.price || 'Free'}
-          </span>
-          <button
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              onEnroll();
-            }}
-            disabled={isEnrolled || isEnrolling}
-            className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all active:scale-95 touch-manipulation ${
-              isEnrolled
-                ? 'bg-emerald-50 text-emerald-600 cursor-default'
-                : isEnrolling
-                ? 'bg-gray-100 text-gray-400 cursor-wait'
-                : 'bg-blue-600 text-white hover:bg-blue-700'
-            }`}
-          >
-            {isEnrolled ? '✓ Enrolled' : isEnrolling ? 'Enrolling…' : 'Enroll'}
-          </button>
-        </div>
-      </div>
-    </Link>
+    <div className="flex items-center justify-between mt-3 pt-2 sm:pt-3 border-t border-gray-100">
+      <span className="text-xs sm:text-sm font-semibold text-gray-900">
+        {course.price || 'Free'}
+      </span>
+      <button
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onEnroll();
+        }}
+        disabled={isEnrolled || isEnrolling}
+        className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all active:scale-95 touch-manipulation ${
+          isEnrolled
+            ? 'bg-emerald-50 text-emerald-600 cursor-default'
+            : isEnrolling
+            ? 'bg-gray-100 text-gray-400 cursor-wait'
+            : 'bg-blue-600 text-white hover:bg-blue-700'
+        }`}
+      >
+        {isEnrolled ? '✓ Enrolled' : isEnrolling ? 'Enrolling…' : 'Enroll'}
+      </button>
+    </div>
+  </div>
+</Link>
   );
 }
 

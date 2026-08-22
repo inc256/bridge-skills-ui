@@ -1,12 +1,14 @@
 // Abstract, elegant SVG course thumbnails — no external assets.
-export function CourseThumb({ variant, color, title, className }: { variant: string; color: string; title?: string; className?: string }) {
+export function CourseThumb({ variant, color, thumbnail, title, className }: { variant: string; color: string; thumbnail?: string | null; title?: string; className?: string }) {
   const bg = color;
+  const safeThumbnail = typeof thumbnail === "string" && thumbnail.trim() ? thumbnail.trim() : null;
   return (
     <div
       className={`relative w-full overflow-hidden ${className ?? "aspect-[16/10]"}`}
       style={{ background: `linear-gradient(135deg, ${bg} 0%, ${shade(bg, -15)} 100%)` }}
     >
-      <svg viewBox="0 0 400 250" className="absolute inset-0 h-full w-full opacity-90">
+      {safeThumbnail ? <img src={safeThumbnail} alt={title ?? "Course thumbnail"} className="absolute inset-0 h-full w-full object-cover" /> : null}
+      {!safeThumbnail && <svg viewBox="0 0 400 250" className="absolute inset-0 h-full w-full opacity-90">
         {variant === "network" && (
           <g stroke="white" strokeOpacity="0.35" fill="none">
             <circle cx="80" cy="80" r="6" fill="white" fillOpacity="0.9" />

@@ -14,6 +14,7 @@ export type Course = {
   certificate?: boolean;
   price?: string;
   image: string;
+  thumbnail?: string | null;
   color: string;
   description: string;
   progress?: number;
@@ -119,6 +120,36 @@ const API_BASE = (import.meta.env?.VITE_API_BASE_URL as string | undefined) ?? "
 //   curl -i -X POST $API_BASE/auth/login/ -H "Content-Type: application/json" \
 //     -d '{"email":"admin@example.com","password":"..."}'
 const LOGIN_IDENTIFIER_FIELD: "email" | "username" = "email";
+
+function formatTotalDuration(totalSeconds: number, fallback: string) {
+  if (!totalSeconds) return fallback;
+  const totalMinutes = Math.round(totalSeconds / 60);
+  if (totalMinutes < 60) return `${totalMinutes} min`;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return minutes ? `${hours}h ${minutes}m` : `${hours}h`;
+}
+
+function lessonDurationSeconds(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) return Math.max(0, value);
+  const text = String(value ?? "").trim().toLowerCase();
+  const hours = Number(text.match(/(\d+(?:\.\d+)?)\s*h/)?.[1] ?? 0);
+  const minutes = Number(text.match(/(\d+(?:\.\d+)?)\s*m/)?.[1] ?? 0);
+  if (hours || minutes) return hours * 3600 + minutes * 60;
+  const numeric = Number(text);
+  return Number.isFinite(numeric) ? Math.max(0, numeric) : 0;
+}
+
+async function getCourseDuration(slug: string, fallback: string) {
+  try {
+    const payload = await apiRequest<any>(`/lessons/admin/course/${slug}/`);
+    const lessons = Array.isArray(payload) ? payload : payload?.results ?? payload?.lessons ?? payload?.data ?? [];
+    const totalSeconds = lessons.reduce((sum: number, lesson: any) => sum + lessonDurationSeconds(lesson?.duration), 0);
+    return lessons.length > 0 ? formatTotalDuration(totalSeconds, "0 min") : fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 function getStorageKey() {
   return "bridge_skills_admin_session";
@@ -508,8 +539,8 @@ export async function getCoursesWithPagination(pageSize: number = 5, page: numbe
     const total = payload?.count ?? list.length;
 
     return {
-      results: list.map(
-        (item: any): CourseDetail => ({
+      results: await Promise.all(list.map(
+        async (item: any): Promise<CourseDetail> => ({
           id: item?.id || item?.slug || "",
           slug: item?.slug || "",
           title: item?.title || "Untitled Course",
@@ -519,7 +550,7 @@ export async function getCoursesWithPagination(pageSize: number = 5, page: numbe
           category: item?.category?.name || item?.category_name || "General",
           category_id: item?.category?.id || "",
           level: item?.level || "All Levels",
-          duration: item?.duration || "0 hours",
+          duration: await getCourseDuration(item?.slug || item?.id, item?.duration || "0 hours"),
           total_students: Number(item?.total_students || item?.students || 0),
           students: Number(item?.students || item?.total_students || 0),
           total_lessons: Number(item?.total_lessons || item?.lessons || item?.modules || 0),
@@ -540,7 +571,7 @@ export async function getCoursesWithPagination(pageSize: number = 5, page: numbe
           created_at: item?.created_at || "",
           updated_at: item?.updated_at || "",
         })
-      ),
+      )),
       total,
       page,
       pageSize,
@@ -558,15 +589,15 @@ export async function getCourses() {
   try {
     const payload = await apiRequest<any>("/courses/");
     const list = Array.isArray(payload) ? payload : payload?.results ?? [];
-    return list.map(
-      (item: any): Course => ({
+    return await Promise.all(list.map(
+      async (item: any): Promise<Course> => ({
         id: item?.id || item?.slug || "",
         slug: item?.slug || "",
         title: item?.title || "Untitled Course",
         instructor: item?.instructor?.full_name || item?.instructor_name || "Instructor",
         category: item?.category?.name || item?.category_name || "General",
         level: item?.level || "All Levels",
-        duration: item?.duration || "0 hours",
+        duration: await getCourseDuration(item?.slug || item?.id, item?.duration || "0 hours"),
         students: Number(item?.total_students || item?.students || 0),
         rating: Number(item?.avg_rating || item?.rating || 0),
         reviews: Number(item?.reviews || 0),
@@ -578,7 +609,7 @@ export async function getCourses() {
         progress: item?.progress || 0,
         modules: Number(item?.modules || item?.total_lessons || 0),
       })
-    );
+    ));
   } catch (error) {
     console.error("Error fetching courses:", error);
     return [];
@@ -605,7 +636,7 @@ export async function getCourseById(courseId: string): Promise<CourseDetail | nu
       category: item?.category?.name || item?.category_name || "General",
       category_id: item?.category?.id || "",
       level: item?.level || "All Levels",
-      duration: item?.duration || "0 hours",
+      duration: await getCourseDuration(item?.slug || item?.id, item?.duration || "0 hours"),
       total_students: Number(item?.total_students || item?.students || 0),
       students: Number(item?.students || item?.total_students || 0),
       total_lessons: Number(item?.total_lessons || item?.lessons || item?.modules || 0),
