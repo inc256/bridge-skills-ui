@@ -6,7 +6,7 @@ import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
 import { c as HeadContent, d as createRouter, f as Outlet, g as Link, h as createRootRouteWithContext, m as createFileRoute, p as lazyRouteComponent, s as Scripts, v as useNavigate, y as useRouter } from "../_libs/@tanstack/react-router+[...].mjs";
 import { $ as CircleAlert, B as FileQuestionMark, C as Play, E as MessageSquare, F as LayoutGrid, G as DollarSign, K as CreditCard, L as GraduationCap, M as List, N as ListChecks, P as Link$1, Q as CircleCheckBig, R as Funnel, S as Plus, T as Minus, U as Ellipsis, V as Eye, W as Download, X as CircleQuestionMark, Y as ClipboardCheck, Z as CirclePlay, _t as Activity, a as User, at as ChartColumn, b as Save, c as TrendingUp, d as Star, dt as Bell, et as ChevronUp, ft as Banknote, g as Share2, gt as ArrowDownRight, h as Shield, i as Users, it as Check, j as Lock, k as Mail, l as Trash2, lt as Book, m as Sparkles, mt as ArrowUpRight, n as X, nt as ChevronLeft, o as UserCheck, ot as Camera, p as SquarePen, pt as Award, q as Clock, r as Video, rt as ChevronDown, s as Upload, st as Briefcase, tt as ChevronRight, u as Target, ut as BookOpen, w as Pause, x as RefreshCw, y as Search, z as FileText } from "../_libs/lucide-react.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-DATbxzRN.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-BrOrOfOg.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var styles_default = "/assets/styles-Cfg_fRuD.css";
@@ -148,7 +148,7 @@ function RootComponent() {
 		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AuthProvider, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Outlet, {}) })
 	});
 }
-var $$splitComponentImporter$3 = () => import("./routes-D-Kb6Zc4.mjs");
+var $$splitComponentImporter$3 = () => import("./routes-w4_I0LjX.mjs");
 var Route$12 = createFileRoute("/")({
 	head: () => ({ meta: [{ title: "Tutor Portal — TechBridge" }, {
 		name: "description",
@@ -156,7 +156,7 @@ var Route$12 = createFileRoute("/")({
 	}] }),
 	component: lazyRouteComponent($$splitComponentImporter$3, "component")
 });
-var $$splitComponentImporter$2 = () => import("./tutor-CDtHinlQ.mjs");
+var $$splitComponentImporter$2 = () => import("./tutor-C6D181wC.mjs");
 var Route$11 = createFileRoute("/tutor")({
 	head: () => ({ meta: [{ title: "Tutor — TechBridge" }, {
 		name: "description",

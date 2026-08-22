@@ -3,7 +3,7 @@ import { T as register, x as login } from "./api-DNWD9kIS.mjs";
 import { n as require_jsx_runtime, r as require_react } from "../_libs/react+tanstack__react-query.mjs";
 import { y as useRouter } from "../_libs/@tanstack/react-router+[...].mjs";
 import { $ as CircleAlert, H as EyeOff, V as Eye, ct as BriefcaseBusiness, ht as ArrowRight, j as Lock, k as Mail } from "../_libs/lucide-react.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/tutor-auth-page-DvypTNBA.js
+//#region node_modules/.nitro/vite/services/ssr/assets/tutor-auth-page-CPqTwegG.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function TutorAuthPage() {
@@ -58,7 +58,7 @@ function TutorAuthPage() {
 			await router.navigate({ to: "/tutor/dashboard" });
 		} catch (err) {
 			console.error(isRegistering ? "Registration error:" : "Login error:", err);
-			const errorMessage = err instanceof Error ? err.message : typeof err === "string" ? err : JSON.stringify(err) || "Unable to sign in right now. Please try again.";
+			const errorMessage = formatAuthError(err);
 			if (isRegistering) setError(`Account creation failed: ${errorMessage}`);
 			else if (errorMessage.includes("401") || errorMessage.includes("Unauthorized")) setError("Invalid email or password. Please try again.");
 			else if (errorMessage.includes("NetworkError") || errorMessage.includes("fetch")) setError("Network error. Please check your connection and try again.");
@@ -67,6 +67,14 @@ function TutorAuthPage() {
 		} finally {
 			setLoading(false);
 		}
+	}
+	function formatAuthError(error) {
+		if (error instanceof Error) return error.message;
+		if (typeof error === "string") return error;
+		if (error && typeof error === "object") return Object.entries(error).flatMap(([field, value]) => {
+			return `${field}: ${Array.isArray(value) ? value.join(", ") : String(value)}`;
+		}).join("; ") || "The server returned an unknown error.";
+		return "Unable to create your account. Please try again.";
 	}
 	const togglePasswordVisibility = () => setShowPassword(!showPassword);
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {

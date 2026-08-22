@@ -61,11 +61,7 @@ export function TutorAuthPage() {
       console.error(isRegistering ? "Registration error:" : "Login error:", err);
       
       // Handle specific error messages
-      const errorMessage = err instanceof Error
-        ? err.message
-        : typeof err === "string"
-          ? err
-          : JSON.stringify(err) || "Unable to sign in right now. Please try again.";
+      const errorMessage = formatAuthError(err);
       
       if (isRegistering) {
         setError(`Account creation failed: ${errorMessage}`);
@@ -81,6 +77,19 @@ export function TutorAuthPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function formatAuthError(error: unknown) {
+    if (error instanceof Error) return error.message;
+    if (typeof error === "string") return error;
+    if (error && typeof error === "object") {
+      const values = Object.entries(error as Record<string, unknown>).flatMap(([field, value]) => {
+        const message = Array.isArray(value) ? value.join(", ") : String(value);
+        return `${field}: ${message}`;
+      });
+      return values.join("; ") || "The server returned an unknown error.";
+    }
+    return "Unable to create your account. Please try again.";
   }
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
