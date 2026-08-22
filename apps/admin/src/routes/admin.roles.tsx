@@ -207,7 +207,7 @@ function RoleCard({ role, count }: RoleCardProps) {
             </span>
           </div>
           <a 
-            href={`http://localhost:8001/admin/accounts/user/?role=${role.role}`}
+            href={`https://techbridge-backend-rust.vercel.app/admin/accounts/user/?role=${role.role}`}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
@@ -342,7 +342,7 @@ function AdminRoles() {
             {ROLE_DEFS.map((role) => (
               <a
                 key={role.role}
-                href={`http://localhost:8001/admin/accounts/user/?role=${role.role}`}
+                href={`https://techbridge-backend-rust.vercel.app/admin/accounts/user/?role=${role.role}`}
                 target="_blank"
                 rel="noreferrer"
                 className="group inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-blue-300 dark:hover:border-blue-700 transition-all"

@@ -317,8 +317,8 @@ function AdminCMS() {
         <div className="p-4 sm:p-5">
           <div className="flex flex-wrap gap-2 sm:gap-3">
             {[
-              ['Django Admin', 'http://localhost:8001/admin/', 'Database'],
-              ['API Swagger Docs', 'http://localhost:8001/api/docs/', 'API'],
+              ['Django Admin', 'https://techbridge-backend-rust.vercel.app/admin/', 'Database'],
+              ['API Swagger Docs', 'https://techbridge-backend-rust.vercel.app/api/docs/', 'API'],
               ['Elearning Platform', 'http://localhost:8000/dashboard/admin/', 'Frontend'],
               ['Themes & Plugins', 'http://localhost:8000/dashboard/admin/themes/', 'Design'],
             ].map(([label, url, badge]) => (

@@ -1024,16 +1024,16 @@ function AdminSettings() {
                   
                   <Section title="API Quick Links" icon={Code}>
                     {[
-                      ['Swagger UI (all endpoints)', 'http://localhost:8001/api/docs/'],
-                      ['ReDoc documentation', 'http://localhost:8001/api/redoc/'],
-                      ['Health check', 'http://localhost:8001/api/health/'],
-                      ['Django Admin (full DB)', 'http://localhost:8001/admin/'],
-                      ['API v1 root', 'http://localhost:8001/api/v1/'],
+                      ['Swagger UI (all endpoints)', 'https://techbridge-backend-rust.vercel.app/api/docs/'],
+                      ['ReDoc documentation', 'https://techbridge-backend-rust.vercel.app/api/redoc/'],
+                      ['Health check', 'https://techbridge-backend-rust.vercel.app/api/health/'],
+                      ['Django Admin (full DB)', 'https://techbridge-backend-rust.vercel.app/admin/'],
+                      ['API v1 root', 'https://techbridge-backend-rust.vercel.app/api/v1/'],
                     ].map(([label, url]) => (
                       <div key={label as string} className="flex flex-col sm:flex-row sm:items-center justify-between py-2.5 border-b border-gray-100 dark:border-gray-700/50 last:border-0">
                         <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{label as string}</p>
                         <a href={url as string} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1 sm:mt-0">
-                          {url.toString().replace('http://localhost:8001', '')} <ExternalLink className="h-3 w-3" />
+                          {url.toString().replace('https://techbridge-backend-rust.vercel.app', '')} <ExternalLink className="h-3 w-3" />
                         </a>
                       </div>
                     ))}

@@ -113,7 +113,7 @@ export type DailyActivity = {
   active_users?: number;
 };
 
-const API_BASE = (import.meta.env?.VITE_API_BASE_URL as string | undefined) ?? "http://localhost:8001/api/v1";
+const API_BASE = (import.meta.env?.VITE_API_BASE_URL as string | undefined) ?? "https://techbridge-backend-rust.vercel.app/api/v1";
 
 // If your backend's TokenObtainPairSerializer expects "username" instead of
 // "email", change this. Confirm once with curl rather than guessing:

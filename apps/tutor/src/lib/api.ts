@@ -51,7 +51,7 @@ export type TutorProfile = {
   youtube: string;
 };
 
-const API_BASE = (import.meta.env?.VITE_API_BASE_URL as string | undefined) ?? "http://localhost:8001/api/v1";
+const API_BASE = (import.meta.env?.VITE_API_BASE_URL as string | undefined) ?? "https://techbridge-backend-rust.vercel.app/api/v1";
 
 // Maps the backend's lowercase lesson `type` enum to the label used by the
 // builder's <select> options. Keep this in sync with the reverse mapping in
