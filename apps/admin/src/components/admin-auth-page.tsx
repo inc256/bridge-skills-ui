@@ -2,7 +2,7 @@ import { useRouter } from "@tanstack/react-router";
 import { ArrowRight, Shield, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { Logo } from "@/components/logo";
-import { login, register, getCurrentUserRole } from "@/lib/api";
+import { login, getCurrentUserRole } from "@/lib/api";
 
 const ALLOWED_ROLES = ["admin", "super_admin", "staff"];
 
@@ -13,27 +13,15 @@ export function AdminAuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [password2, setPassword2] = useState("");
-
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!email.trim() || !password || (isRegistering && (!firstName.trim() || !password2))) {
-      setError("Please complete all required fields.");
-      return;
-    }
-    if (isRegistering && password !== password2) {
-      setError("Passwords do not match.");
+    if (!email.trim() || !password) {
+      setError("Please enter your email and password.");
       return;
     }
     setError(null);
     setLoading(true);
     try {
-      if (isRegistering) {
-        await register({ email: email.trim(), username: email.trim().split("@")[0], password, password2, first_name: firstName.trim(), last_name: lastName.trim(), role: "admin" });
-      }
       const session = await login(email.trim(), password);
 
       const role = await getCurrentUserRole(session?.access);
@@ -75,8 +63,8 @@ export function AdminAuthPage() {
 
         {/* Card */}
         <div className="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm">
-          <h1 className="text-[22px] font-bold text-gray-900 mb-1">{isRegistering ? "Create Admin Account" : "Admin Sign In"}</h1>
-          <p className="text-sm text-gray-400 mb-6">{isRegistering ? "Create an account for the admin portal." : "Enter your credentials to access the admin portal."}</p>
+          <h1 className="text-[22px] font-bold text-gray-900 mb-1">Admin Sign In</h1>
+          <p className="text-sm text-gray-400 mb-6">Enter your credentials to access the admin portal.</p>
 
           {error && (
             <div className="mb-4 p-2.5 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
@@ -85,12 +73,6 @@ export function AdminAuthPage() {
           )}
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {isRegistering && (
-              <div className="grid gap-3 sm:grid-cols-2">
-                <input value={firstName} onChange={(event) => setFirstName(event.target.value)} placeholder="First name" className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none" required autoComplete="given-name" />
-                <input value={lastName} onChange={(event) => setLastName(event.target.value)} placeholder="Last name" className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none" autoComplete="family-name" />
-              </div>
-            )}
             <div>
               <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
                 Email
@@ -130,8 +112,6 @@ export function AdminAuthPage() {
               </div>
             </div>
 
-            {isRegistering && <input type="password" value={password2} onChange={(event) => setPassword2(event.target.value)} placeholder="Confirm password" className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none" required autoComplete="new-password" />}
-
             <button
               type="submit"
               disabled={loading}
@@ -140,19 +120,16 @@ export function AdminAuthPage() {
               {loading ? (
                 <>
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  {isRegistering ? "Creating account…" : "Signing in…"}
+                  Signing in…
                 </>
               ) : (
                 <>
-                  {isRegistering ? "Create account" : "Sign in"}
+                  Sign in
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}
             </button>
           </form>
-          <button type="button" onClick={() => { setIsRegistering((current) => !current); setError(null); }} className="mt-5 w-full text-sm font-medium text-primary hover:opacity-80">
-            {isRegistering ? "Already have an account? Sign in" : "Create admin account"}
-          </button>
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-5">

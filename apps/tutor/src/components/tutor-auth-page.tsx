@@ -79,8 +79,14 @@ export function TutorAuthPage() {
   }
 
   function formatAuthError(error: unknown) {
-    if (error instanceof Error) return error.message;
-    if (typeof error === "string") return error;
+    const value = error instanceof Error ? error.message : error;
+    if (typeof value === "string") {
+      try {
+        return formatAuthError(JSON.parse(value));
+      } catch {
+        return value;
+      }
+    }
     if (error && typeof error === "object") {
       const values = Object.entries(error as Record<string, unknown>).flatMap(([field, value]) => {
         const message = Array.isArray(value) ? value.join(", ") : String(value);
