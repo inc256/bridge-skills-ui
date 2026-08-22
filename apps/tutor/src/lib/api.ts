@@ -226,7 +226,8 @@ async function apiRequest<T>(path: string, init: RequestInit = {}, retried = fal
       const rawText = await response.text();
       try {
         const payload = JSON.parse(rawText);
-        detail = typeof payload === "string" ? payload : payload?.detail ?? payload?.message ?? JSON.stringify(payload);
+        const rawDetail = typeof payload === "string" ? payload : payload?.detail ?? payload?.message ?? payload;
+        detail = typeof rawDetail === "string" ? rawDetail : JSON.stringify(rawDetail);
       } catch {
         // Not JSON (e.g. an HTML error page) - fall back to the raw text.
         detail = rawText || detail;

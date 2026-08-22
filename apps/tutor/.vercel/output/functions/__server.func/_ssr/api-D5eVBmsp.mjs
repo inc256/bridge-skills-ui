@@ -1,4 +1,4 @@
-//#region node_modules/.nitro/vite/services/ssr/assets/api-DNWD9kIS.js
+//#region node_modules/.nitro/vite/services/ssr/assets/api-D5eVBmsp.js
 var API_BASE = "https://techbridge-backend-rust.vercel.app/api/v1";
 var LESSON_TYPE_TO_DISPLAY = {
 	video: "Video",
@@ -121,7 +121,8 @@ async function apiRequest(path, init = {}, retried = false) {
 			const rawText = await response.text();
 			try {
 				const payload = JSON.parse(rawText);
-				detail = typeof payload === "string" ? payload : payload?.detail ?? payload?.message ?? JSON.stringify(payload);
+				const rawDetail = typeof payload === "string" ? payload : payload?.detail ?? payload?.message ?? payload;
+				detail = typeof rawDetail === "string" ? rawDetail : JSON.stringify(rawDetail);
 			} catch {
 				detail = rawText || detail;
 			}
