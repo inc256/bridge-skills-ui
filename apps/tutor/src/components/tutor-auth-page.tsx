@@ -58,10 +58,9 @@ export function TutorAuthPage() {
       console.log("Login successful, navigating to tutor dashboard...");
       await router.navigate({ to: "/tutor/dashboard" });
     } catch (err: unknown) {
-      console.error(isRegistering ? "Registration error:" : "Login error:", err);
-      
       // Handle specific error messages
       const errorMessage = formatAuthError(err);
+      console.error(isRegistering ? "Registration error:" : "Login error:", errorMessage);
       
       if (isRegistering) {
         setError(`Account creation failed: ${errorMessage}`);

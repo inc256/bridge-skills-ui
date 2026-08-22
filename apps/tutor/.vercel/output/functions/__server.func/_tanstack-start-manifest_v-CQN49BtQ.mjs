@@ -1,19 +1,19 @@
-//#region node_modules/.nitro/vite/services/ssr/assets/_tanstack-start-manifest_v-DsWXTQ3c.js
+//#region node_modules/.nitro/vite/services/ssr/assets/_tanstack-start-manifest_v-CQN49BtQ.js
 var tsrStartManifest = () => ({ routes: {
 	__root__: {
 		filePath: "C:/Local Disk Virtual/WPA/bridge-skills-ui/apps/tutor/src/routes/__root.tsx",
 		children: ["/", "/tutor"],
-		preloads: ["/assets/index-BKQOVTbZ.js", "/assets/createLucideIcon-Cq4gx-J7.js"],
+		preloads: ["/assets/index-BCF4q0pr.js", "/assets/createLucideIcon-Cq4gx-J7.js"],
 		scripts: [{ attrs: {
 			type: "module",
 			async: !0,
-			src: "/assets/index-BKQOVTbZ.js"
+			src: "/assets/index-BCF4q0pr.js"
 		} }]
 	},
 	"/": {
 		filePath: "C:/Local Disk Virtual/WPA/bridge-skills-ui/apps/tutor/src/routes/index.tsx",
 		children: void 0,
-		preloads: ["/assets/routes-DNJKDLL3.js", "/assets/tutor-auth-page-D9UMu7Ea.js"]
+		preloads: ["/assets/routes-C25fKCRA.js", "/assets/tutor-auth-page-DoCRIUI8.js"]
 	},
 	"/tutor": {
 		filePath: "C:/Local Disk Virtual/WPA/bridge-skills-ui/apps/tutor/src/routes/tutor.tsx",
@@ -30,7 +30,7 @@ var tsrStartManifest = () => ({ routes: {
 			"/tutor/students",
 			"/tutor/"
 		],
-		preloads: ["/assets/tutor-BvOcjRLO.js", "/assets/tutor-auth-page-D9UMu7Ea.js"]
+		preloads: ["/assets/tutor-COEGe29d.js", "/assets/tutor-auth-page-DoCRIUI8.js"]
 	},
 	"/tutor/messages": {
 		filePath: "C:/Local Disk Virtual/WPA/bridge-skills-ui/apps/tutor/src/routes/tutor.messages.tsx",
@@ -40,7 +40,7 @@ var tsrStartManifest = () => ({ routes: {
 	"/tutor/": {
 		filePath: "C:/Local Disk Virtual/WPA/bridge-skills-ui/apps/tutor/src/routes/tutor.index.tsx",
 		children: void 0,
-		preloads: ["/assets/tutor.index-CKBaT1NT.js"]
+		preloads: ["/assets/tutor.index-fkntr1zW.js"]
 	}
 } });
 //#endregion
