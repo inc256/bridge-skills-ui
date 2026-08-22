@@ -329,6 +329,21 @@ export async function login(identifier: string, password: string) {
   return session;
 }
 
+export async function register(payload: {
+  email: string;
+  username: string;
+  password: string;
+  password2: string;
+  first_name?: string;
+  last_name?: string;
+  role?: string;
+}) {
+  return await apiRequest<any>("/auth/register/", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 /**
  * Fetches the profile of the currently authenticated user.
  * ADJUST THIS PATH to match your backend — common options:

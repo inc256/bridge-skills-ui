@@ -1,0 +1,1 @@
+import{t as e}from"./admin-auth-page-Uwy3q0Cx.js";var t=e;export{t as component};

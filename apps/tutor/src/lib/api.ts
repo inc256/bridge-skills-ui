@@ -640,3 +640,18 @@ export async function deleteTutorLesson(lessonId: string) {
     method: "DELETE",
   });
 }
+
+export async function register(payload: {
+  email: string;
+  username: string;
+  password: string;
+  password2: string;
+  first_name?: string;
+  last_name?: string;
+  role?: string;
+}) {
+  return await apiRequest<any>("/auth/register/", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}

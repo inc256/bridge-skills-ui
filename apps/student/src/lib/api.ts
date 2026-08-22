@@ -351,7 +351,7 @@ export async function register(payload: {
     return resp;
   } catch (err) {
     console.error("Registration error:", err);
-    return null;
+    throw err;
   }
 }
 

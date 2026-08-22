@@ -1,7 +1,7 @@
 import { useRouter } from "@tanstack/react-router";
 import { ArrowRight, Mail, Lock, Eye, EyeOff, BriefcaseBusiness, AlertCircle } from "lucide-react";
 import { useState } from "react";
-import { login } from "@/lib/api";
+import { login, register } from "@/lib/api";
 
 export function TutorAuthPage() {
   const router = useRouter();
@@ -11,6 +11,10 @@ export function TutorAuthPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [password2, setPassword2] = useState("");
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -19,15 +23,24 @@ export function TutorAuthPage() {
     
     try {
       // Validate inputs
-      if (!email.trim() || !password.trim()) {
-        setError("Please enter both email and password.");
+      if (!email.trim() || !password.trim() || (isRegistering && (!firstName.trim() || !password2.trim()))) {
+        setError(isRegistering ? "Please complete all required fields." : "Please enter both email and password.");
+        setLoading(false);
+        return;
+      }
+
+      if (isRegistering && password !== password2) {
+        setError("Passwords do not match.");
         setLoading(false);
         return;
       }
 
       console.log("Attempting login for:", email.trim());
       
-      // Call the login function
+      if (isRegistering) {
+        await register({ email: email.trim(), username: email.trim().split("@")[0], password, password2, first_name: firstName.trim(), last_name: lastName.trim(), role: "tutor" });
+      }
+
       const session = await login(email.trim(), password);
       
       if (!session) {
@@ -83,13 +96,19 @@ export function TutorAuthPage() {
               <BriefcaseBusiness className="h-8 w-8 text-blue-600 dark:text-blue-400" />
             </div>
             <h2 className="text-[28px] font-bold tracking-tight text-gray-900 dark:text-white text-center">
-              Sign in
+              {isRegistering ? "Create tutor account" : "Sign in"}
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-              Instructor workspace
+              {isRegistering ? "Create your instructor workspace" : "Instructor workspace"}
             </p>
 
             <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+              {isRegistering && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <input value={firstName} onChange={(event) => setFirstName(event.target.value)} placeholder="First name" className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm outline-none" required autoComplete="given-name" />
+                  <input value={lastName} onChange={(event) => setLastName(event.target.value)} placeholder="Last name" className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm outline-none" autoComplete="family-name" />
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Email <span className="text-red-500">*</span>
@@ -107,6 +126,10 @@ export function TutorAuthPage() {
                   />
                 </div>
               </div>
+
+              {isRegistering && (
+                <input type="password" value={password2} onChange={(event) => setPassword2(event.target.value)} placeholder="Confirm password" className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm outline-none" required autoComplete="new-password" />
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -173,12 +196,16 @@ export function TutorAuthPage() {
                   </span>
                 ) : (
                   <>
-                    Enter workspace
+                    {isRegistering ? "Create account" : "Enter workspace"}
                     <ArrowRight className="h-4 w-4" />
                   </>
                 )}
               </button>
             </form>
+
+            <button type="button" onClick={() => { setIsRegistering((current) => !current); setError(null); }} className="mt-5 w-full text-sm font-medium text-blue-600 hover:text-blue-700">
+              {isRegistering ? "Already have an account? Sign in" : "Create tutor account"}
+            </button>
           </div>
         </div>
       </div>

@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
+import { register } from "@/lib/api";
 
 export function StudentAuthPage() {
   const router = useRouter();
@@ -15,6 +16,10 @@ export function StudentAuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [password2, setPassword2] = useState("");
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -27,8 +32,14 @@ export function StudentAuthPage() {
     setLoading(true);
     
     try {
-      if (!email.trim() || !password.trim()) {
-        setError("Please enter both email and password.");
+      if (!email.trim() || !password.trim() || (isRegistering && (!firstName.trim() || !password2.trim()))) {
+        setError(isRegistering ? "Please complete all required fields." : "Please enter both email and password.");
+        setLoading(false);
+        return;
+      }
+
+      if (isRegistering && password !== password2) {
+        setError("Passwords do not match.");
         setLoading(false);
         return;
       }
@@ -36,6 +47,17 @@ export function StudentAuthPage() {
       console.log("Attempting login for:", email.trim());
       
       try {
+        if (isRegistering) {
+          await register({
+            email: email.trim(),
+            username: email.trim().split("@")[0],
+            password,
+            password2,
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
+            role: "student",
+          });
+        }
         await authLogin(email.trim(), password);
         console.log("Login successful, navigating to dashboard...");
         await router.navigate({ to: "/student/dashboard" });
@@ -77,14 +99,20 @@ export function StudentAuthPage() {
                 <GraduationCap className="h-8 w-8 text-blue-600 dark:text-blue-400" />
               </div>
               <h2 className="text-[28px] font-bold tracking-tight text-gray-900 dark:text-white">
-                Student Sign In
+                {isRegistering ? "Create student account" : "Student Sign In"}
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Welcome back to your courses
+                {isRegistering ? "Start learning with TechBridge" : "Welcome back to your courses"}
               </p>
             </div>
 
             <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+              {isRegistering && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <input value={firstName} onChange={(event) => setFirstName(event.target.value)} placeholder="First name" className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm outline-none" required autoComplete="given-name" />
+                  <input value={lastName} onChange={(event) => setLastName(event.target.value)} placeholder="Last name" className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm outline-none" autoComplete="family-name" />
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Email <span className="text-red-500">*</span>
@@ -102,6 +130,10 @@ export function StudentAuthPage() {
                   />
                 </div>
               </div>
+
+              {isRegistering && (
+                <input type="password" value={password2} onChange={(event) => setPassword2(event.target.value)} placeholder="Confirm password" className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm outline-none" required autoComplete="new-password" />
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -159,14 +191,14 @@ export function StudentAuthPage() {
                 disabled={loading}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-semibold text-white transition-all hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-70 shadow-sm hover:shadow-md"
               >
-                {loading ? (
+                  {loading ? (
                   <span className="flex items-center gap-2">
                     <span className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white" />
-                    Signing in…
+                    {isRegistering ? "Creating account…" : "Signing in…"}
                   </span>
                 ) : (
                   <>
-                    Sign in
+                    {isRegistering ? "Create account" : "Sign in"}
                     <ArrowRight className="h-4 w-4" />
                   </>
                 )}
@@ -175,16 +207,17 @@ export function StudentAuthPage() {
 
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Don't have an account?
+                {isRegistering ? "Already have an account?" : "Don't have an account?"}
               </p>
               <button 
                 type="button" 
                 className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors flex items-center gap-1"
                 onClick={() => {
-                  setError("Registration is currently disabled. Please contact support.");
+                  setIsRegistering((current) => !current);
+                  setError(null);
                 }}
               >
-                Create account
+                {isRegistering ? "Sign in" : "Create account"}
                 <ArrowRight className="h-3.5 w-3.5" />
               </button>
             </div>

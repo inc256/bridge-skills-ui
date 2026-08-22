@@ -8,24 +8,11 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getCourses, getMeStats, getMyEnrollments, getMyCertificates, getProfile } from "@/lib/api";
+import type { Course } from "@/lib/api";
 
 export const Route = createFileRoute("/student/dashboard")({
   component: Dashboard,
 });
-
-interface Course {
-  id: string;
-  slug: string;
-  title: string;
-  instructor: string;
-  category: string;
-  thumbnail?: string | null;
-  level: string;
-  students: number;
-  rating: number;
-  progress?: number;
-  status?: string;
-}
 
 interface Stats {
   streak: number;
@@ -484,7 +471,7 @@ function Dashboard() {
                 <div className="flex-1">
                   <h4 className="text-sm font-semibold text-gray-900">Need help?</h4>
                   <p className="text-xs text-gray-600 mt-0.5">Check our FAQs or contact support</p>
-                  <Link to="/student/help" className="inline-block mt-2 text-xs font-medium text-blue-600 hover:text-blue-700">
+                  <Link to="/student" className="inline-block mt-2 text-xs font-medium text-blue-600 hover:text-blue-700">
                     Get support →
                   </Link>
                 </div>

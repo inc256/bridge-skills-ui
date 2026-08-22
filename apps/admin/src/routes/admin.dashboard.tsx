@@ -58,6 +58,9 @@ interface User {
   role?: string;
   avatar?: string;
   joined_at?: string;
+  name?: string;
+  user_type?: string;
+  type?: string;
 }
 
 interface Course {
@@ -77,6 +80,7 @@ interface Course {
   pricing?: string;
   is_paid?: boolean;
   amount?: number;
+  is_published?: boolean;
 }
 
 // ==================== UTILITY FUNCTIONS ====================
@@ -352,7 +356,8 @@ function AdminDashboard() {
       if (statsResult.status === 'fulfilled') setStats(statsResult.value);
       
       if (dailyResult.status === 'fulfilled') {
-        const data = Array.isArray(dailyResult.value) ? dailyResult.value : (dailyResult.value?.results || []);
+        const dailyPayload = dailyResult.value as any;
+        const data = Array.isArray(dailyPayload) ? dailyPayload : (dailyPayload?.results || []);
         setDailyActivity(data.slice(0, 7).reverse());
       }
       
