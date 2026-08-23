@@ -646,15 +646,35 @@ export async function updateTutorModule(moduleId: string, data: Record<string, a
 export async function createTutorLesson(courseSlug: string, data: Record<string, any>) {
   return await apiRequest<any>(`/lessons/admin/course/${courseSlug}/`, {
     method: "POST",
-    body: JSON.stringify(data),
+    body: lessonRequestBody(data),
   });
 }
 
 export async function updateTutorLesson(lessonId: string, data: Record<string, any>) {
   return await apiRequest<any>(`/lessons/admin/${lessonId}/`, {
     method: "PATCH",
-    body: JSON.stringify(data),
+    body: lessonRequestBody(data),
   });
+}
+
+const LESSON_FILE_FIELDS = new Set(["video_file", "pdf_file", "audio_file", "ppt_file", "thumbnail", "subtitle_vtt"]);
+
+function lessonRequestBody(data: Record<string, any>): BodyInit {
+  const fileValues = Object.values(data).some((value) => value instanceof File);
+  if (!fileValues) {
+    const jsonData = Object.fromEntries(Object.entries(data).filter(([key, value]) => !LESSON_FILE_FIELDS.has(key) || value instanceof File));
+    return JSON.stringify(jsonData);
+  }
+
+  const form = new FormData();
+  Object.entries(data).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === "") return;
+    // Existing file URLs are read-only references. Only a File should be sent
+    // to a Django upload field, otherwise it returns "submitted data was not a file".
+    if (LESSON_FILE_FIELDS.has(key) && !(value instanceof File)) return;
+    form.append(key, value instanceof File ? value : Array.isArray(value) ? JSON.stringify(value) : String(value));
+  });
+  return form;
 }
 
 export async function deleteTutorLesson(lessonId: string) {

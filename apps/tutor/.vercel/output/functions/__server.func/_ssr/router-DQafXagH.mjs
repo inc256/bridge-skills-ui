@@ -1,12 +1,12 @@
 import { r as __toESM } from "../_runtime.mjs";
-import { C as patchCourse, D as updateTutorModule, E as updateTutorLesson, a as deleteCourse, c as generateCourseTitle, d as getCourseLessons, f as getCourseModules, g as getProfile, i as createTutorModule, l as getCourse, m as getCourses, n as createCourse, o as deleteTutorLesson, p as getCourseReviews, r as createTutorLesson, s as generateCourseDescription, u as getCourseCategories, v as getStudents, w as patchProfile, y as getTutorAnalytics } from "./api-CNLM6zj2.mjs";
+import { C as patchCourse, D as updateTutorModule, E as updateTutorLesson, a as deleteCourse, c as generateCourseTitle, d as getCourseLessons, f as getCourseModules, g as getProfile, i as createTutorModule, l as getCourse, m as getCourses, n as createCourse, o as deleteTutorLesson, p as getCourseReviews, r as createTutorLesson, s as generateCourseDescription, u as getCourseCategories, v as getStudents, w as patchProfile, y as getTutorAnalytics } from "./api-Da0wOjN4.mjs";
 import { n as require_jsx_runtime, r as require_react, t as QueryClientProvider } from "../_libs/react+tanstack__react-query.mjs";
-import { t as AuthProvider } from "./auth-BGk6uy0K.mjs";
+import { t as AuthProvider } from "./auth-C_Y6hKkR.mjs";
 import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
 import { c as HeadContent, d as createRouter, f as Outlet, g as Link, h as createRootRouteWithContext, m as createFileRoute, p as lazyRouteComponent, s as Scripts, v as useNavigate, y as useRouter } from "../_libs/@tanstack/react-router+[...].mjs";
 import { $ as CircleCheckBig, A as Mail, B as FileText, C as Plus, D as MessageSquare, E as Minus, F as Link$1, G as Download, H as Eye, I as LayoutGrid, J as Clock, K as DollarSign, M as Lock, N as List, P as ListChecks, Q as CirclePlay, R as GraduationCap, S as RefreshCw, T as Pause, V as FileQuestionMark, W as Ellipsis, X as ClipboardCheck, Z as CircleQuestionMark, _ as Share2, _t as ArrowDownRight, a as Users, at as Check, b as Search, c as Upload, ct as Briefcase, d as Target, dt as BookOpen, et as CircleAlert, f as Star, ft as Bell, g as Shield, h as Sparkles, ht as ArrowUpRight, i as Video, it as ChevronDown, l as TrendingUp, m as SquarePen, mt as Award, n as X, nt as ChevronRight, o as User, ot as ChartColumn, pt as Banknote, q as CreditCard, r as Volume2, rt as ChevronLeft, s as UserCheck, st as Camera, tt as ChevronUp, u as Trash2, ut as Book, vt as Activity, w as Play, x as Save, z as Funnel } from "../_libs/lucide-react.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-CBZGJ25r.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-DQafXagH.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var styles_default = "/assets/styles-DpDLL9au.css";
@@ -148,7 +148,7 @@ function RootComponent() {
 		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AuthProvider, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Outlet, {}) })
 	});
 }
-var $$splitComponentImporter$3 = () => import("./routes-BQdeVUTN.mjs");
+var $$splitComponentImporter$3 = () => import("./routes-B1El-gmU.mjs");
 var Route$12 = createFileRoute("/")({
 	head: () => ({ meta: [{ title: "Tutor Portal — TechBridge" }, {
 		name: "description",
@@ -156,7 +156,7 @@ var Route$12 = createFileRoute("/")({
 	}] }),
 	component: lazyRouteComponent($$splitComponentImporter$3, "component")
 });
-var $$splitComponentImporter$2 = () => import("./tutor-CzlUrzg6.mjs");
+var $$splitComponentImporter$2 = () => import("./tutor-DlRT2edM.mjs");
 var Route$11 = createFileRoute("/tutor")({
 	head: () => ({ meta: [{ title: "Tutor — TechBridge" }, {
 		name: "description",
@@ -164,7 +164,7 @@ var Route$11 = createFileRoute("/tutor")({
 	}] }),
 	component: lazyRouteComponent($$splitComponentImporter$2, "component")
 });
-var $$splitComponentImporter$1 = () => import("./tutor.index-XSLaxfKb.mjs");
+var $$splitComponentImporter$1 = () => import("./tutor.index-CGmK6I05.mjs");
 var Route$10 = createFileRoute("/tutor/")({ component: lazyRouteComponent($$splitComponentImporter$1, "component") });
 var Route$9 = createFileRoute("/tutor/analytics")({ component: Analytics });
 function Analytics() {
@@ -1229,7 +1229,7 @@ function normalizeLessonType(value) {
 	return LESSON_TYPES.includes(type) ? type : "video";
 }
 function validateLesson(lesson, type) {
-	const has = (value) => Boolean(value?.trim());
+	const has = (value) => Boolean(value && (value instanceof File || value.trim()));
 	if (!lesson.title.trim()) return "title is required.";
 	if (type === "text" || type === "assignment" || type === "quiz") {
 		if (!has(lesson.content)) return `${type} lessons require content.`;
@@ -1252,6 +1252,37 @@ function LessonField({ label, value, placeholder, onChange }) {
 			className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
 		})]
 	});
+}
+function LessonFileField({ label, value, accept, onChange }) {
+	const fileName = value instanceof File ? value.name : value?.split("/").pop();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("label", {
+		className: "space-y-1",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+			className: "text-xs text-gray-500",
+			children: label
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+			className: "flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-gray-300 bg-white px-3 py-2 text-sm text-gray-600 hover:border-blue-400 hover:bg-blue-50",
+			children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Upload, { className: "h-4 w-4 shrink-0 text-blue-600" }),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+					className: "min-w-0 truncate",
+					children: fileName ?? "Choose file"
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+					type: "file",
+					accept,
+					className: "sr-only",
+					onChange: (event) => {
+						const file = event.target.files?.[0];
+						if (file) onChange(file);
+					}
+				})
+			]
+		})]
+	});
+}
+function mediaPayload(value) {
+	return value instanceof File ? value : void 0;
 }
 function readSavedCourse(slug) {
 	if (typeof window === "undefined") return null;
@@ -1774,12 +1805,12 @@ function Builder() {
 						video_url: videoUrl,
 						video_source: /youtube\.com|youtu\.be/i.test(videoUrl) ? "youtube" : void 0
 					} : {},
-					video_file: lesson.videoFile?.trim() || "",
-					pdf_file: lesson.pdfFile?.trim() || "",
-					audio_file: lesson.audioFile?.trim() || "",
-					ppt_file: lesson.pptFile?.trim() || "",
-					thumbnail: lesson.thumbnail?.trim() || "",
-					subtitle_vtt: lesson.subtitleVtt?.trim() || "",
+					video_file: mediaPayload(lesson.videoFile),
+					pdf_file: mediaPayload(lesson.pdfFile),
+					audio_file: mediaPayload(lesson.audioFile),
+					ppt_file: mediaPayload(lesson.pptFile),
+					thumbnail: mediaPayload(lesson.thumbnail),
+					subtitle_vtt: mediaPayload(lesson.subtitleVtt),
 					description: lesson.description ?? "",
 					content: lesson.content ?? "",
 					module: module.id,
@@ -2553,35 +2584,41 @@ function Builder() {
 													placeholder: "https://...",
 													onChange: (value) => handleUpdateLesson(moduleIndex, lessonIndex, { videoUrl: value })
 												}),
-												lesson.type === "video" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LessonField, {
-													label: "Uploaded video URL",
+												lesson.type === "video" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LessonFileField, {
+													label: "Video file",
 													value: lesson.videoFile,
-													placeholder: "Bucket URL for the video file",
+													accept: "video/*",
 													onChange: (value) => handleUpdateLesson(moduleIndex, lessonIndex, { videoFile: value })
 												}),
-												/* @__PURE__ */ (0, import_jsx_runtime.jsx)(LessonField, {
-													label: "Audio file URL (optional)",
+												/* @__PURE__ */ (0, import_jsx_runtime.jsx)(LessonFileField, {
+													label: "Audio file (optional)",
 													value: lesson.audioFile,
-													placeholder: "https://.../audio.mp3",
+													accept: "audio/*",
 													onChange: (value) => handleUpdateLesson(moduleIndex, lessonIndex, { audioFile: value })
 												}),
-												/* @__PURE__ */ (0, import_jsx_runtime.jsx)(LessonField, {
-													label: "PDF file URL (optional)",
+												/* @__PURE__ */ (0, import_jsx_runtime.jsx)(LessonFileField, {
+													label: "PDF file (optional)",
 													value: lesson.pdfFile,
-													placeholder: "https://.../guide.pdf",
+													accept: "application/pdf",
 													onChange: (value) => handleUpdateLesson(moduleIndex, lessonIndex, { pdfFile: value })
 												}),
-												/* @__PURE__ */ (0, import_jsx_runtime.jsx)(LessonField, {
-													label: "PowerPoint file URL (optional)",
+												/* @__PURE__ */ (0, import_jsx_runtime.jsx)(LessonFileField, {
+													label: "PowerPoint file (optional)",
 													value: lesson.pptFile,
-													placeholder: "https://.../slides.pptx",
+													accept: ".ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation",
 													onChange: (value) => handleUpdateLesson(moduleIndex, lessonIndex, { pptFile: value })
 												}),
-												/* @__PURE__ */ (0, import_jsx_runtime.jsx)(LessonField, {
-													label: "Thumbnail URL",
+												/* @__PURE__ */ (0, import_jsx_runtime.jsx)(LessonFileField, {
+													label: "Lesson thumbnail (optional)",
 													value: lesson.thumbnail,
-													placeholder: "Optional image URL",
+													accept: "image/*",
 													onChange: (value) => handleUpdateLesson(moduleIndex, lessonIndex, { thumbnail: value })
+												}),
+												/* @__PURE__ */ (0, import_jsx_runtime.jsx)(LessonFileField, {
+													label: "Subtitles VTT (optional)",
+													value: lesson.subtitleVtt,
+													accept: ".vtt,text/vtt",
+													onChange: (value) => handleUpdateLesson(moduleIndex, lessonIndex, { subtitleVtt: value })
 												}),
 												/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("label", {
 													className: "flex items-center gap-2 text-xs text-gray-600 sm:col-span-2",

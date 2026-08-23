@@ -47,12 +47,12 @@ type BuilderLesson = {
   duration: string;
   type: "text" | "video" | "audio" | "document" | "assignment" | "quiz";
   videoUrl?: string;
-  videoFile?: string;
-  pdfFile?: string;
-  audioFile?: string;
-  pptFile?: string;
-  thumbnail?: string;
-  subtitleVtt?: string;
+  videoFile?: string | File;
+  pdfFile?: string | File;
+  audioFile?: string | File;
+  pptFile?: string | File;
+  thumbnail?: string | File;
+  subtitleVtt?: string | File;
   xpReward?: number;
   isFree?: boolean;
   isDrip?: boolean;
@@ -81,7 +81,7 @@ function normalizeLessonType(value: unknown): BuilderLesson["type"] {
 }
 
 function validateLesson(lesson: BuilderLesson, type: BuilderLesson["type"]) {
-  const has = (value?: string) => Boolean(value?.trim());
+  const has = (value?: string | File) => Boolean(value && (value instanceof File || value.trim()));
   if (!lesson.title.trim()) return "title is required.";
   if (type === "text" || type === "assignment" || type === "quiz") {
     if (!has(lesson.content)) return `${type} lessons require content.`;
@@ -99,6 +99,24 @@ function LessonField({ label, value, placeholder, onChange }: { label: string; v
       <input value={value ?? ""} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all" />
     </label>
   );
+}
+
+function LessonFileField({ label, value, accept, onChange }: { label: string; value?: string | File; accept: string; onChange: (value: File) => void }) {
+  const fileName = value instanceof File ? value.name : value?.split("/").pop();
+  return (
+    <label className="space-y-1">
+      <span className="text-xs text-gray-500">{label}</span>
+      <span className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-gray-300 bg-white px-3 py-2 text-sm text-gray-600 hover:border-blue-400 hover:bg-blue-50">
+        <Upload className="h-4 w-4 shrink-0 text-blue-600" />
+        <span className="min-w-0 truncate">{fileName ?? "Choose file"}</span>
+        <input type="file" accept={accept} className="sr-only" onChange={(event) => { const file = event.target.files?.[0]; if (file) onChange(file); }} />
+      </span>
+    </label>
+  );
+}
+
+function mediaPayload(value?: string | File) {
+  return value instanceof File ? value : undefined;
 }
 
 function readSavedCourse(slug: string) {
@@ -687,12 +705,12 @@ function Builder() {
             video_url: videoUrl,
             video_source: /youtube\.com|youtu\.be/i.test(videoUrl) ? "youtube" : undefined,
           } : {}),
-          video_file: lesson.videoFile?.trim() || "",
-          pdf_file: lesson.pdfFile?.trim() || "",
-          audio_file: lesson.audioFile?.trim() || "",
-          ppt_file: lesson.pptFile?.trim() || "",
-          thumbnail: lesson.thumbnail?.trim() || "",
-          subtitle_vtt: lesson.subtitleVtt?.trim() || "",
+          video_file: mediaPayload(lesson.videoFile),
+          pdf_file: mediaPayload(lesson.pdfFile),
+          audio_file: mediaPayload(lesson.audioFile),
+          ppt_file: mediaPayload(lesson.pptFile),
+          thumbnail: mediaPayload(lesson.thumbnail),
+          subtitle_vtt: mediaPayload(lesson.subtitleVtt),
           // Preserve existing content/description instead of wiping them -
           // the builder UI doesn't expose fields to edit these, so blanking
           // them here would destroy real lesson content on every save.
@@ -1368,11 +1386,12 @@ function Builder() {
                               </label>
                               {lesson.type === "video" && <LessonField label="Video URL" value={lesson.videoUrl} placeholder="https://youtube.com/..." onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { videoUrl: value })} />}
                               {lesson.type !== "video" && <LessonField label="Video URL (supplementary)" value={lesson.videoUrl} placeholder="https://..." onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { videoUrl: value })} />}
-                              {lesson.type === "video" && <LessonField label="Uploaded video URL" value={lesson.videoFile} placeholder="Bucket URL for the video file" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { videoFile: value })} />}
-                              <LessonField label="Audio file URL (optional)" value={lesson.audioFile} placeholder="https://.../audio.mp3" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { audioFile: value })} />
-                              <LessonField label="PDF file URL (optional)" value={lesson.pdfFile} placeholder="https://.../guide.pdf" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { pdfFile: value })} />
-                              <LessonField label="PowerPoint file URL (optional)" value={lesson.pptFile} placeholder="https://.../slides.pptx" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { pptFile: value })} />
-                              <LessonField label="Thumbnail URL" value={lesson.thumbnail} placeholder="Optional image URL" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { thumbnail: value })} />
+                              {lesson.type === "video" && <LessonFileField label="Video file" value={lesson.videoFile} accept="video/*" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { videoFile: value })} />}
+                              <LessonFileField label="Audio file (optional)" value={lesson.audioFile} accept="audio/*" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { audioFile: value })} />
+                              <LessonFileField label="PDF file (optional)" value={lesson.pdfFile} accept="application/pdf" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { pdfFile: value })} />
+                              <LessonFileField label="PowerPoint file (optional)" value={lesson.pptFile} accept=".ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { pptFile: value })} />
+                              <LessonFileField label="Lesson thumbnail (optional)" value={lesson.thumbnail} accept="image/*" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { thumbnail: value })} />
+                              <LessonFileField label="Subtitles VTT (optional)" value={lesson.subtitleVtt} accept=".vtt,text/vtt" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { subtitleVtt: value })} />
                               <label className="flex items-center gap-2 text-xs text-gray-600 sm:col-span-2"><input type="checkbox" checked={lesson.isDrip ?? false} onChange={(event) => handleUpdateLesson(moduleIndex, lessonIndex, { isDrip: event.target.checked })} /> Release after enrollment day <input type="number" min="0" value={lesson.dripAfter ?? 0} onChange={(event) => handleUpdateLesson(moduleIndex, lessonIndex, { dripAfter: Number(event.target.value) })} className="w-20 rounded border border-gray-200 px-2 py-1" /></label>
                             </div>
                           </div>

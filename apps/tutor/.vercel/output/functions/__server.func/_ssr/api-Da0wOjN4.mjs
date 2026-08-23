@@ -1,4 +1,4 @@
-//#region node_modules/.nitro/vite/services/ssr/assets/api-CNLM6zj2.js
+//#region node_modules/.nitro/vite/services/ssr/assets/api-Da0wOjN4.js
 var API_BASE = "https://techbridge-backend-rust.vercel.app/api/v1";
 function toLessonType(rawType) {
 	const type = String(rawType ?? "video").toLowerCase();
@@ -429,14 +429,35 @@ async function updateTutorModule(moduleId, data) {
 async function createTutorLesson(courseSlug, data) {
 	return await apiRequest(`/lessons/admin/course/${courseSlug}/`, {
 		method: "POST",
-		body: JSON.stringify(data)
+		body: lessonRequestBody(data)
 	});
 }
 async function updateTutorLesson(lessonId, data) {
 	return await apiRequest(`/lessons/admin/${lessonId}/`, {
 		method: "PATCH",
-		body: JSON.stringify(data)
+		body: lessonRequestBody(data)
 	});
+}
+var LESSON_FILE_FIELDS = /* @__PURE__ */ new Set([
+	"video_file",
+	"pdf_file",
+	"audio_file",
+	"ppt_file",
+	"thumbnail",
+	"subtitle_vtt"
+]);
+function lessonRequestBody(data) {
+	if (!Object.values(data).some((value) => value instanceof File)) {
+		const jsonData = Object.fromEntries(Object.entries(data).filter(([key, value]) => !LESSON_FILE_FIELDS.has(key) || value instanceof File));
+		return JSON.stringify(jsonData);
+	}
+	const form = new FormData();
+	Object.entries(data).forEach(([key, value]) => {
+		if (value === void 0 || value === null || value === "") return;
+		if (LESSON_FILE_FIELDS.has(key) && !(value instanceof File)) return;
+		form.append(key, value instanceof File ? value : Array.isArray(value) ? JSON.stringify(value) : String(value));
+	});
+	return form;
 }
 async function deleteTutorLesson(lessonId) {
 	return await apiRequest(`/lessons/admin/${lessonId}/`, { method: "DELETE" });
