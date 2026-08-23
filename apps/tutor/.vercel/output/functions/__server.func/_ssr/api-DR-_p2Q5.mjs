@@ -1,4 +1,4 @@
-//#region node_modules/.nitro/vite/services/ssr/assets/api-D9XJEAL8.js
+//#region node_modules/.nitro/vite/services/ssr/assets/api-DR-_p2Q5.js
 var API_BASE = "https://techbridge-backend-rust.vercel.app/api/v1";
 function toLessonType(rawType) {
 	const type = String(rawType ?? "video").toLowerCase();
@@ -111,10 +111,15 @@ async function apiRequest(path, init = {}, retried = false) {
 	if (!headers.has("Content-Type") && init.body && typeof init.body === "string") headers.set("Content-Type", "application/json");
 	const url = `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
 	console.log(`API Request: ${init.method || "GET"} ${url}`);
-	const response = await fetch(url, {
-		...init,
-		headers
-	});
+	let response;
+	try {
+		response = await fetch(url, {
+			...init,
+			headers
+		});
+	} catch {
+		throw new Error(`The server rejected this request or did not return a CORS response. Check the backend logs for ${init.method ?? "GET"} ${path}.`);
+	}
 	if (!response.ok) {
 		if (response.status === 401 && !retried && !isLoginPath && !path.includes("/auth/token/refresh/")) {
 			if (await refreshToken()) return apiRequest(path, init, true);

@@ -712,10 +712,9 @@ function Builder() {
           title: lesson.title.trim(),
           slug: lesson.slug || `${slugify(lesson.title)}-${moduleIndex + 1}-${lessonIndex + 1}`,
           type,
-          ...(videoUrl ? {
-            video_url: videoUrl,
-            video_source: /youtube\.com|youtu\.be/i.test(videoUrl) ? "youtube" : undefined,
-          } : {}),
+          // These database columns are non-null even for non-video lessons.
+          video_url: videoUrl,
+          video_source: videoUrl && /youtube\.com|youtu\.be/i.test(videoUrl) ? "youtube" : "upload",
           video_file: mediaPayload(lesson.videoFile),
           pdf_file: mediaPayload(lesson.pdfFile),
           audio_file: mediaPayload(lesson.audioFile),

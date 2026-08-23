@@ -195,10 +195,15 @@ async function apiRequest<T>(path: string, init: RequestInit = {}, retried = fal
   const url = `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
   console.log(`API Request: ${init.method || 'GET'} ${url}`);
   
-  const response = await fetch(url, { 
-    ...init, 
-    headers 
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...init,
+      headers,
+    });
+  } catch {
+    throw new Error(`The server rejected this request or did not return a CORS response. Check the backend logs for ${init.method ?? "GET"} ${path}.`);
+  }
   
   if (!response.ok) {
     // Don't try to refresh token on login failures
