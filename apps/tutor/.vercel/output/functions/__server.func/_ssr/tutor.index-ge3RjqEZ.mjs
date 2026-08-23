@@ -1,9 +1,9 @@
 import { r as __toESM } from "../_runtime.mjs";
-import { h as getNotifications, m as getCourses, v as getStudents, y as getTutorAnalytics } from "./api-Da0wOjN4.mjs";
+import { h as getNotifications, m as getCourses, v as getStudents, y as getTutorAnalytics } from "./api-D9XJEAL8.mjs";
 import { n as require_jsx_runtime, r as require_react } from "../_libs/react+tanstack__react-query.mjs";
 import { g as Link } from "../_libs/@tanstack/react-router+[...].mjs";
 import { C as Plus, K as DollarSign, a as Users, dt as BookOpen, f as Star, ht as ArrowUpRight } from "../_libs/lucide-react.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/tutor.index-CGmK6I05.js
+//#region node_modules/.nitro/vite/services/ssr/assets/tutor.index-ge3RjqEZ.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function TutorDashboard() {

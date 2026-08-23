@@ -72,6 +72,7 @@ type BuilderModule = {
 };
 
 const LESSON_TYPES = ["text", "video", "audio", "document", "assignment", "quiz"] as const;
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 
 function normalizeLessonType(value: unknown): BuilderLesson["type"] {
   const type = String(value ?? "video").toLowerCase();
@@ -117,6 +118,10 @@ function LessonFileField({ label, value, accept, onChange }: { label: string; va
 
 function mediaPayload(value?: string | File) {
   return value instanceof File ? value : undefined;
+}
+
+function oversizedUpload(value?: string | File | null) {
+  return value instanceof File && value.size > MAX_UPLOAD_BYTES ? value : null;
 }
 
 function readSavedCourse(slug: string) {
@@ -632,8 +637,14 @@ function Builder() {
         for (const [lessonIndex, lesson] of module.lessons.entries()) {
           const message = validateLesson(lesson, normalizeLessonType(lesson.type));
           if (message) throw new Error(`Lesson ${lessonIndex + 1} in "${module.title}": ${message}`);
+          const oversized = [lesson.videoFile, lesson.pdfFile, lesson.audioFile, lesson.pptFile, lesson.thumbnail, lesson.subtitleVtt]
+            .map(oversizedUpload)
+            .find(Boolean);
+          if (oversized) throw new Error(`"${oversized.name}" is too large. Files must be smaller than 4 MB for this API.`);
         }
       }
+      const oversizedThumbnail = oversizedUpload(thumbnailFile ?? undefined);
+      if (oversizedThumbnail) throw new Error(`"${oversizedThumbnail.name}" is too large. Files must be smaller than 4 MB for this API.`);
 
       const payload = {
         title: title.trim(),

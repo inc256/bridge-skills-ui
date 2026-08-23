@@ -241,7 +241,14 @@ async function apiRequest<T>(path: string, init: RequestInit = {}, retried = fal
     } catch {
       // Body couldn't be read at all - keep the default message.
     }
-    const httpError = new Error(detail || `Request failed with ${response.status}`) as Error & { status?: number };
+    const isReadOnlyMediaFailure = /read-only file system|var\/task\/media/i.test(detail);
+    const isPayloadTooLarge = response.status === 413 || /content too large|request entity too large|payload too large/i.test(detail);
+    const message = isReadOnlyMediaFailure
+      ? "The server cannot store uploaded media: its deployment is using read-only local storage (/var/task/media). Configure the backend bucket storage before uploading files."
+      : isPayloadTooLarge
+        ? "This upload is too large for the deployed API. Use a smaller file or provide a hosted media URL, then try again."
+      : detail || `Request failed with ${response.status}`;
+    const httpError = new Error(message) as Error & { status?: number };
     if (detail === "Request failed") {
       httpError.message = `Request failed with ${response.status}`;
     }

@@ -1,12 +1,12 @@
 import { r as __toESM } from "../_runtime.mjs";
-import { C as patchCourse, D as updateTutorModule, E as updateTutorLesson, a as deleteCourse, c as generateCourseTitle, d as getCourseLessons, f as getCourseModules, g as getProfile, i as createTutorModule, l as getCourse, m as getCourses, n as createCourse, o as deleteTutorLesson, p as getCourseReviews, r as createTutorLesson, s as generateCourseDescription, u as getCourseCategories, v as getStudents, w as patchProfile, y as getTutorAnalytics } from "./api-Da0wOjN4.mjs";
+import { C as patchCourse, D as updateTutorModule, E as updateTutorLesson, a as deleteCourse, c as generateCourseTitle, d as getCourseLessons, f as getCourseModules, g as getProfile, i as createTutorModule, l as getCourse, m as getCourses, n as createCourse, o as deleteTutorLesson, p as getCourseReviews, r as createTutorLesson, s as generateCourseDescription, u as getCourseCategories, v as getStudents, w as patchProfile, y as getTutorAnalytics } from "./api-D9XJEAL8.mjs";
 import { n as require_jsx_runtime, r as require_react, t as QueryClientProvider } from "../_libs/react+tanstack__react-query.mjs";
-import { t as AuthProvider } from "./auth-C_Y6hKkR.mjs";
+import { t as AuthProvider } from "./auth-CzSgaZ2L.mjs";
 import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
 import { c as HeadContent, d as createRouter, f as Outlet, g as Link, h as createRootRouteWithContext, m as createFileRoute, p as lazyRouteComponent, s as Scripts, v as useNavigate, y as useRouter } from "../_libs/@tanstack/react-router+[...].mjs";
 import { $ as CircleCheckBig, A as Mail, B as FileText, C as Plus, D as MessageSquare, E as Minus, F as Link$1, G as Download, H as Eye, I as LayoutGrid, J as Clock, K as DollarSign, M as Lock, N as List, P as ListChecks, Q as CirclePlay, R as GraduationCap, S as RefreshCw, T as Pause, V as FileQuestionMark, W as Ellipsis, X as ClipboardCheck, Z as CircleQuestionMark, _ as Share2, _t as ArrowDownRight, a as Users, at as Check, b as Search, c as Upload, ct as Briefcase, d as Target, dt as BookOpen, et as CircleAlert, f as Star, ft as Bell, g as Shield, h as Sparkles, ht as ArrowUpRight, i as Video, it as ChevronDown, l as TrendingUp, m as SquarePen, mt as Award, n as X, nt as ChevronRight, o as User, ot as ChartColumn, pt as Banknote, q as CreditCard, r as Volume2, rt as ChevronLeft, s as UserCheck, st as Camera, tt as ChevronUp, u as Trash2, ut as Book, vt as Activity, w as Play, x as Save, z as Funnel } from "../_libs/lucide-react.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-DQafXagH.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-fsVC5ySD.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var styles_default = "/assets/styles-DpDLL9au.css";
@@ -148,7 +148,7 @@ function RootComponent() {
 		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AuthProvider, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Outlet, {}) })
 	});
 }
-var $$splitComponentImporter$3 = () => import("./routes-B1El-gmU.mjs");
+var $$splitComponentImporter$3 = () => import("./routes-BH_FXrPo.mjs");
 var Route$12 = createFileRoute("/")({
 	head: () => ({ meta: [{ title: "Tutor Portal — TechBridge" }, {
 		name: "description",
@@ -156,7 +156,7 @@ var Route$12 = createFileRoute("/")({
 	}] }),
 	component: lazyRouteComponent($$splitComponentImporter$3, "component")
 });
-var $$splitComponentImporter$2 = () => import("./tutor-DlRT2edM.mjs");
+var $$splitComponentImporter$2 = () => import("./tutor-CxwwF7n5.mjs");
 var Route$11 = createFileRoute("/tutor")({
 	head: () => ({ meta: [{ title: "Tutor — TechBridge" }, {
 		name: "description",
@@ -164,7 +164,7 @@ var Route$11 = createFileRoute("/tutor")({
 	}] }),
 	component: lazyRouteComponent($$splitComponentImporter$2, "component")
 });
-var $$splitComponentImporter$1 = () => import("./tutor.index-CGmK6I05.mjs");
+var $$splitComponentImporter$1 = () => import("./tutor.index-ge3RjqEZ.mjs");
 var Route$10 = createFileRoute("/tutor/")({ component: lazyRouteComponent($$splitComponentImporter$1, "component") });
 var Route$9 = createFileRoute("/tutor/analytics")({ component: Analytics });
 function Analytics() {
@@ -1222,6 +1222,7 @@ var LESSON_TYPES = [
 	"assignment",
 	"quiz"
 ];
+var MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 function normalizeLessonType(value) {
 	const type = String(value ?? "video").toLowerCase();
 	if (type === "article" || type === "reading") return "text";
@@ -1283,6 +1284,9 @@ function LessonFileField({ label, value, accept, onChange }) {
 }
 function mediaPayload(value) {
 	return value instanceof File ? value : void 0;
+}
+function oversizedUpload(value) {
+	return value instanceof File && value.size > MAX_UPLOAD_BYTES ? value : null;
 }
 function readSavedCourse(slug) {
 	if (typeof window === "undefined") return null;
@@ -1735,7 +1739,18 @@ function Builder() {
 			for (const module of modules) for (const [lessonIndex, lesson] of module.lessons.entries()) {
 				const message = validateLesson(lesson, normalizeLessonType(lesson.type));
 				if (message) throw new Error(`Lesson ${lessonIndex + 1} in "${module.title}": ${message}`);
+				const oversized = [
+					lesson.videoFile,
+					lesson.pdfFile,
+					lesson.audioFile,
+					lesson.pptFile,
+					lesson.thumbnail,
+					lesson.subtitleVtt
+				].map(oversizedUpload).find(Boolean);
+				if (oversized) throw new Error(`"${oversized.name}" is too large. Files must be smaller than 4 MB for this API.`);
 			}
+			const oversizedThumbnail = oversizedUpload(thumbnailFile);
+			if (oversizedThumbnail) throw new Error(`"${oversizedThumbnail.name}" is too large. Files must be smaller than 4 MB for this API.`);
 			const payload = {
 				title: title.trim(),
 				slug: newSlug,
