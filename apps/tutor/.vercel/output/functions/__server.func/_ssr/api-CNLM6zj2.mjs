@@ -1,4 +1,4 @@
-//#region node_modules/.nitro/vite/services/ssr/assets/api-n3K9V306.js
+//#region node_modules/.nitro/vite/services/ssr/assets/api-CNLM6zj2.js
 var API_BASE = "https://techbridge-backend-rust.vercel.app/api/v1";
 function toLessonType(rawType) {
 	const type = String(rawType ?? "video").toLowerCase();
@@ -101,8 +101,12 @@ async function refreshToken() {
 }
 async function apiRequest(path, init = {}, retried = false) {
 	const headers = new Headers(init.headers);
-	const session = readSession();
 	const isLoginPath = path.includes("/auth/login/") || path.includes("/login/");
+	let session = readSession();
+	if (!isLoginPath && session?.access && isAccessTokenExpired(session.access) && session.refresh) {
+		await refreshToken();
+		session = readSession();
+	}
 	if (session?.access && !isLoginPath) headers.set("Authorization", `Bearer ${session.access}`);
 	if (!headers.has("Content-Type") && init.body && typeof init.body === "string") headers.set("Content-Type", "application/json");
 	const url = `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
@@ -115,6 +119,11 @@ async function apiRequest(path, init = {}, retried = false) {
 		if (response.status === 401 && !retried && !isLoginPath && !path.includes("/auth/token/refresh/")) {
 			if (await refreshToken()) return apiRequest(path, init, true);
 			clearStoredSession();
+			if (init.method === "DELETE") {
+				const authError = /* @__PURE__ */ new Error("Your tutor session has expired. Please sign in again.");
+				authError.status = 401;
+				throw authError;
+			}
 		}
 		let detail = "Request failed";
 		try {
