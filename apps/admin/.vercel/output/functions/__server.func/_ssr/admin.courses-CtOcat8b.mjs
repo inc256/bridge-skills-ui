@@ -1,7 +1,7 @@
 import { r as __toESM } from "../_runtime.mjs";
 import { i as getCategories, t as apiRequest$1 } from "./api-aCKu3ccm.mjs";
 import { n as require_jsx_runtime, r as require_react } from "../_libs/react+tanstack__react-query.mjs";
-import { Ot as Archive, S as Plus, Z as Ellipsis, d as Trash2, ft as Check, i as Users, it as Clock, n as X, p as Star, w as Pen, y as Search, yt as BookOpen } from "../_libs/lucide-react.mjs";
+import { C as Plus, Q as Ellipsis, T as Pen, a as Users, at as Clock, b as Search, bt as BookOpen, f as Trash2, kt as Archive, m as Star, n as X, pt as Check } from "../_libs/lucide-react.mjs";
 //#region node_modules/.nitro/vite/services/ssr/assets/admin.courses-CtOcat8b.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();

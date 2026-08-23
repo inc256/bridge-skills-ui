@@ -53,22 +53,11 @@ export type TutorProfile = {
 
 const API_BASE = (import.meta.env?.VITE_API_BASE_URL as string | undefined) ?? "https://techbridge-backend-rust.vercel.app/api/v1";
 
-// Maps the backend's lowercase lesson `type` enum to the label used by the
-// builder's <select> options. Keep this in sync with the reverse mapping in
-// builder.tsx's handleSave (display -> backend).
-const LESSON_TYPE_TO_DISPLAY: Record<string, string> = {
-  video: "Video",
-  text: "Article",
-  reading: "Article",
-  quiz: "Quiz",
-  assignment: "Project",
-  project: "Project",
-  live: "Project",
-};
-
-function toDisplayLessonType(rawType: string | undefined | null): string {
-  if (!rawType) return "Video";
-  return LESSON_TYPE_TO_DISPLAY[String(rawType).toLowerCase()] ?? "Video";
+function toLessonType(rawType: string | undefined | null): string {
+  const type = String(rawType ?? "video").toLowerCase();
+  if (type === "article" || type === "reading") return "text";
+  if (type === "project" || type === "live") return "assignment";
+  return ["text", "video", "audio", "document", "assignment", "quiz"].includes(type) ? type : "video";
 }
 
 // The DB stores lesson duration as an integer number of seconds. The builder
@@ -423,6 +412,7 @@ export async function createCourse(course: {
   status?: string;
   pricing: string;
   price: string;
+  duration?: string;
   outcomes?: string[];
   requirements?: string[];
   thumbnail?: File | null;
@@ -605,8 +595,19 @@ export async function getCourseModules(slug: string) {
         duration: typeof lesson?.duration === "number"
           ? formatDurationSeconds(lesson.duration)
           : lesson?.duration ?? lesson?.length ?? "15 min",
-        type: toDisplayLessonType(lesson?.type ?? lesson?.lesson_type),
+        type: toLessonType(lesson?.type ?? lesson?.lesson_type),
         videoUrl: lesson?.video_url_resolved ?? lesson?.video_url ?? lesson?.video?.url ?? "",
+        videoFile: lesson?.video_file ?? "",
+        pdfFile: lesson?.pdf_file ?? "",
+        audioFile: lesson?.audio_file ?? "",
+        pptFile: lesson?.ppt_file ?? "",
+        thumbnail: lesson?.thumbnail ?? "",
+        subtitleVtt: lesson?.subtitle_vtt ?? "",
+        xpReward: Number(lesson?.xp_reward ?? 10),
+        isFree: Boolean(lesson?.is_free),
+        isDrip: Boolean(lesson?.is_drip),
+        dripAfter: Number(lesson?.drip_after ?? 0),
+        isPublished: lesson?.is_published !== false,
         _persisted: true,
       });
       groups.set(moduleId, group);

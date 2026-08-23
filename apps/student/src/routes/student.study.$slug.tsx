@@ -1,7 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import {
   Check, ChevronLeft, ChevronRight, Play, Pause, Volume2, Maximize, Settings, MessageSquare,
-  FileText, Download, Bookmark, PenSquare, ChevronDown, Minimize, VolumeX,
+  FileText, Download, Bookmark, PenSquare, ChevronDown, Minimize, VolumeX, FileSpreadsheet, ExternalLink,
   Lock, ChevronUp,
 } from "lucide-react";
 import { useEffect, useState, useMemo, useRef } from "react";
@@ -145,7 +145,16 @@ function StudyInterface() {
   };
 
   const lessonContent = currentLesson?.content ?? currentLesson?.description ?? "";
-  const lessonResources = Array.isArray(currentLesson?.resources) ? currentLesson.resources : resources;
+  const lessonType = String(currentLesson?.type ?? "video").toLowerCase();
+  const audioUrl = currentLesson?.audio_file ?? currentLesson?.audio_url ?? "";
+  const documentUrls = [
+    currentLesson?.pdf_file ? { label: "PDF document", url: currentLesson.pdf_file } : null,
+    currentLesson?.ppt_file ? { label: "PowerPoint slides", url: currentLesson.ppt_file } : null,
+  ].filter(Boolean) as Array<{ label: string; url: string }>;
+  const lessonResources = [
+    ...(Array.isArray(currentLesson?.resources) ? currentLesson.resources : resources),
+    ...documentUrls,
+  ];
   const videoUrl = currentLesson?.video_url
     ?? currentLesson?.video_url_resolved
     ?? currentLesson?.video?.url
@@ -544,7 +553,18 @@ function StudyInterface() {
               ref={playerContainerRef} 
               className="relative aspect-video w-full overflow-hidden bg-[#0A1A15] text-white"
             >
-              {videoInfo ? (
+              {lessonType === "audio" && audioUrl ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-[#0A1A15] p-6 text-white">
+                  <div className="grid h-20 w-20 place-items-center rounded-full bg-[#2ECC71]/15 text-[#2ECC71]"><Volume2 className="h-9 w-9" /></div>
+                  <div className="w-full max-w-xl"><div className="mb-3 text-center text-sm text-white/70">Audio lesson</div><audio className="w-full" controls src={audioUrl} /></div>
+                </div>
+              ) : lessonType === "document" && documentUrls.length > 0 ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[#0A1A15] p-6 text-center text-white">
+                  <FileSpreadsheet className="h-12 w-12 text-[#2ECC71]" />
+                  <div><p className="font-medium">Open the lesson document</p><p className="mt-1 text-sm text-white/60">Choose a file to view or download.</p></div>
+                  <div className="flex flex-wrap justify-center gap-2">{documentUrls.map((file) => <a key={file.url} href={file.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-sm hover:bg-white/20"><ExternalLink className="h-4 w-4" />{file.label}</a>)}</div>
+                </div>
+              ) : videoInfo ? (
                 <>
                   {videoInfo.type === 'youtube' ? (
                     <div ref={youtubeContainerRef} className="absolute inset-0 h-full w-full bg-[#0A1A15]" />
@@ -740,7 +760,7 @@ function StudyInterface() {
                     <Play className="h-5 w-5 sm:h-7 sm:w-7 fill-white/30 text-white/30" />
                   </div>
                   <div className="mt-2 sm:mt-3 text-xs sm:text-sm text-white/40">
-                    {currentLesson ? 'No video available' : 'No lesson selected'}
+                    {currentLesson ? (lessonType === "text" ? "Read the lesson content below" : "No media available") : 'No lesson selected'}
                   </div>
                 </div>
               )}
@@ -806,8 +826,15 @@ function StudyInterface() {
             {lessonContent && (
               <article className="mb-4 sm:mb-5 card-surface p-4 sm:p-5 lg:p-6">
                 <div className="text-[10px] sm:text-xs font-medium uppercase tracking-widest text-muted-foreground">Lesson content</div>
-                <div className="mt-2 sm:mt-3 whitespace-pre-wrap text-xs sm:text-sm leading-6 sm:leading-7 text-foreground/80">{lessonContent}</div>
+                <div className="prose prose-sm mt-2 sm:mt-3 max-w-none text-xs sm:text-sm leading-6 sm:leading-7 text-foreground/80" dangerouslySetInnerHTML={{ __html: lessonContent }} />
               </article>
+            )}
+
+            {(lessonType === "assignment" || lessonType === "quiz") && (
+              <div className="mb-4 sm:mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
+                <div><div className="text-sm font-semibold">{lessonType === "assignment" ? "Ready to submit your work?" : "Ready to test your knowledge?"}</div><div className="mt-1 text-xs text-muted-foreground">{lessonType === "assignment" ? "Review the instructions, then submit your completed work." : "Start the quiz when you are ready."}</div></div>
+                {lessonType === "assignment" ? <Link to="/student/assignments" className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">Submit assignment<ChevronRight className="h-4 w-4" /></Link> : <button type="button" onClick={() => setTab("quiz")} className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">Start quiz<ChevronRight className="h-4 w-4" /></button>}
+              </div>
             )}
             
             <div className="flex gap-1 overflow-x-auto rounded-[14px] border border-border bg-card p-1">

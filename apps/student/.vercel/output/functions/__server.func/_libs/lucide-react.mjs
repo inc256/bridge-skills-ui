@@ -507,6 +507,38 @@ var Eye = createLucideIcon("eye", [["path", {
 * This source code is licensed under the ISC license.
 * See the LICENSE file in the root directory of this source tree.
 */
+var FileSpreadsheet = createLucideIcon("file-spreadsheet", [
+	["path", {
+		d: "M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z",
+		key: "1oefj6"
+	}],
+	["path", {
+		d: "M14 2v5a1 1 0 0 0 1 1h5",
+		key: "wfsgrz"
+	}],
+	["path", {
+		d: "M8 13h2",
+		key: "yr2amv"
+	}],
+	["path", {
+		d: "M14 13h2",
+		key: "un5t4a"
+	}],
+	["path", {
+		d: "M8 17h2",
+		key: "2yhykz"
+	}],
+	["path", {
+		d: "M14 17h2",
+		key: "10kma7"
+	}]
+]);
+/**
+* @license lucide-react v0.575.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
 var FileText = createLucideIcon("file-text", [
 	["path", {
 		d: "M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z",
@@ -1417,4 +1449,4 @@ var Zap = createLucideIcon("zap", [["path", {
 	key: "1xq2db"
 }]]);
 //#endregion
-export { Clock as $, Maximize as A, Heart as B, RefreshCw as C, Minimize as D, Moon as E, LoaderCircle as F, Flame as G, Globe as H, Linkedin as I, EyeOff as J, FileText as K, Library as L, Mail as M, LogOut as N, MessageSquare as O, Lock as P, Compass as Q, LayoutDashboard as R, Rocket as S, Pause as T, Github as U, GraduationCap as V, Funnel as W, Download as X, ExternalLink as Y, CreditCard as Z, ShoppingCart as _, ArrowRight as _t, Users as a, ChevronUp as at, Settings as b, Trophy as c, ChevronDown as ct, Target as d, Calendar as dt, Clock3 as et, Sun as f, Bookmark as ft, Signal as g, Award as gt, Sparkles as h, Bell as ht, Volume2 as i, CircleAlert as it, MapPin as j, Menu as k, TrendingUp as l, Check as lt, SquarePen as m, BookMarked as mt, X as n, CirclePlay as nt, User as o, ChevronRight as ot, Star as p, BookOpen as pt, Eye as q, VolumeX as r, CircleCheckBig as rt, Twitter as s, ChevronLeft as st, Zap as t, CircleQuestionMark as tt, Trash2 as u, Camera as ut, Shield as v, Play as w, Search as x, Share2 as y, Layers as z };
+export { Compass as $, Maximize as A, Heart as B, RefreshCw as C, Minimize as D, Moon as E, LoaderCircle as F, Flame as G, Globe as H, Linkedin as I, Eye as J, FileText as K, Library as L, Mail as M, LogOut as N, MessageSquare as O, Lock as P, CreditCard as Q, LayoutDashboard as R, Rocket as S, Pause as T, Github as U, GraduationCap as V, Funnel as W, ExternalLink as X, EyeOff as Y, Download as Z, ShoppingCart as _, Award as _t, Users as a, CircleAlert as at, Settings as b, Trophy as c, ChevronLeft as ct, Target as d, Camera as dt, Clock as et, Sun as f, Calendar as ft, Signal as g, Bell as gt, Sparkles as h, BookMarked as ht, Volume2 as i, CircleCheckBig as it, MapPin as j, Menu as k, TrendingUp as l, ChevronDown as lt, SquarePen as m, BookOpen as mt, X as n, CircleQuestionMark as nt, User as o, ChevronUp as ot, Star as p, Bookmark as pt, FileSpreadsheet as q, VolumeX as r, CirclePlay as rt, Twitter as s, ChevronRight as st, Zap as t, Clock3 as tt, Trash2 as u, Check as ut, Shield as v, ArrowRight as vt, Play as w, Search as x, Share2 as y, Layers as z };

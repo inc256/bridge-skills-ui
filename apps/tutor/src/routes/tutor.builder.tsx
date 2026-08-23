@@ -7,6 +7,8 @@ import {
   Upload, 
   ChevronRight, 
   ChevronLeft,
+  ChevronDown,
+  ChevronUp,
   Sparkles,
   FileText,
   BookOpen,
@@ -23,7 +25,8 @@ import {
   Target,
   ListChecks,
   Save,
-  RefreshCw
+  RefreshCw,
+  Volume2
 } from "lucide-react";
 import { toast } from "sonner";
 import { createCourse, patchCourse, getCourse, getCourseModules, getCourseCategories, createTutorModule, updateTutorModule, createTutorLesson, updateTutorLesson, deleteTutorLesson, generateCourseDescription, generateCourseTitle } from "@/lib/api";
@@ -42,8 +45,19 @@ type BuilderLesson = {
   description?: string;
   content?: string;
   duration: string;
-  type: string;
+  type: "text" | "video" | "audio" | "document" | "assignment" | "quiz";
   videoUrl?: string;
+  videoFile?: string;
+  pdfFile?: string;
+  audioFile?: string;
+  pptFile?: string;
+  thumbnail?: string;
+  subtitleVtt?: string;
+  xpReward?: number;
+  isFree?: boolean;
+  isDrip?: boolean;
+  dripAfter?: number;
+  isPublished?: boolean;
   // True once this lesson exists in the DB. Set explicitly at load/creation
   // time instead of being guessed from the shape of `id` at save time.
   _persisted?: boolean;
@@ -56,6 +70,36 @@ type BuilderModule = {
   lessons: BuilderLesson[];
   _persisted?: boolean;
 };
+
+const LESSON_TYPES = ["text", "video", "audio", "document", "assignment", "quiz"] as const;
+
+function normalizeLessonType(value: unknown): BuilderLesson["type"] {
+  const type = String(value ?? "video").toLowerCase();
+  if (type === "article" || type === "reading") return "text";
+  if (type === "project" || type === "live") return "assignment";
+  return LESSON_TYPES.includes(type as BuilderLesson["type"]) ? type as BuilderLesson["type"] : "video";
+}
+
+function validateLesson(lesson: BuilderLesson, type: BuilderLesson["type"]) {
+  const has = (value?: string) => Boolean(value?.trim());
+  if (!lesson.title.trim()) return "title is required.";
+  if (type === "text" || type === "assignment" || type === "quiz") {
+    if (!has(lesson.content)) return `${type} lessons require content.`;
+  }
+  if (type === "video" && !has(lesson.videoUrl) && !has(lesson.videoFile)) return "video lessons require a video URL or video file.";
+  if (type === "audio" && !has(lesson.audioFile)) return "audio lessons require an audio file.";
+  if (type === "document" && !has(lesson.pdfFile) && !has(lesson.pptFile)) return "document lessons require a PDF or PowerPoint file.";
+  return null;
+}
+
+function LessonField({ label, value, placeholder, onChange }: { label: string; value?: string; placeholder: string; onChange: (value: string) => void }) {
+  return (
+    <label className="space-y-1">
+      <span className="text-xs text-gray-500">{label}</span>
+      <input value={value ?? ""} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all" />
+    </label>
+  );
+}
 
 function readSavedCourse(slug: string) {
   if (typeof window === "undefined") return null;
@@ -79,6 +123,7 @@ function Builder() {
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
+  const [courseTimeline, setCourseTimeline] = useState("");
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [categoryId, setCategoryId] = useState<number | null>(null);
@@ -103,6 +148,7 @@ function Builder() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loadingCourse, setLoadingCourse] = useState(false);
+  const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
 
   // Fallback heuristic for drafts saved before `_persisted` existed (e.g. an
   // old draft sitting in localStorage). Once every draft has gone through a
@@ -173,6 +219,7 @@ function Builder() {
           if (course.subtitle) setSubtitle(course.subtitle);
           if (course.description) setDescription(course.description ?? course.subtitle ?? "");
           if (course.thumbnail) setThumbnailUrl(String(course.thumbnail));
+          if (course.duration) setCourseTimeline(String(course.duration));
           if (course.category && typeof course.category === "object") {
             setCategoryId(course.category.id ?? course.category);
           } else if (course.category_id) {
@@ -217,11 +264,23 @@ function Builder() {
                 description: l.description ?? "",
                 content: l.content ?? "",
                 duration: l.duration || "15 min",
-                type: l.type || "Video",
+                type: normalizeLessonType(l.type),
                 videoUrl: l.video_url || l.videoUrl || "",
+                videoFile: l.video_file || l.videoFile || "",
+                pdfFile: l.pdf_file || l.pdfFile || "",
+                audioFile: l.audio_file || l.audioFile || "",
+                pptFile: l.ppt_file || l.pptFile || "",
+                thumbnail: l.thumbnail || "",
+                subtitleVtt: l.subtitle_vtt || l.subtitleVtt || "",
+                xpReward: Number(l.xp_reward ?? l.xpReward ?? 10),
+                isFree: Boolean(l.is_free ?? l.isFree),
+                isDrip: Boolean(l.is_drip ?? l.isDrip),
+                dripAfter: Number(l.drip_after ?? l.dripAfter ?? 0),
+                isPublished: l.is_published !== false,
                 _persisted: l._persisted ?? looksPersistedId(l.id),
               })) : []
             })));
+            setExpandedModules(Object.fromEntries(curriculum.map((m: any, index: number) => [String(m.id || index), index === 0])));
           }
           
           // Handle resources if they exist
@@ -271,6 +330,7 @@ function Builder() {
       slug,
       subtitle,
       description,
+      courseTimeline,
       thumbnailUrl: thumbnailUrl.startsWith("blob:") ? "" : thumbnailUrl,
       categoryId,
       level,
@@ -284,7 +344,7 @@ function Builder() {
       resources,
     };
     window.localStorage.setItem("bridge_skills_tutor_course_draft", JSON.stringify(draft));
-  }, [title, slug, subtitle, description, thumbnailUrl, categoryId, level, language, pricing, price, status, modules, outcomes, requirements, resources, isEdit]);
+  }, [title, slug, subtitle, description, courseTimeline, thumbnailUrl, categoryId, level, language, pricing, price, status, modules, outcomes, requirements, resources, isEdit]);
 
   function slugify(value: string) {
     return value
@@ -314,34 +374,19 @@ function Builder() {
       : Math.random().toString(36).slice(2, 10);
   }
 
-  function estimateDuration() {
-    const total = modules.reduce((moduleSum, module) => {
-      return moduleSum + module.lessons.reduce((lessonSum, lesson) => {
-        if (typeof lesson.duration === "number" && Number.isFinite(lesson.duration)) {
-          return lessonSum + Math.round(lesson.duration / 60);
-        }
-        const match = String(lesson.duration ?? "").match(/(\d+(?:\.\d+)?)\s*(h|m)?/i);
-        if (!match) return lessonSum + 15;
-        const value = Number(match[1]);
-        return lessonSum + (match[2]?.toLowerCase() === "h" ? value * 60 : value);
-      }, 0);
-    }, 0);
-    if (total === 0) return "TBD";
-    if (total < 60) return `${total} min`;
-    return `${Math.round(total / 60)}h ${total % 60}m`;
-  }
-
   function handleAddModule() {
+    const moduleId = `module-${getNewId()}`;
     setModules((prev) => [
       ...prev,
       {
-        id: `module-${getNewId()}`,
+        id: moduleId,
         title: "New module",
         description: "Describe what this module covers.",
         lessons: [],
         _persisted: false,
       },
     ]);
+    setExpandedModules((current) => ({ ...current, [moduleId]: true }));
     setStep(2);
   }
 
@@ -365,10 +410,21 @@ function Builder() {
                   id: `lesson-${getNewId()}`,
                   title: "New lesson",
                   duration: "15 min",
-                  type: "Video",
+                  type: "video",
                   videoUrl: "",
                   description: "",
                   content: "",
+                  videoFile: "",
+                  pdfFile: "",
+                  audioFile: "",
+                  pptFile: "",
+                  thumbnail: "",
+                  subtitleVtt: "",
+                  xpReward: 10,
+                  isFree: false,
+                  isDrip: false,
+                  dripAfter: 0,
+                  isPublished: true,
                   _persisted: false,
                 },
               ],
@@ -490,8 +546,8 @@ function Builder() {
         description: `Set the stage with objectives and what learners will accomplish in this course.`,
         _persisted: false,
         lessons: [
-          { id: `lesson-${getNewId()}`, title: `Why ${base} matters`, duration: "12 min", type: "Video", description: "", content: "", _persisted: false },
-          { id: `lesson-${getNewId()}`, title: `Course overview and outcomes`, duration: "15 min", type: "Article", description: "", content: "", _persisted: false },
+          { id: `lesson-${getNewId()}`, title: `Why ${base} matters`, duration: "12 min", type: "video", description: "", content: "", _persisted: false },
+          { id: `lesson-${getNewId()}`, title: `Course overview and outcomes`, duration: "15 min", type: "text", description: "", content: "", _persisted: false },
         ],
       },
       {
@@ -500,8 +556,8 @@ function Builder() {
         description: `Bring together the main knowledge areas with clear examples and exercises.`,
         _persisted: false,
         lessons: [
-          { id: `lesson-${getNewId()}`, title: `Core idea #1`, duration: "18 min", type: "Video", description: "", content: "", _persisted: false },
-          { id: `lesson-${getNewId()}`, title: `Core idea #2`, duration: "18 min", type: "Video", description: "", content: "", _persisted: false },
+          { id: `lesson-${getNewId()}`, title: `Core idea #1`, duration: "18 min", type: "video", description: "", content: "", _persisted: false },
+          { id: `lesson-${getNewId()}`, title: `Core idea #2`, duration: "18 min", type: "video", description: "", content: "", _persisted: false },
         ],
       },
       {
@@ -510,8 +566,8 @@ function Builder() {
         description: `Help learners apply skills through guided practice and review.`,
         _persisted: false,
         lessons: [
-          { id: `lesson-${getNewId()}`, title: `Hands-on exercise`, duration: "25 min", type: "Project", description: "", content: "", _persisted: false },
-          { id: `lesson-${getNewId()}`, title: `Final review`, duration: "10 min", type: "Quiz", description: "", content: "", _persisted: false },
+          { id: `lesson-${getNewId()}`, title: `Hands-on exercise`, duration: "25 min", type: "assignment", description: "", content: "", _persisted: false },
+          { id: `lesson-${getNewId()}`, title: `Final review`, duration: "10 min", type: "quiz", description: "", content: "", _persisted: false },
         ],
       },
     ]);
@@ -544,6 +600,9 @@ function Builder() {
       if (!description.trim()) {
         throw new Error("Course description is required.");
       }
+      if (!courseTimeline.trim()) {
+        throw new Error("Total course timeline is required.");
+      }
       if (modules.length === 0) {
         throw new Error("Add at least one module to build a complete course.");
       }
@@ -551,12 +610,19 @@ function Builder() {
       if (totalLessons === 0) {
         throw new Error("Add at least one lesson to your curriculum.");
       }
+      for (const module of modules) {
+        for (const [lessonIndex, lesson] of module.lessons.entries()) {
+          const message = validateLesson(lesson, normalizeLessonType(lesson.type));
+          if (message) throw new Error(`Lesson ${lessonIndex + 1} in "${module.title}": ${message}`);
+        }
+      }
 
       const payload = {
         title: title.trim(),
         slug: newSlug,
         subtitle: subtitle.trim() || undefined,
         description: description.trim(),
+        duration: courseTimeline.trim() || undefined,
         thumbnail: thumbnailFile ?? undefined,
         category: categoryId ?? 1,
         level,
@@ -579,6 +645,12 @@ function Builder() {
         // Create new course
         saved = await createCourse(payload);
         toast.success("Course created successfully!");
+      }
+
+      const storedThumbnail = saved?.thumbnail ?? saved?.thumbnail_url;
+      if (storedThumbnail) {
+        setThumbnailUrl(String(storedThumbnail));
+        setThumbnailFile(null);
       }
 
       const courseSlug = saved?.slug ?? newSlug;
@@ -604,12 +676,7 @@ function Builder() {
       const lessonPayloads = persistedModules.flatMap((module, moduleIndex) =>
         module.lessons.map((lesson, lessonIndex) => {
           const videoUrl = lesson.videoUrl?.trim() || "";
-          const type = (() => {
-            const type = lesson.type.toLowerCase();
-            if (type === "article" || type === "reading") return "text";
-            if (type === "project" || type === "live") return "assignment";
-            return type;
-          })();
+          const type = normalizeLessonType(lesson.type);
           return {
           id: lesson.id,
           _persisted: lesson._persisted ?? looksPersistedId(lesson.id),
@@ -620,26 +687,24 @@ function Builder() {
             video_url: videoUrl,
             video_source: /youtube\.com|youtu\.be/i.test(videoUrl) ? "youtube" : undefined,
           } : {}),
+          video_file: lesson.videoFile?.trim() || "",
+          pdf_file: lesson.pdfFile?.trim() || "",
+          audio_file: lesson.audioFile?.trim() || "",
+          ppt_file: lesson.pptFile?.trim() || "",
+          thumbnail: lesson.thumbnail?.trim() || "",
+          subtitle_vtt: lesson.subtitleVtt?.trim() || "",
           // Preserve existing content/description instead of wiping them -
           // the builder UI doesn't expose fields to edit these, so blanking
           // them here would destroy real lesson content on every save.
           description: lesson.description ?? "",
           content: lesson.content ?? "",
           module: module.id,
-          is_drip: false,
-          drip_after: 0,
-          duration: (() => {
-            const value = String(lesson.duration ?? "").trim().toLowerCase();
-            const hours = value.match(/(\d+(?:\.\d+)?)\s*h/);
-            const minutes = value.match(/(\d+(?:\.\d+)?)\s*m/);
-            if (hours || minutes) {
-              return Math.round((hours ? Number(hours[1]) * 3600 : 0) + (minutes ? Number(minutes[1]) * 60 : 0));
-            }
-            return Number.parseInt(value, 10) || 0;
-          })(),
-          xp_reward: 10,
-          is_free: moduleIndex === 0 && lessonIndex === 0,
-          is_published: status === "published",
+          duration: 0,
+          xp_reward: Math.max(0, Number(lesson.xpReward ?? 10)),
+          is_free: Boolean(lesson.isFree ?? (moduleIndex === 0 && lessonIndex === 0)),
+          is_drip: Boolean(lesson.isDrip),
+          drip_after: Math.max(0, Number(lesson.dripAfter ?? 0)),
+          is_published: lesson.isPublished ?? status === "published",
           lesson_order: lessonIndex + 1,
           };
         }),
@@ -671,7 +736,8 @@ function Builder() {
       const savedCourse = {
         ...(saved ?? {}),
         ...payload,
-        thumbnail: saved?.thumbnail ?? "",
+        thumbnail: storedThumbnail ?? thumbnailUrl ?? "",
+        duration: saved?.duration ?? courseTimeline,
         id: saved?.id ?? originalSlug ?? newSlug,
         slug: saved?.slug ?? newSlug,
         category: typeof saved?.category === "object" ? saved.category?.name ?? categoryName : saved?.category ?? categoryName,
@@ -704,10 +770,12 @@ function Builder() {
 
   const getLessonTypeIcon = (type: string) => {
     const icons: Record<string, any> = {
-      Video: Video,
-      Article: FileText,
-      Quiz: FileQuestion,
-      Project: Briefcase,
+      video: Video,
+      text: FileText,
+      quiz: FileQuestion,
+      assignment: Briefcase,
+      audio: Volume2,
+      document: BookOpen,
     };
     return icons[type] || FileText;
   };
@@ -887,6 +955,17 @@ function Builder() {
                   />
                 </label>
 
+                <label className="space-y-1.5">
+                  <span className="text-sm font-medium text-gray-700">Total course timeline *</span>
+                  <input
+                    value={courseTimeline}
+                    onChange={(event) => setCourseTimeline(event.target.value)}
+                    className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                    placeholder="e.g. 8 weeks or 24 hours"
+                  />
+                  <span className="text-xs text-gray-500">This is the learner-facing course duration. Individual lessons do not need a duration.</span>
+                </label>
+
                 <div className="space-y-3">
                   <span className="text-sm font-medium text-gray-700">Course Thumbnail</span>
                   <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100">
@@ -909,6 +988,7 @@ function Builder() {
                   <div className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
                     <img src={thumbnailUrl} alt="Course thumbnail preview" className="h-40 w-full object-cover" />
                     <p className="px-3 py-2 text-xs text-gray-500">{thumbnailFile?.name ?? "Current course thumbnail"}</p>
+                    {thumbnailFile && <p className="border-t border-gray-200 px-3 py-2 text-xs text-amber-700">Uploaded to the course bucket when you save.</p>}
                   </div>
                 ) : null}
 
@@ -1188,7 +1268,15 @@ function Builder() {
               <div className="space-y-4">
                 {modules.map((module, moduleIndex) => (
                   <div key={module.id} className="border border-gray-200 rounded-xl p-4">
-                    <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+                    <div className="flex items-start gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedModules((current) => ({ ...current, [module.id]: !current[module.id] }))}
+                        className="mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50"
+                        aria-label={`${expandedModules[module.id] ? "Collapse" : "Expand"} ${module.title}`}
+                      >
+                        {expandedModules[module.id] ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </button>
                       <div className="flex-1 space-y-3">
                         <label className="space-y-1">
                           <span className="text-sm font-medium text-gray-700">Module Title</span>
@@ -1208,7 +1296,7 @@ function Builder() {
                           />
                         </label>
                       </div>
-                      <div className="flex lg:flex-col gap-2">
+                      <div className="flex gap-2">
                         <button
                           type="button"
                           onClick={() => handleAddLesson(moduleIndex)}
@@ -1226,7 +1314,7 @@ function Builder() {
                       </div>
                     </div>
 
-                    <div className="mt-4 space-y-3">
+                    {expandedModules[module.id] && <div className="mt-4 space-y-3 border-t border-gray-100 pt-4">
                       {module.lessons.map((lesson, lessonIndex) => {
                         const LessonIcon = getLessonTypeIcon(lesson.type);
                         return (
@@ -1254,40 +1342,43 @@ function Builder() {
                                 />
                               </label>
                               <label className="space-y-1">
-                                <span className="text-xs text-gray-500">Duration</span>
-                                <input
-                                  value={lesson.duration}
-                                  onChange={(event) => handleUpdateLesson(moduleIndex, lessonIndex, { duration: event.target.value })}
-                                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
-                                />
-                              </label>
-                              <label className="space-y-1">
                                 <span className="text-xs text-gray-500">Type</span>
                                 <select
                                   value={lesson.type}
-                                  onChange={(event) => handleUpdateLesson(moduleIndex, lessonIndex, { type: event.target.value })}
+                                  onChange={(event) => handleUpdateLesson(moduleIndex, lessonIndex, { type: normalizeLessonType(event.target.value) })}
                                   className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                                 >
-                                  <option value="Video">Video</option>
-                                  <option value="Article">Article</option>
-                                  <option value="Quiz">Quiz</option>
-                                  <option value="Project">Project</option>
+                                  <option value="document">Document</option>
+                                  <option value="text">Text</option>
+                                  <option value="video">Video</option>
+                                  <option value="audio">Audio</option>
+                                  <option value="assignment">Assignment</option>
+                                  <option value="quiz">Quiz</option>
                                 </select>
                               </label>
-                              <label className="space-y-1">
-                                <span className="text-xs text-gray-500">Video URL</span>
-                                <input
-                                  value={(lesson as any).videoUrl ?? ""}
-                                  onChange={(event) => handleUpdateLesson(moduleIndex, lessonIndex, { videoUrl: event.target.value })}
+                              <label className="space-y-1 sm:col-span-2">
+                                <span className="text-xs text-gray-500">Description / content (HTML)</span>
+                                <textarea
+                                  value={lesson.content ?? ""}
+                                  onChange={(event) => handleUpdateLesson(moduleIndex, lessonIndex, { content: event.target.value })}
+                                  rows={3}
                                   className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
-                                  placeholder="https://..."
+                                  placeholder="Add lesson instructions, transcript, or notes"
                                 />
                               </label>
+                              {lesson.type === "video" && <LessonField label="Video URL" value={lesson.videoUrl} placeholder="https://youtube.com/..." onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { videoUrl: value })} />}
+                              {lesson.type !== "video" && <LessonField label="Video URL (supplementary)" value={lesson.videoUrl} placeholder="https://..." onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { videoUrl: value })} />}
+                              {lesson.type === "video" && <LessonField label="Uploaded video URL" value={lesson.videoFile} placeholder="Bucket URL for the video file" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { videoFile: value })} />}
+                              <LessonField label="Audio file URL (optional)" value={lesson.audioFile} placeholder="https://.../audio.mp3" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { audioFile: value })} />
+                              <LessonField label="PDF file URL (optional)" value={lesson.pdfFile} placeholder="https://.../guide.pdf" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { pdfFile: value })} />
+                              <LessonField label="PowerPoint file URL (optional)" value={lesson.pptFile} placeholder="https://.../slides.pptx" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { pptFile: value })} />
+                              <LessonField label="Thumbnail URL" value={lesson.thumbnail} placeholder="Optional image URL" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { thumbnail: value })} />
+                              <label className="flex items-center gap-2 text-xs text-gray-600 sm:col-span-2"><input type="checkbox" checked={lesson.isDrip ?? false} onChange={(event) => handleUpdateLesson(moduleIndex, lessonIndex, { isDrip: event.target.checked })} /> Release after enrollment day <input type="number" min="0" value={lesson.dripAfter ?? 0} onChange={(event) => handleUpdateLesson(moduleIndex, lessonIndex, { dripAfter: Number(event.target.value) })} className="w-20 rounded border border-gray-200 px-2 py-1" /></label>
                             </div>
                           </div>
                         );
                       })}
-                    </div>
+                    </div>}
                   </div>
                 ))}
 
@@ -1421,8 +1512,8 @@ function Builder() {
                       <p className="text-lg font-bold text-gray-900">{modules.reduce((sum, m) => sum + m.lessons.length, 0)}</p>
                     </div>
                     <div className="bg-white/80 rounded-lg p-2 text-center">
-                      <p className="text-xs text-gray-500">Duration</p>
-                      <p className="text-lg font-bold text-gray-900">{estimateDuration()}</p>
+                      <p className="text-xs text-gray-500">Course timeline</p>
+                      <p className="text-lg font-bold text-gray-900">{courseTimeline || "TBD"}</p>
                     </div>
                   </div>
 
@@ -1522,8 +1613,8 @@ function Builder() {
                 <p className="text-lg font-bold text-gray-900">{modules.reduce((sum, m) => sum + m.lessons.length, 0)}</p>
               </div>
               <div className="bg-gray-50 rounded-lg p-2 text-center">
-                <p className="text-xs text-gray-500">Duration</p>
-                <p className="text-lg font-bold text-gray-900">{estimateDuration()}</p>
+                <p className="text-xs text-gray-500">Course timeline</p>
+                <p className="text-lg font-bold text-gray-900">{courseTimeline || "TBD"}</p>
               </div>
             </div>
 

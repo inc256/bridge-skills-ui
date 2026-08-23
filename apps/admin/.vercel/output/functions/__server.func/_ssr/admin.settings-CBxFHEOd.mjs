@@ -1,7 +1,7 @@
 import { r as __toESM } from "../_runtime.mjs";
 import { t as apiRequest } from "./api-aCKu3ccm.mjs";
 import { n as require_jsx_runtime, r as require_react } from "../_libs/react+tanstack__react-query.mjs";
-import { F as Link, M as Mail, P as Lock, U as Globe, X as ExternalLink, _ as Settings, a as User, at as CircleX, et as Database, h as Shield, m as Sparkles, n as X, nt as Code, st as CircleCheckBig, tt as CreditCard, ut as ChevronRight, v as Server, vt as Bot, z as Info } from "../_libs/lucide-react.mjs";
+import { B as Info, F as Lock, I as Link, N as Mail, W as Globe, Z as ExternalLink, ct as CircleCheckBig, dt as ChevronRight, g as Shield, h as Sparkles, n as X, nt as CreditCard, o as User, ot as CircleX, rt as Code, tt as Database, v as Settings, y as Server, yt as Bot } from "../_libs/lucide-react.mjs";
 //#region node_modules/.nitro/vite/services/ssr/assets/admin.settings-CBxFHEOd.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();

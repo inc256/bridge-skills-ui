@@ -1,7 +1,7 @@
 import { r as __toESM } from "../_runtime.mjs";
 import { a as getCoursesWithPagination, c as getRecentUsers, r as getAnalyticsDailyActivity, s as getDashboardStats } from "./api-aCKu3ccm.mjs";
 import { n as require_jsx_runtime, r as require_react } from "../_libs/react+tanstack__react-query.mjs";
-import { Dt as ArrowDownRight, H as GraduationCap, Q as Download, St as Award, i as Users, n as X, o as UserPlus, u as TrendingUp, wt as ArrowUpRight, yt as BookOpen } from "../_libs/lucide-react.mjs";
+import { $ as Download, Ct as Award, Ot as ArrowDownRight, Tt as ArrowUpRight, U as GraduationCap, a as Users, bt as BookOpen, d as TrendingUp, n as X, s as UserPlus } from "../_libs/lucide-react.mjs";
 //#region node_modules/.nitro/vite/services/ssr/assets/admin.dashboard-Dxx7sY78.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();

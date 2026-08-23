@@ -2,7 +2,7 @@ import { r as __toESM } from "../_runtime.mjs";
 import { S as initiatePayment, c as getCourseModules, i as enrollInCourse, n as checkCourseEnrollment } from "./api-BK_0zLtj.mjs";
 import { n as require_jsx_runtime, r as require_react } from "../_libs/react+tanstack__react-query.mjs";
 import { g as Link, v as useNavigate } from "../_libs/@tanstack/react-router+[...].mjs";
-import { $ as Clock, F as LoaderCircle, H as Globe, X as Download, a as Users, gt as Award, lt as Check, nt as CirclePlay, p as Star } from "../_libs/lucide-react.mjs";
+import { F as LoaderCircle, H as Globe, Z as Download, _t as Award, a as Users, et as Clock, p as Star, rt as CirclePlay, ut as Check } from "../_libs/lucide-react.mjs";
 import { t as Route } from "./student.course._slug-Bggw7Vne.mjs";
 import { t as CourseThumb } from "./course-thumb-BLEjkbjf.mjs";
 //#region node_modules/.nitro/vite/services/ssr/assets/student.course._slug-DZR7sio2.js

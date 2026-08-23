@@ -1636,6 +1636,26 @@ var Video = createLucideIcon("video", [["path", {
 * This source code is licensed under the ISC license.
 * See the LICENSE file in the root directory of this source tree.
 */
+var Volume2 = createLucideIcon("volume-2", [
+	["path", {
+		d: "M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z",
+		key: "uqj9uw"
+	}],
+	["path", {
+		d: "M16 9a5 5 0 0 1 0 6",
+		key: "1q6k2b"
+	}],
+	["path", {
+		d: "M19.364 18.364a9 9 0 0 0 0-12.728",
+		key: "ijwkga"
+	}]
+]);
+/**
+* @license lucide-react v0.575.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
 var X = createLucideIcon("x", [["path", {
 	d: "M18 6 6 18",
 	key: "1bl5f8"
@@ -1654,4 +1674,4 @@ var Zap = createLucideIcon("zap", [["path", {
 	key: "1xq2db"
 }]]);
 //#endregion
-export { DollarSign as $, Megaphone as A, House as B, Phone as C, ArrowUp as Ct, MessageSquare as D, ArrowDownRight as Dt, Minus as E, ArrowDown as Et, Link as F, Funnel as G, GraduationCap as H, LayoutDashboard as I, Eye as J, FileText as K, Layers as L, Mail as M, LogOut as N, MessageCircle as O, Archive as Ot, Lock as P, Download as Q, Key as R, Plus as S, Award as St, PanelsTopLeft as T, ArrowRight as Tt, Globe as U, Headphones as V, Gift as W, ExternalLink as X, EyeOff as Y, Ellipsis as Z, Settings as _, Briefcase as _t, User as a, CircleX as at, RotateCcw as b, Bell as bt, UserCheck as c, CircleAlert as ct, Trash2 as d, ChevronDown as dt, Database as et, Tag as f, Check as ft, ShieldCheck as g, Building2 as gt, Shield as h, Calendar as ht, Users as i, Clock as it, MapPin as j, Menu as k, Activity as kt, TriangleAlert as l, ChevronUp as lt, Sparkles as m, ChartColumn as mt, X as n, Code as nt, UserPlus as o, CircleQuestionMark as ot, Star as p, ChartNoAxesColumn as pt, FilePen as q, Video as r, CloudUpload as rt, UserCog as s, CircleCheckBig as st, Zap as t, CreditCard as tt, TrendingUp as u, ChevronRight as ut, Server as v, Bot as vt, Pen as w, ArrowUpRight as wt, RefreshCw as x, Ban as xt, Search as y, BookOpen as yt, Info as z };
+export { Download as $, Menu as A, Activity as At, Info as B, Plus as C, Award as Ct, Minus as D, ArrowDown as Dt, PanelsTopLeft as E, ArrowRight as Et, Lock as F, Gift as G, Headphones as H, Link as I, FilePen as J, Funnel as K, LayoutDashboard as L, MapPin as M, Mail as N, MessageSquare as O, ArrowDownRight as Ot, LogOut as P, Ellipsis as Q, Layers as R, RefreshCw as S, Ban as St, Pen as T, ArrowUpRight as Tt, GraduationCap as U, House as V, Globe as W, EyeOff as X, Eye as Y, ExternalLink as Z, ShieldCheck as _, Building2 as _t, Users as a, Clock as at, Search as b, BookOpen as bt, UserCog as c, CircleCheckBig as ct, TrendingUp as d, ChevronRight as dt, DollarSign as et, Trash2 as f, ChevronDown as ft, Shield as g, Calendar as gt, Sparkles as h, ChartColumn as ht, Video as i, CloudUpload as it, Megaphone as j, MessageCircle as k, Archive as kt, UserCheck as l, CircleAlert as lt, Star as m, ChartNoAxesColumn as mt, X as n, CreditCard as nt, User as o, CircleX as ot, Tag as p, Check as pt, FileText as q, Volume2 as r, Code as rt, UserPlus as s, CircleQuestionMark as st, Zap as t, Database as tt, TriangleAlert as u, ChevronUp as ut, Settings as v, Briefcase as vt, Phone as w, ArrowUp as wt, RotateCcw as x, Bell as xt, Server as y, Bot as yt, Key as z };

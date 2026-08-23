@@ -2,7 +2,7 @@ import { r as __toESM } from "../_runtime.mjs";
 import { C as isAccessTokenExpired, O as register, T as logout, _ as getProfile, b as getStoredSession, r as clearStoredSession, w as login } from "./api-BK_0zLtj.mjs";
 import { n as require_jsx_runtime, r as require_react } from "../_libs/react+tanstack__react-query.mjs";
 import { y as useRouter } from "../_libs/@tanstack/react-router+[...].mjs";
-import { J as EyeOff, M as Mail, P as Lock, V as GraduationCap, _t as ArrowRight, it as CircleAlert, q as Eye, rt as CircleCheckBig, v as Shield } from "../_libs/lucide-react.mjs";
+import { J as Eye, M as Mail, P as Lock, V as GraduationCap, Y as EyeOff, at as CircleAlert, it as CircleCheckBig, v as Shield, vt as ArrowRight } from "../_libs/lucide-react.mjs";
 //#region node_modules/.nitro/vite/services/ssr/assets/student-auth-page-BIl8CWjg.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();

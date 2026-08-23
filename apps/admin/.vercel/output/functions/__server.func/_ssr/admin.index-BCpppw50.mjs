@@ -1,5 +1,5 @@
 import { n as require_jsx_runtime } from "../_libs/react+tanstack__react-query.mjs";
-import { Dt as ArrowDownRight, H as GraduationCap, St as Award, i as Users, wt as ArrowUpRight, yt as BookOpen } from "../_libs/lucide-react.mjs";
+import { Ct as Award, Ot as ArrowDownRight, Tt as ArrowUpRight, U as GraduationCap, a as Users, bt as BookOpen } from "../_libs/lucide-react.mjs";
 //#region node_modules/.nitro/vite/services/ssr/assets/admin.index-BCpppw50.js
 var import_jsx_runtime = require_jsx_runtime();
 function AdminDashboard() {

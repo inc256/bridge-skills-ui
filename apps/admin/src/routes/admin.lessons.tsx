@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { 
   Plus, Edit2, Trash2, RefreshCw, X, Video, FileText, HelpCircle, 
   UploadCloud, BookOpen, Search, CheckCircle, Gift,
-  Layers, ChevronDown, ChevronUp, Filter
+  Layers, ChevronDown, ChevronUp, Filter, Volume2
 } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 // Import the authenticated apiRequest from lib/api
@@ -26,8 +26,14 @@ interface Course {
 interface Lesson {
   id: string;
   title: string;
-  type: 'video' | 'text' | 'quiz' | 'assignment';
+  type: 'video' | 'text' | 'audio' | 'document' | 'quiz' | 'assignment';
   video_url?: string;
+  video_file?: string;
+  pdf_file?: string;
+  audio_file?: string;
+  ppt_file?: string;
+  thumbnail?: string;
+  subtitle_vtt?: string;
   video_source?: string;
   description?: string;
   content?: string;
@@ -42,14 +48,22 @@ interface Lesson {
 
 interface LessonFormData {
   title: string;
-  type: 'video' | 'text' | 'quiz' | 'assignment';
+  type: 'video' | 'text' | 'audio' | 'document' | 'quiz' | 'assignment';
   video_url: string;
+  video_file: string;
+  pdf_file: string;
+  audio_file: string;
+  ppt_file: string;
+  thumbnail: string;
+  subtitle_vtt: string;
   video_source: string;
   description: string;
   content: string;
   xp_reward: number;
   is_free: boolean;
   is_published: boolean;
+  is_drip: boolean;
+  drip_after: number;
   lesson_order: string;
   duration: number;
 }
@@ -162,6 +176,8 @@ function StatCard({ icon: Icon, value, label, color = "blue", iconColor = "blue"
 const TYPE_ICONS: Record<string, React.ReactNode> = {
   video: <Video className="h-3.5 w-3.5 sm:h-4 sm:w-4" />,
   text: <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />,
+  audio: <Volume2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />,
+  document: <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />,
   quiz: <HelpCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />,
   assignment: <UploadCloud className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
 };
@@ -177,12 +193,20 @@ const BLANK: LessonFormData = {
   title: '',
   type: 'video',
   video_url: '',
+  video_file: '',
+  pdf_file: '',
+  audio_file: '',
+  ppt_file: '',
+  thumbnail: '',
+  subtitle_vtt: '',
   video_source: 'youtube',
   description: '',
   content: '',
   xp_reward: 10,
   is_free: false,
   is_published: true,
+  is_drip: false,
+  drip_after: 0,
   lesson_order: '',
   duration: 0
 };
@@ -262,12 +286,20 @@ function AdminLessons() {
       title: lesson.title,
       type: lesson.type,
       video_url: lesson.video_url || '',
+      video_file: lesson.video_file || '',
+      pdf_file: lesson.pdf_file || '',
+      audio_file: lesson.audio_file || '',
+      ppt_file: lesson.ppt_file || '',
+      thumbnail: lesson.thumbnail || '',
+      subtitle_vtt: lesson.subtitle_vtt || '',
       video_source: lesson.video_source || 'youtube',
       description: lesson.description || '',
       content: lesson.content || '',
       xp_reward: lesson.xp_reward,
       is_free: lesson.is_free,
       is_published: lesson.is_published,
+      is_drip: Boolean((lesson as any).is_drip),
+      drip_after: Number((lesson as any).drip_after || 0),
       lesson_order: lesson.lesson_order?.toString() || '',
       duration: lesson.duration
     });
@@ -282,6 +314,23 @@ function AdminLessons() {
     }
     if (!selCourse) {
       showToast('Please select a course first', false);
+      return;
+    }
+    const has = (value: string) => Boolean(value.trim());
+    if ((form.type === 'text' || form.type === 'assignment' || form.type === 'quiz') && !has(form.content)) {
+      showToast(`${form.type} lessons require content`, false);
+      return;
+    }
+    if (form.type === 'video' && !has(form.video_url) && !has(form.video_file)) {
+      showToast('Video lessons require a video URL or file', false);
+      return;
+    }
+    if (form.type === 'audio' && !has(form.audio_file)) {
+      showToast('Audio lessons require an audio file', false);
+      return;
+    }
+    if (form.type === 'document' && !has(form.pdf_file) && !has(form.ppt_file)) {
+      showToast('Document lessons require a PDF or PowerPoint file', false);
       return;
     }
 
@@ -680,6 +729,8 @@ function AdminLessons() {
                 >
                   <option value="video">Video</option>
                   <option value="text">Text</option>
+                  <option value="audio">Audio</option>
+                  <option value="document">Document</option>
                   <option value="quiz">Quiz</option>
                   <option value="assignment">Assignment</option>
                 </select>
@@ -709,6 +760,15 @@ function AdminLessons() {
               />
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {(['video_file', 'audio_file', 'pdf_file', 'ppt_file', 'thumbnail', 'subtitle_vtt'] as const).map((key) => (
+                <div key={key}>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{key.replace('_', ' ')}</label>
+                  <input value={form[key]} onChange={handleChange(key)} placeholder="https://..." className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" />
+                </div>
+              ))}
+            </div>
+
             {/* Description */}
             <div>
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Description</label>
@@ -722,7 +782,7 @@ function AdminLessons() {
             </div>
 
             {/* Content (for text type) */}
-            {form.type === 'text' && (
+            {(['text', 'assignment', 'quiz'].includes(form.type)) && (
               <div>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Content (HTML)</label>
                 <textarea

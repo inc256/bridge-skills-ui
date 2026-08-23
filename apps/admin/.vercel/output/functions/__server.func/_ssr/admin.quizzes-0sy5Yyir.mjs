@@ -1,7 +1,7 @@
 import { r as __toESM } from "../_runtime.mjs";
 import { t as apiRequest } from "./api-aCKu3ccm.mjs";
 import { n as require_jsx_runtime, r as require_react } from "../_libs/react+tanstack__react-query.mjs";
-import { L as Layers, S as Plus, St as Award, d as Trash2, i as Users, it as Clock, mt as ChartColumn, n as X, ot as CircleQuestionMark, st as CircleCheckBig, w as Pen, y as Search, yt as BookOpen } from "../_libs/lucide-react.mjs";
+import { C as Plus, Ct as Award, R as Layers, T as Pen, a as Users, at as Clock, b as Search, bt as BookOpen, ct as CircleCheckBig, f as Trash2, ht as ChartColumn, n as X, st as CircleQuestionMark } from "../_libs/lucide-react.mjs";
 //#region node_modules/.nitro/vite/services/ssr/assets/admin.quizzes-0sy5Yyir.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();

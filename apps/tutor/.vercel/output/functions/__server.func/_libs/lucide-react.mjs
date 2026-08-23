@@ -1408,6 +1408,26 @@ var Video = createLucideIcon("video", [["path", {
 * This source code is licensed under the ISC license.
 * See the LICENSE file in the root directory of this source tree.
 */
+var Volume2 = createLucideIcon("volume-2", [
+	["path", {
+		d: "M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z",
+		key: "uqj9uw"
+	}],
+	["path", {
+		d: "M16 9a5 5 0 0 1 0 6",
+		key: "1q6k2b"
+	}],
+	["path", {
+		d: "M19.364 18.364a9 9 0 0 0 0-12.728",
+		key: "ijwkga"
+	}]
+]);
+/**
+* @license lucide-react v0.575.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
 var X = createLucideIcon("x", [["path", {
 	d: "M18 6 6 18",
 	key: "1bl5f8"
@@ -1426,4 +1446,4 @@ var Zap = createLucideIcon("zap", [["path", {
 	key: "1xq2db"
 }]]);
 //#endregion
-export { CircleAlert as $, LogOut as A, FileQuestionMark as B, Play as C, MessageCircle as D, MessageSquare as E, LayoutGrid as F, DollarSign as G, EyeOff as H, LayoutDashboard as I, ClipboardList as J, CreditCard as K, GraduationCap as L, List as M, ListChecks as N, Menu as O, Link as P, CircleCheckBig as Q, Funnel as R, Plus as S, Minus as T, Ellipsis as U, Eye as V, Download as W, CircleQuestionMark as X, ClipboardCheck as Y, CirclePlay as Z, Settings as _, Activity as _t, User as a, ChartColumn as at, Save as b, TrendingUp as c, BriefcaseBusiness as ct, Star as d, Bell as dt, ChevronUp as et, SquarePlus as f, Banknote as ft, Share2 as g, ArrowDownRight as gt, Shield as h, ArrowRight as ht, Users as i, Check as it, Lock as j, Mail as k, Trash2 as l, Book as lt, Sparkles as m, ArrowUpRight as mt, X as n, ChevronLeft as nt, UserCheck as o, Camera as ot, SquarePen as p, Award as pt, Clock as q, Video as r, ChevronDown as rt, Upload as s, Briefcase as st, Zap as t, ChevronRight as tt, Target as u, BookOpen as ut, Send as v, Pause as w, RefreshCw as x, Search as y, FileText as z };
+export { CircleCheckBig as $, Mail as A, FileText as B, Plus as C, MessageSquare as D, Minus as E, Link as F, Download as G, Eye as H, LayoutGrid as I, Clock as J, DollarSign as K, LayoutDashboard as L, Lock as M, List as N, MessageCircle as O, ListChecks as P, CirclePlay as Q, GraduationCap as R, RefreshCw as S, Pause as T, EyeOff as U, FileQuestionMark as V, Ellipsis as W, ClipboardCheck as X, ClipboardList as Y, CircleQuestionMark as Z, Share2 as _, ArrowDownRight as _t, Users as a, Check as at, Search as b, Upload as c, Briefcase as ct, Target as d, BookOpen as dt, CircleAlert as et, Star as f, Bell as ft, Shield as g, ArrowRight as gt, Sparkles as h, ArrowUpRight as ht, Video as i, ChevronDown as it, LogOut as j, Menu as k, TrendingUp as l, BriefcaseBusiness as lt, SquarePen as m, Award as mt, X as n, ChevronRight as nt, User as o, ChartColumn as ot, SquarePlus as p, Banknote as pt, CreditCard as q, Volume2 as r, ChevronLeft as rt, UserCheck as s, Camera as st, Zap as t, ChevronUp as tt, Trash2 as u, Book as ut, Settings as v, Activity as vt, Play as w, Save as x, Send as y, Funnel as z };
