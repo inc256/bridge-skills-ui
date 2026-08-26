@@ -1,1 +1,0 @@
-import{t as e}from"./tutor-auth-page-COVYF6_1.js";var t=e;export{t as component};

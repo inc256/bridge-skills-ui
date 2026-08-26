@@ -1,4 +1,4 @@
-//#region node_modules/.nitro/vite/services/ssr/assets/api-CgVvnMe4.js
+//#region node_modules/.nitro/vite/services/ssr/assets/api-Dxke6VUi.js
 var API_BASE = "https://techbridge-backend-rust.vercel.app/api/v1";
 function toLessonType(rawType) {
 	const type = String(rawType ?? "video").toLowerCase();
@@ -458,16 +458,20 @@ var LESSON_FILE_FIELDS = /* @__PURE__ */ new Set([
 	"thumbnail",
 	"subtitle_vtt"
 ]);
+function lessonTypeForApi(value) {
+	return String(value ?? "video").toLowerCase() === "document" ? "text" : value;
+}
 function lessonRequestBody(data) {
 	if (!Object.values(data).some((value) => value instanceof File)) {
-		const jsonData = Object.fromEntries(Object.entries(data).filter(([key, value]) => !LESSON_FILE_FIELDS.has(key) || value instanceof File));
+		const jsonData = Object.fromEntries(Object.entries(data).filter(([key, value]) => !LESSON_FILE_FIELDS.has(key) || value instanceof File).map(([key, value]) => [key, key === "type" ? lessonTypeForApi(value) : value]));
 		return JSON.stringify(jsonData);
 	}
 	const form = new FormData();
 	Object.entries(data).forEach(([key, value]) => {
 		if (value === void 0 || value === null || value === "") return;
 		if (LESSON_FILE_FIELDS.has(key) && !(value instanceof File)) return;
-		form.append(key, value instanceof File ? value : Array.isArray(value) ? JSON.stringify(value) : String(value));
+		const apiValue = key === "type" ? lessonTypeForApi(value) : value;
+		form.append(key, apiValue instanceof File ? apiValue : Array.isArray(apiValue) ? JSON.stringify(apiValue) : String(apiValue));
 	});
 	return form;
 }

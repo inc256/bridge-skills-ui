@@ -1,9 +1,9 @@
 import { r as __toESM } from "../_runtime.mjs";
-import { T as register, x as login } from "./api-CgVvnMe4.mjs";
+import { T as register, x as login } from "./api-Dxke6VUi.mjs";
 import { n as require_jsx_runtime, r as require_react } from "../_libs/react+tanstack__react-query.mjs";
 import { y as useRouter } from "../_libs/@tanstack/react-router+[...].mjs";
 import { A as Mail, H as Eye, M as Lock, U as EyeOff, et as CircleAlert, gt as ArrowRight, lt as BriefcaseBusiness } from "../_libs/lucide-react.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/tutor-auth-page-BiP_SFVD.js
+//#region node_modules/.nitro/vite/services/ssr/assets/tutor-auth-page-DcIbogVd.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function TutorAuthPage() {
