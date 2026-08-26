@@ -11,9 +11,8 @@ export default defineConfig({
     preset: "vercel",
   },
   tanstackStart: {
-    // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-    // nitro/vite builds from this
-    server: { entry: "server" },
+    // Use TanStack Start's generated server entry so private package imports
+    // are rewritten during the Vercel SSR build.
   },
   vite: {
     ssr: {
