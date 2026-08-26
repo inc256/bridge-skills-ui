@@ -677,18 +677,10 @@ export async function updateTutorLesson(lessonId: string, data: Record<string, a
 
 const LESSON_FILE_FIELDS = new Set(["video_file", "pdf_file", "audio_file", "ppt_file", "thumbnail", "subtitle_vtt"]);
 
-function lessonTypeForApi(value: unknown) {
-  return String(value ?? "video").toLowerCase() === "document" ? "text" : value;
-}
-
 function lessonRequestBody(data: Record<string, any>): BodyInit {
   const fileValues = Object.values(data).some((value) => value instanceof File);
   if (!fileValues) {
-    const jsonData = Object.fromEntries(
-      Object.entries(data)
-        .filter(([key, value]) => !LESSON_FILE_FIELDS.has(key) || value instanceof File)
-        .map(([key, value]) => [key, key === "type" ? lessonTypeForApi(value) : value]),
-    );
+    const jsonData = Object.fromEntries(Object.entries(data).filter(([key, value]) => !LESSON_FILE_FIELDS.has(key) || value instanceof File));
     return JSON.stringify(jsonData);
   }
 
@@ -698,8 +690,7 @@ function lessonRequestBody(data: Record<string, any>): BodyInit {
     // Existing file URLs are read-only references. Only a File should be sent
     // to a Django upload field, otherwise it returns "submitted data was not a file".
     if (LESSON_FILE_FIELDS.has(key) && !(value instanceof File)) return;
-    const apiValue = key === "type" ? lessonTypeForApi(value) : value;
-    form.append(key, apiValue instanceof File ? apiValue : Array.isArray(apiValue) ? JSON.stringify(apiValue) : String(apiValue));
+    form.append(key, value instanceof File ? value : Array.isArray(value) ? JSON.stringify(value) : String(value));
   });
   return form;
 }

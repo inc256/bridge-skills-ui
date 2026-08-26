@@ -71,7 +71,7 @@ type BuilderModule = {
   _persisted?: boolean;
 };
 
-const LESSON_TYPES = ["text", "video", "audio", "document", "assignment", "quiz"] as const;
+const LESSON_TYPES = ["video", "text", "audio", "document", "quiz", "assignment"] as const;
 const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 
 function normalizeLessonType(value: unknown): BuilderLesson["type"] {
@@ -1376,12 +1376,12 @@ function Builder() {
                                   onChange={(event) => handleUpdateLesson(moduleIndex, lessonIndex, { type: normalizeLessonType(event.target.value) })}
                                   className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                                 >
-                                  <option value="document">Document</option>
-                                  <option value="text">Text</option>
                                   <option value="video">Video</option>
+                                  <option value="text">Text / Article</option>
                                   <option value="audio">Audio</option>
-                                  <option value="assignment">Assignment</option>
+                                  <option value="document">Document</option>
                                   <option value="quiz">Quiz</option>
+                                  <option value="assignment">Assignment</option>
                                 </select>
                               </label>
                               <label className="space-y-1 sm:col-span-2">

@@ -130,7 +130,7 @@ function AdminLayout() {
     }
 
     const session = getStoredSession();
-    if (!session?.access || isAccessTokenExpired(session.access)) {
+    if (!session?.access || (isAccessTokenExpired(session.access) && !session.refresh)) {
       clearStoredSession();
       setChecking(false);
       void router.navigate({ to: "/admin" });

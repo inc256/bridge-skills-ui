@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     const loadUser = async () => {
       const session = getStoredSession();
-      if (!session?.access || isAccessTokenExpired(session.access)) {
+      if (!session?.access || (isAccessTokenExpired(session.access) && !session.refresh)) {
         clearStoredSession();
         setUser(null);
         setIsLoading(false);

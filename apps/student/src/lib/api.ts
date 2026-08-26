@@ -187,7 +187,18 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}, retrie
                      path.includes("/auth/register/") || 
                      path.includes("/auth/token/");
   
-  const session = readSession();
+  let session = readSession();
+
+  if (!isAuthPath && session?.access && isAccessTokenExpired(session.access) && session.refresh) {
+    await refreshToken();
+    session = readSession();
+  }
+
+  if (!isAuthPath && !session?.access) {
+    const authError = new Error("Your student session has expired. Please sign in again.") as Error & { status?: number };
+    authError.status = 401;
+    throw authError;
+  }
   
   // Only add Authorization header if we have a session AND it's not an auth path
   if (session?.access && !isAuthPath) {
@@ -217,6 +228,9 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}, retrie
           return apiRequest<T>(path, init, true);
         }
         clearStoredSession();
+        const authError = new Error("Your student session has expired. Please sign in again.") as Error & { status?: number };
+        authError.status = 401;
+        throw authError;
       }
 
       let detail = "Request failed";

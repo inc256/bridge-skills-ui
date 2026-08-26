@@ -241,7 +241,18 @@ async function refreshToken(): Promise<boolean> {
 export async function apiRequest<T>(path: string, init: RequestInit = {}, retried = false): Promise<T> {
   const headers = new Headers(init.headers);
   const isAuthPath = isPublicPath(path);
-  const session = readSession();
+  let session = readSession();
+
+  if (!isAuthPath && session?.access && isAccessTokenExpired(session.access) && session.refresh) {
+    await refreshToken();
+    session = readSession();
+  }
+
+  if (!isAuthPath && !session?.access) {
+    const authError = new Error("Your admin session has expired. Please sign in again.") as Error & { status?: number };
+    authError.status = 401;
+    throw authError;
+  }
 
   if (session?.access && !isAuthPath) headers.set("Authorization", `Bearer ${session.access}`);
   if (!headers.has("Content-Type") && init.body && typeof init.body === "string") headers.set("Content-Type", "application/json");
@@ -261,6 +272,9 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}, retrie
         return apiRequest<T>(path, init, true);
       }
       clearStoredSession();
+      const authError = new Error("Your admin session has expired. Please sign in again.") as Error & { status?: number };
+      authError.status = 401;
+      throw authError;
     }
 
     let detail = "Request failed";

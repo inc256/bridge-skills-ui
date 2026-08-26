@@ -1,5 +1,5 @@
 // apps/tutor/src/components/portal-shell.tsx
-import { Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { Link, Outlet, useRouter, useRouterState } from "@tanstack/react-router";
 import { 
   ChevronDown, 
   Menu, 
@@ -44,12 +44,19 @@ export function PortalShell({
   accent?: "student" | "tutor" | "admin";
 }) {
   const auth = useAuth();
-  const { user, logout } = auth || { user: null, logout: async () => {} };
+  const router = useRouter();
+  const { user, logout, isLoading } = auth || { user: null, logout: async () => {}, isLoading: false };
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const accentLabel = accent === "student" ? "Student" : accent === "tutor" ? "Tutor" : "Admin";
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      void router.navigate({ to: "/tutor" });
+    }
+  }, [isLoading, router, user]);
 
   // Close user menu when clicking outside
   useEffect(() => {
