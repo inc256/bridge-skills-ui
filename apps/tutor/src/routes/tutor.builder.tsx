@@ -29,7 +29,7 @@ import {
   Volume2
 } from "lucide-react";
 import { toast } from "sonner";
-import { createCourse, patchCourse, getCourse, getCourseModules, getCourseCategories, createTutorModule, updateTutorModule, createTutorLesson, updateTutorLesson, deleteTutorLesson, generateCourseDescription, generateCourseTitle } from "@/lib/api";
+import { createCourse, patchCourse, getCourse, getCourseModules, getCourseCategories, createTutorModule, updateTutorModule, createTutorLesson, updateTutorLesson, deleteTutorLesson, generateCourseDescription, generateCourseTitle, resolveTutorMedia } from "@/lib/api";
 
 export const Route = createFileRoute("/tutor/builder")({
   component: Builder,
@@ -241,7 +241,9 @@ function Builder() {
           if (course.slug) setSlug(course.slug);
           if (course.subtitle) setSubtitle(course.subtitle);
           if (course.description) setDescription(course.description ?? course.subtitle ?? "");
-          if (course.thumbnail) setThumbnailUrl(String(course.thumbnail));
+          if (course.thumbnail || course.thumbnail_url || course.cover_image || course.image) {
+            setThumbnailUrl(resolveTutorMedia(course.thumbnail ?? course.thumbnail_url ?? course.cover_image ?? course.image, "thumbnails"));
+          }
           if (course.duration) setCourseTimeline(String(course.duration));
           if (course.category && typeof course.category === "object") {
             setCategoryId(course.category.id ?? course.category);
@@ -290,10 +292,10 @@ function Builder() {
                 type: normalizeLessonType(l.type),
                 videoUrl: l.video_url || l.videoUrl || "",
                 videoFile: l.video_file || l.videoFile || "",
-                pdfFile: l.pdf_file || l.pdfFile || "",
-                audioFile: l.audio_file || l.audioFile || "",
-                pptFile: l.ppt_file || l.pptFile || "",
-                thumbnail: l.thumbnail || "",
+                pdfFile: resolveTutorMedia(l.pdf_file || l.pdfFile, "pdf"),
+                audioFile: resolveTutorMedia(l.audio_file || l.audioFile, "audio"),
+                pptFile: resolveTutorMedia(l.ppt_file || l.pptFile, "ppt"),
+                thumbnail: resolveTutorMedia(l.thumbnail, "thumbnails"),
                 subtitleVtt: l.subtitle_vtt || l.subtitleVtt || "",
                 xpReward: Number(l.xp_reward ?? l.xpReward ?? 10),
                 isFree: Boolean(l.is_free ?? l.isFree),
@@ -676,7 +678,7 @@ function Builder() {
         toast.success("Course created successfully!");
       }
 
-      const storedThumbnail = saved?.thumbnail ?? saved?.thumbnail_url;
+      const storedThumbnail = resolveTutorMedia(saved?.thumbnail ?? saved?.thumbnail_url, "thumbnails");
       if (storedThumbnail) {
         setThumbnailUrl(String(storedThumbnail));
         setThumbnailFile(null);

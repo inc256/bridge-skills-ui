@@ -52,6 +52,28 @@ export type TutorProfile = {
 };
 
 const API_BASE = (import.meta.env?.VITE_API_BASE_URL as string | undefined) ?? "https://techbridge-backend-rust.vercel.app/api/v1";
+const SUPABASE_MEDIA_URL = "https://xcxuhqghaddopvzhapgw.supabase.co/storage/v1/object/public/media";
+
+export function resolveTutorMedia(value: unknown, folder: "audio" | "pdf" | "ppt" | "thumbnails") {
+  const media = typeof value === "string"
+    ? value.trim()
+    : typeof value === "object" && value !== null
+      ? String((value as { url?: unknown; path?: unknown; file?: unknown; name?: unknown }).url
+        ?? (value as { path?: unknown }).path
+        ?? (value as { file?: unknown }).file
+        ?? (value as { name?: unknown }).name
+        ?? "").trim()
+      : "";
+  if (!media) return "";
+  if (/^https?:\/\//i.test(media) && media.includes("/storage/v1/object/public/media/")) return media;
+  const filename = media.split(/[?#]/, 1)[0].replace(/\\/g, "/").split("/").pop();
+  if (!filename) return "";
+  let decodedFilename = filename;
+  try {
+    decodedFilename = decodeURIComponent(filename);
+  } catch {}
+  return `${SUPABASE_MEDIA_URL}/courses/${folder}/${encodeURIComponent(decodedFilename)}`;
+}
 
 function toLessonType(rawType: string | undefined | null): string {
   const type = String(rawType ?? "video").toLowerCase();
@@ -117,6 +139,8 @@ function writeSession(session: any | null) {
   }
 }
 
+let refreshInFlight: Promise<boolean> | null = null;
+
 // Cheap, synchronous, no-network check for whether a session is present.
 // Use this to decide whether it's worth calling an authenticated endpoint
 // at all (e.g. on app boot) instead of firing the request and catching the
@@ -140,13 +164,23 @@ export function isAccessTokenExpired(token: string | undefined) {
     if (!payload) return true;
     const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
     const decoded = JSON.parse(atob(normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), "=")));
-    return typeof decoded?.exp === "number" && decoded.exp * 1000 <= Date.now();
+    return typeof decoded?.exp === "number" && decoded.exp * 1000 <= Date.now() + 30_000;
   } catch {
     return true;
   }
 }
 
 async function refreshToken(): Promise<boolean> {
+    if (refreshInFlight) return refreshInFlight;
+    refreshInFlight = refreshTokenInternal();
+    try {
+      return await refreshInFlight;
+    } finally {
+      refreshInFlight = null;
+    }
+  }
+
+  async function refreshTokenInternal(): Promise<boolean> {
   const session = readSession();
   if (!session?.refresh) return false;
 
@@ -347,7 +381,7 @@ export async function getCourses() {
       price: item?.price ? `GHS ${Number(item.price).toLocaleString()}` : "Free",
       status: item?.status ?? "draft",
       image: item?.title?.toLowerCase().includes("network") ? "network" : item?.title?.toLowerCase().includes("security") ? "security" : "code",
-      thumbnail: item?.thumbnail ?? item?.thumbnail_url ?? null,
+      thumbnail: resolveTutorMedia(item?.thumbnail ?? item?.thumbnail_url ?? item?.cover_image ?? item?.image, "thumbnails") || null,
       color: "#3B82F6",
       description: item?.subtitle ?? "",
       modules: Number(item?.total_modules ?? item?.module_count ?? item?.sections_count ?? item?.modules_count ?? 0),
@@ -626,11 +660,11 @@ export async function getCourseModules(slug: string) {
           : lesson?.duration ?? lesson?.length ?? "15 min",
         type: toLessonType(lesson?.type ?? lesson?.lesson_type),
         videoUrl: lesson?.video_url_resolved ?? lesson?.video_url ?? lesson?.video?.url ?? "",
-        videoFile: lesson?.video_file ?? "",
-        pdfFile: lesson?.pdf_file ?? "",
-        audioFile: lesson?.audio_file ?? "",
-        pptFile: lesson?.ppt_file ?? "",
-        thumbnail: lesson?.thumbnail ?? "",
+        videoFile: lesson?.video_file ?? lesson?.video?.url ?? "",
+        pdfFile: resolveTutorMedia(lesson?.pdf_file ?? lesson?.pdf_url ?? lesson?.pdf, "pdf"),
+        audioFile: resolveTutorMedia(lesson?.audio_file ?? lesson?.audio_url ?? lesson?.audio, "audio"),
+        pptFile: resolveTutorMedia(lesson?.ppt_file ?? lesson?.ppt_url ?? lesson?.ppt ?? lesson?.powerpoint, "ppt"),
+        thumbnail: resolveTutorMedia(lesson?.thumbnail ?? lesson?.thumbnail_url, "thumbnails"),
         subtitleVtt: lesson?.subtitle_vtt ?? "",
         xpReward: Number(lesson?.xp_reward ?? 10),
         isFree: Boolean(lesson?.is_free),

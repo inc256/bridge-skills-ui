@@ -155,6 +155,8 @@ function writeSession(session: AuthSession | null) {
   }
 }
 
+let refreshInFlight: Promise<boolean> | null = null;
+
 export function getStoredSession() {
   return readSession();
 }
@@ -170,13 +172,23 @@ export function isAccessTokenExpired(token: string | undefined) {
     if (!payload) return true;
     const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
     const decoded = JSON.parse(atob(normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), "=")));
-    return typeof decoded?.exp === "number" && decoded.exp * 1000 <= Date.now();
+    return typeof decoded?.exp === "number" && decoded.exp * 1000 <= Date.now() + 30_000;
   } catch {
     return true;
   }
 }
 
 async function refreshToken(): Promise<boolean> {
+    if (refreshInFlight) return refreshInFlight;
+    refreshInFlight = refreshTokenInternal();
+    try {
+      return await refreshInFlight;
+    } finally {
+      refreshInFlight = null;
+    }
+  }
+
+  async function refreshTokenInternal(): Promise<boolean> {
   const session = readSession();
   if (!session?.refresh) return false;
 
