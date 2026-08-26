@@ -19,7 +19,7 @@ export const Route = createFileRoute("/student/study/$slug")({
 
 function StudyInterface() {
   const { course, modules: initialModules } = Route.useLoaderData();
-  const [tab, setTab] = useState<"notes" | "resources" | "discussion">("resources");
+  const [tab, setTab] = useState<"resources" | "discussion">("resources");
   const [showOutline, setShowOutline] = useState(true);
   const [modules, setModules] = useState<any[]>(initialModules ?? []);
   const [quizzes, setQuizzes] = useState<any[]>([]);
@@ -44,6 +44,7 @@ function StudyInterface() {
   const [youtubePlayer, setYoutubePlayer] = useState<any>(null);
   const [isYouTube, setIsYouTube] = useState(false);
   const [selectedResource, setSelectedResource] = useState<{ label: string; url: string; type: "pdf" | "ppt" | "audio" } | null>(null);
+  const [resourcePreviewError, setResourcePreviewError] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
@@ -70,13 +71,26 @@ function StudyInterface() {
     };
   }, [course.slug, initialModules]);
 
-  const orderedModules = useMemo(() => [...modules].sort((left, right) => {
-    const leftOrder = Number(left?.module_order ?? left?.order ?? Number.MAX_SAFE_INTEGER);
-    const rightOrder = Number(right?.module_order ?? right?.order ?? Number.MAX_SAFE_INTEGER);
-    return leftOrder - rightOrder;
-  }), [modules]);
+  const orderedModules = useMemo(() => modules
+    .map((module, index) => ({ module, index }))
+    .sort((left, right) => {
+      const leftOrder = Number(left.module?.module_order ?? left.module?.order ?? left.module?.position ?? left.module?.sequence ?? left.module?.module_number);
+      const rightOrder = Number(right.module?.module_order ?? right.module?.order ?? right.module?.position ?? right.module?.sequence ?? right.module?.module_number);
+      return (Number.isFinite(leftOrder) ? leftOrder : left.index) - (Number.isFinite(rightOrder) ? rightOrder : right.index);
+    })
+    .map(({ module }) => ({
+      ...module,
+      lessons: (Array.isArray(module.lessons) ? module.lessons : [])
+        .map((lesson: any, lessonIndex: number) => ({ lesson, lessonIndex }))
+        .sort((left: { lesson: any; lessonIndex: number }, right: { lesson: any; lessonIndex: number }) => {
+          const leftOrder = Number(left.lesson?.lesson_order ?? left.lesson?.order ?? left.lesson?.position ?? left.lesson?.sequence ?? left.lesson?.lesson_number);
+          const rightOrder = Number(right.lesson?.lesson_order ?? right.lesson?.order ?? right.lesson?.position ?? right.lesson?.sequence ?? right.lesson?.lesson_number);
+          return (Number.isFinite(leftOrder) ? leftOrder : left.lessonIndex) - (Number.isFinite(rightOrder) ? rightOrder : right.lessonIndex);
+        })
+        .map(({ lesson }: { lesson: any }) => lesson),
+    })), [modules]);
 
-  const lessonList = useMemo(() => orderedModules.flatMap((module) => Array.isArray(module.lessons) ? module.lessons : []), [orderedModules]);
+  const lessonList = useMemo(() => orderedModules.flatMap((module) => module.lessons), [orderedModules]);
   const [currentLessonId, setCurrentLessonId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -85,6 +99,11 @@ function StudyInterface() {
       setCurrentLessonId(firstIncomplete?.id ?? lessonList[0]?.id);
     }
   }, [lessonList]);
+
+  useEffect(() => {
+    setSelectedResource(null);
+    setResourcePreviewError(false);
+  }, [currentLessonId]);
 
   const currentLesson = useMemo(() => {
     if (!currentLessonId) return null;
@@ -124,6 +143,17 @@ function StudyInterface() {
   const videoInfo = useMemo(() => getVideoInfo(videoUrl), [videoUrl]);
   const dbDuration = currentLesson?.duration || currentLesson?.estimated_duration || currentLesson?.video_duration || 0;
 
+  const inferResourceType = (url: string): 'pdf' | 'ppt' | 'audio' | 'video' | 'link' => {
+    if (/\.(pdf)(?:[?#]|$)/i.test(url) || /\/pdf\//i.test(url)) return 'pdf';
+    if (/\.(pptx?)(?:[?#]|$)/i.test(url) || /\/ppt\//i.test(url)) return 'ppt';
+    if (/\.(mp3|wav|m4a|aac|flac|ogg)(?:[?#]|$)/i.test(url) || /\/audio\//i.test(url)) return 'audio';
+    if (/(youtube|youtu\.be|vimeo)/i.test(url) || /\.(mp4|webm|mov)(?:[?#]|$)/i.test(url)) return 'video';
+    return 'link';
+  };
+
+  const resolveResourceUrl = (url: string, type: 'pdf' | 'ppt' | 'audio' | 'video' | 'link') =>
+    type === 'pdf' || type === 'ppt' || type === 'audio' ? resolveCourseMedia(url, type) : url;
+
   // Resources - includes all extra files and links
   const resources = useMemo(() => {
     const allResources: Array<{ label: string; url: string; type: 'pdf' | 'ppt' | 'audio' | 'video' | 'link' | 'doc' }> = [];
@@ -153,10 +183,8 @@ function StudyInterface() {
         if (typeof r === 'string') {
           allResources.push({ label: r, url: r, type: 'link' });
         } else if (r.url) {
-          const type = r.url.match(/\.(pdf)$/i) ? 'pdf' :
-                      r.url.match(/\.(pptx?)$/i) ? 'ppt' :
-                      r.url.match(/(youtube|youtu\.be|vimeo)/i) ? 'video' : 'link';
-          allResources.push({ label: r.title || r.name || 'Resource', url: r.url, type });
+          const type = inferResourceType(r.url);
+          allResources.push({ label: r.title || r.name || 'Resource', url: resolveResourceUrl(r.url, type), type });
         }
       });
     }
@@ -167,10 +195,8 @@ function StudyInterface() {
         if (typeof r === 'string') {
           allResources.push({ label: r, url: r, type: 'link' });
         } else if (r.url) {
-          const type = r.url.match(/\.(pdf)$/i) ? 'pdf' :
-                      r.url.match(/\.(pptx?)$/i) ? 'ppt' :
-                      r.url.match(/(youtube|youtu\.be|vimeo)/i) ? 'video' : 'link';
-          allResources.push({ label: r.title || r.name || 'Material', url: r.url, type });
+          const type = inferResourceType(r.url);
+          allResources.push({ label: r.title || r.name || 'Material', url: resolveResourceUrl(r.url, type), type });
         }
       });
     }
@@ -181,10 +207,8 @@ function StudyInterface() {
         if (typeof r === 'string') {
           allResources.push({ label: r, url: r, type: 'link' });
         } else if (r.url) {
-          const type = r.url.match(/\.(pdf)$/i) ? 'pdf' :
-                      r.url.match(/\.(pptx?)$/i) ? 'ppt' :
-                      r.url.match(/(youtube|youtu\.be|vimeo)/i) ? 'video' : 'link';
-          allResources.push({ label: r.title || r.name || 'Resource', url: r.url, type });
+          const type = inferResourceType(r.url);
+          allResources.push({ label: r.title || r.name || 'Resource', url: resolveResourceUrl(r.url, type), type });
         }
       });
     }
@@ -198,9 +222,11 @@ function StudyInterface() {
     });
   }, [currentLesson, course.raw]);
 
-  useEffect(() => {
-    setSelectedResource(null);
-  }, [currentLessonId]);
+  const selectResource = (resource: { label: string; url: string; type: string }) => {
+    if (!['pdf', 'ppt', 'audio'].includes(resource.type)) return;
+    setResourcePreviewError(false);
+    setSelectedResource({ label: resource.label, url: resource.url, type: resource.type as "pdf" | "ppt" | "audio" });
+  };
 
   const hasYouTubeMethods = (player: any): player is { getDuration: () => number; getCurrentTime: () => number } =>
     Boolean(player && typeof player.getDuration === "function" && typeof player.getCurrentTime === "function");
@@ -1088,22 +1114,27 @@ function StudyInterface() {
                   {selectedResource && (
                     <div className="mt-4 overflow-hidden rounded-xl border border-border bg-background">
                       <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2.5">
-                        <span className="truncate text-sm font-medium">{selectedResource.label}</span>
+                        <span className="truncate text-sm font-medium">Preview: {selectedResource.label}</span>
                         <a href={selectedResource.url} target="_blank" rel="noreferrer" className="shrink-0 text-xs text-primary hover:underline">
                           Open separately
                         </a>
                       </div>
-                      {selectedResource.type === "audio" ? (
+                      {resourcePreviewError ? (
+                        <div className="p-5 text-center text-sm text-muted-foreground">
+                          Preview unavailable. Use “Open separately” to view or download this file.
+                        </div>
+                      ) : selectedResource.type === "audio" ? (
                         <div className="p-4">
-                          <audio controls className="w-full" src={selectedResource.url} />
+                          <audio controls preload="metadata" className="w-full" src={selectedResource.url} onError={() => setResourcePreviewError(true)} />
                         </div>
                       ) : selectedResource.type === "pdf" ? (
-                        <iframe title={selectedResource.label} src={selectedResource.url} className="h-[min(70vh,620px)] w-full" />
+                        <iframe title={selectedResource.label} src={selectedResource.url} className="h-[min(70vh,620px)] w-full" onError={() => setResourcePreviewError(true)} />
                       ) : (
                         <iframe
                           title={selectedResource.label}
                           src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(selectedResource.url)}`}
                           className="h-[min(70vh,620px)] w-full"
+                          onError={() => setResourcePreviewError(true)}
                         />
                       )}
                     </div>
@@ -1113,14 +1144,14 @@ function StudyInterface() {
                       <a
                         key={`${r.url}-${index}`}
                         href={r.url}
-                              target={r.type === "pdf" || r.type === "ppt" || r.type === "audio" ? undefined : "_blank"}
+                        target={r.type === "pdf" || r.type === "ppt" || r.type === "audio" ? undefined : "_blank"}
                         rel="noreferrer"
-                              onClick={(event) => {
-                                if (r.type === "pdf" || r.type === "ppt" || r.type === "audio") {
-                                  event.preventDefault();
-                                  setSelectedResource({ label: r.label, url: r.url, type: r.type as "pdf" | "ppt" | "audio" });
-                                }
-                              }}
+                        onClick={(event) => {
+                          if (r.type === "pdf" || r.type === "ppt" || r.type === "audio") {
+                            event.preventDefault();
+                            selectResource(r);
+                          }
+                        }}
                         className="resource-item flex items-center gap-3 rounded-xl border border-border px-3 py-2.5 hover:border-primary/40 transition-colors hover:bg-secondary/30"
                       >
                         <span className="w-5 text-center">

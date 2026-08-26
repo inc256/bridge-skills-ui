@@ -7,7 +7,13 @@ export function resolveCourseMedia(value: unknown, folder: "audio" | "pdf" | "pp
   if (/^https?:\/\//i.test(media) && media.includes("/storage/v1/s3/media/")) return media;
   if (/^https?:\/\//i.test(media) && !/\/media\//i.test(media)) return media;
   const filename = media.split(/[?#]/, 1)[0].replace(/\\/g, "/").split("/").pop();
-  return filename ? `${SUPABASE_MEDIA_URL}/media/courses/${folder}/${encodeURIComponent(filename)}` : "";
+  if (!filename) return "";
+  let decodedFilename = filename;
+  try {
+    decodedFilename = decodeURIComponent(filename);
+  } catch {
+  }
+  return `${SUPABASE_MEDIA_URL}/media/courses/${folder}/${encodeURIComponent(decodedFilename)}`;
 }
 
 type ApiEnvelope<T> = {
@@ -861,6 +867,13 @@ export async function getMe() {
 // ===================== COURSE MODULES =====================
 
 export async function getCourseModules(slug: string) {
+  const readOrder = (item: any, keys: string[], fallback: number) => {
+    for (const key of keys) {
+      const value = Number(item?.[key]);
+      if (Number.isFinite(value)) return value;
+    }
+    return fallback;
+  };
   const formatLessonDuration = (value: any) => {
     if (value === null || value === undefined || value === "") return "";
     if (typeof value === "string" && /[a-z]/i.test(value)) return value;
@@ -929,8 +942,11 @@ export async function getCourseModules(slug: string) {
       id: String(module?.id ?? module?.slug ?? `module-${index + 1}`),
       title: module?.title ?? module?.name ?? `Module ${index + 1}`,
       description: module?.description ?? "",
-      module_order: Number(module?.module_order ?? module?.order ?? index + 1),
-      lessons: (Array.isArray(module?.lessons) ? module.lessons : Array.isArray(module?.lesson_set) ? module.lesson_set : []).map(normalizeLesson),
+      module_order: readOrder(module, ["module_order", "order", "position", "sequence", "module_number"], index + 1),
+      lessons: (Array.isArray(module?.lessons) ? module.lessons : Array.isArray(module?.lesson_set) ? module.lesson_set : [])
+        .map(normalizeLesson)
+        .sort((left: any, right: any) => readOrder(left, ["lesson_order", "order", "position", "sequence", "lesson_number"], 0)
+          - readOrder(right, ["lesson_order", "order", "position", "sequence", "lesson_number"], 0)),
     }))
     .sort((left, right) => left.module_order - right.module_order);
 
@@ -938,7 +954,8 @@ export async function getCourseModules(slug: string) {
     const groups = new Map<string, any>();
     const unassignedLessons: any[] = [];
     [...lessons]
-      .sort((left, right) => Number(left?.lesson_order ?? left?.order ?? 0) - Number(right?.lesson_order ?? right?.order ?? 0))
+      .sort((left, right) => readOrder(left, ["lesson_order", "order", "position", "sequence", "lesson_number"], 0)
+        - readOrder(right, ["lesson_order", "order", "position", "sequence", "lesson_number"], 0))
       .forEach((lesson, index) => {
       const sourceModule = lesson?.module ?? lesson?.section ?? lesson?.chapter;
       const moduleId = typeof sourceModule === "string"
