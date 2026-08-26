@@ -16,6 +16,14 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
+    ssr: {
+      external: ["canvas"],
+    },
+    build: {
+      rolldownOptions: {
+        external: ["canvas"],
+      },
+    },
     server: {
       proxy: {
         "/api": {
