@@ -381,32 +381,6 @@ function Dashboard() {
 
           {/* Right Column - Sidebar */}
           <div className="space-y-6">
-            
-            {/* Weekly Progress */}
-            <section className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-gray-900">Weekly Goal</h3>
-                <Target className="h-4 w-4 text-blue-600" />
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-gray-900">{stats.weekly_hours || 0}</span>
-                <span className="text-sm text-gray-500">/ {weeklyGoal} hrs</span>
-              </div>
-              <div className="mt-3 h-2 overflow-hidden rounded-full bg-gray-200">
-                <div className="h-full rounded-full bg-blue-600 transition-all duration-1000" style={{ width: `${weeklyProgress}%` }} />
-              </div>
-              <div className="mt-4 grid grid-cols-7 gap-1">
-                {DAYS.map((d, i) => (
-                  <div key={i} className="text-center">
-                    <div className={`h-8 w-full rounded-md transition-colors ${
-                      i < Math.min(3, Math.ceil((stats.weekly_hours || 0) / 2)) ? 'bg-blue-600' : 
-                      i === 3 ? 'bg-blue-400' : 'bg-gray-200'
-                    }`} />
-                    <div className="mt-1 text-[10px] text-gray-500">{d}</div>
-                  </div>
-                ))}
-              </div>
-            </section>
 
             {/* Quick Actions */}
             <section className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 shadow-sm">

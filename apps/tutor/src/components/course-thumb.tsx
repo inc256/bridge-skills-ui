@@ -4,7 +4,7 @@ const SUPABASE_THUMBNAIL_PREFIX = `${SUPABASE_MEDIA_URL}/courses/thumbnails/`;
 export function resolveCourseThumbnail(value?: string | null) {
   const thumbnail = typeof value === "string" ? value.trim() : "";
   if (!thumbnail) return null;
-  if (/^https?:\/\//i.test(thumbnail)) return thumbnail;
+  if (thumbnail.startsWith(SUPABASE_THUMBNAIL_PREFIX)) return thumbnail;
 
   const filename = thumbnail
     .split(/[?#]/, 1)[0]

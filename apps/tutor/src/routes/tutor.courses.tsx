@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { deleteCourse, deleteTutorLesson, getCourseLessons, getCourseReviews, getCourses } from "@/lib/api";
+import { resolveCourseThumbnail } from "@/components/course-thumb";
 
 export const Route = createFileRoute("/tutor/courses")({
   component: TutorCourses,
@@ -375,7 +376,7 @@ function CourseTableRow({
           <div className="h-12 w-16 shrink-0 overflow-hidden rounded-lg">
             {course.thumbnail ? (
               <img
-                src={course.thumbnail}
+                src={resolveCourseThumbnail(course.thumbnail) ?? undefined}
                 alt={course.title}
                 className="h-full w-full object-cover"
               />
@@ -459,7 +460,7 @@ function CourseGridCard({
         <div className="h-16 w-20 shrink-0 overflow-hidden rounded-lg">
           {course.thumbnail ? (
             <img
-              src={course.thumbnail}
+              src={resolveCourseThumbnail(course.thumbnail) ?? undefined}
               alt={course.title}
               className="h-full w-full object-cover"
             />
