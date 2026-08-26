@@ -18,6 +18,11 @@ export default defineConfig({
   vite: {
     ssr: {
       external: ["canvas"],
+      noExternal: [
+        "@tanstack/react-start",
+        "@tanstack/react-start-server",
+        "@tanstack/start-server-core",
+      ],
     },
     build: {
       rolldownOptions: {
