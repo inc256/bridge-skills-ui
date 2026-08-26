@@ -1,1 +1,0 @@
-import{t as e}from"./jsx-runtime-DGeXAQPT.js";var t=e(),n=()=>(0,t.jsx)(`div`,{className:`p-8`,children:`Course not found.`});export{n as notFoundComponent};
