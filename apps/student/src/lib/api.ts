@@ -1,10 +1,18 @@
 const API_BASE = (import.meta.env?.VITE_API_BASE_URL as string | undefined) ?? "https://techbridge-backend-rust.vercel.app/api/v1";
-const SUPABASE_MEDIA_URL = "https://xcxuhqghaddopvzhapgw.storage.supabase.co/storage/v1/s3";
+const SUPABASE_MEDIA_URL = "https://xcxuhqghaddopvzhapgw.supabase.co/storage/v1/object/public/media";
 
 export function resolveCourseMedia(value: unknown, folder: "audio" | "pdf" | "ppt") {
-  const media = typeof value === "string" ? value.trim() : "";
+  const media = typeof value === "string"
+    ? value.trim()
+    : typeof value === "object" && value !== null
+      ? String((value as { url?: unknown; path?: unknown; file?: unknown; name?: unknown }).url
+        ?? (value as { path?: unknown }).path
+        ?? (value as { file?: unknown }).file
+        ?? (value as { name?: unknown }).name
+        ?? "").trim()
+      : "";
   if (!media) return "";
-  if (/^https?:\/\//i.test(media) && media.includes("/storage/v1/s3/media/")) return media;
+  if (/^https?:\/\//i.test(media) && media.includes("/storage/v1/object/public/media/")) return media;
   if (/^https?:\/\//i.test(media) && !/\/media\//i.test(media)) return media;
   const filename = media.split(/[?#]/, 1)[0].replace(/\\/g, "/").split("/").pop();
   if (!filename) return "";
@@ -13,7 +21,7 @@ export function resolveCourseMedia(value: unknown, folder: "audio" | "pdf" | "pp
     decodedFilename = decodeURIComponent(filename);
   } catch {
   }
-  return `${SUPABASE_MEDIA_URL}/media/courses/${folder}/${encodeURIComponent(decodedFilename)}`;
+  return `${SUPABASE_MEDIA_URL}/courses/${folder}/${encodeURIComponent(decodedFilename)}`;
 }
 
 type ApiEnvelope<T> = {
@@ -489,7 +497,7 @@ function normalizeCourse(item: any): Course {
     certificate: Boolean(item?.has_certificate),
     price,
     image: deriveThumbVariant(item?.title ?? "", category ?? ""),
-    thumbnail: item?.thumbnail ?? item?.thumbnail_url ?? null,
+    thumbnail: item?.thumbnail ?? item?.thumbnail_url ?? item?.thumbnail_url_resolved ?? item?.cover_image ?? item?.image ?? null,
     color: deriveColor(category ?? ""),
     description: item?.subtitle ?? item?.description ?? "",
     modules: Math.max(0, moduleCount),
@@ -869,9 +877,12 @@ export async function getMe() {
 export async function getCourseModules(slug: string) {
   const readOrder = (item: any, keys: string[], fallback: number) => {
     for (const key of keys) {
-      const value = Number(item?.[key]);
+        const value = Number(item?.[key]);
       if (Number.isFinite(value)) return value;
     }
+      const titleMatch = String(item?.title ?? item?.name ?? "").match(/(?:module|lesson)\s*(?:[-:.#]\s*)?(\d+)/i)
+        ?? String(item?.title ?? item?.name ?? "").match(/^\s*(\d+)[.):\s]/);
+      if (titleMatch) return Number(titleMatch[1]);
     return fallback;
   };
   const formatLessonDuration = (value: any) => {
@@ -916,9 +927,9 @@ export async function getCourseModules(slug: string) {
       ?? lesson?.content_url
       ?? lesson?.media_url
       ?? "",
-    audio_file: resolveCourseMedia(lesson?.audio_file ?? lesson?.audio_url, "audio"),
-    pdf_file: resolveCourseMedia(lesson?.pdf_file ?? lesson?.pdf_url, "pdf"),
-    ppt_file: resolveCourseMedia(lesson?.ppt_file ?? lesson?.ppt_url, "ppt"),
+    audio_file: resolveCourseMedia(lesson?.audio_file ?? lesson?.audio_url ?? lesson?.audio, "audio"),
+    pdf_file: resolveCourseMedia(lesson?.pdf_file ?? lesson?.pdf_url ?? lesson?.pdf, "pdf"),
+    ppt_file: resolveCourseMedia(lesson?.ppt_file ?? lesson?.ppt_url ?? lesson?.ppt ?? lesson?.powerpoint, "ppt"),
     ...(() => {
       const rawContent = String(lesson?.content ?? lesson?.body ?? lesson?.text ?? lesson?.description ?? "");
       const marker = rawContent.match(/\[\[bridge-module:([^\]]+)\]\]/);
@@ -942,11 +953,11 @@ export async function getCourseModules(slug: string) {
       id: String(module?.id ?? module?.slug ?? `module-${index + 1}`),
       title: module?.title ?? module?.name ?? `Module ${index + 1}`,
       description: module?.description ?? "",
-      module_order: readOrder(module, ["module_order", "order", "position", "sequence", "module_number"], index + 1),
+      module_order: readOrder(module, ["module_order", "order", "position", "sequence", "module_number", "module_index", "sort_order", "index", "number"], Number.MAX_SAFE_INTEGER - index),
       lessons: (Array.isArray(module?.lessons) ? module.lessons : Array.isArray(module?.lesson_set) ? module.lesson_set : [])
         .map(normalizeLesson)
-        .sort((left: any, right: any) => readOrder(left, ["lesson_order", "order", "position", "sequence", "lesson_number"], 0)
-          - readOrder(right, ["lesson_order", "order", "position", "sequence", "lesson_number"], 0)),
+        .sort((left: any, right: any) => readOrder(left, ["lesson_order", "order", "position", "sequence", "lesson_number", "lesson_index", "sort_order", "index", "number"], 0)
+          - readOrder(right, ["lesson_order", "order", "position", "sequence", "lesson_number", "lesson_index", "sort_order", "index", "number"], 0)),
     }))
     .sort((left, right) => left.module_order - right.module_order);
 
@@ -973,9 +984,9 @@ export async function getCourseModules(slug: string) {
         id: String(moduleId),
         title: moduleTitle ?? lesson?.section_title ?? "Course module",
         description: sourceModule?.description ?? "",
-        module_order: Number((typeof sourceModule === "object" ? sourceModule?.module_order ?? sourceModule?.order : undefined)
-          ?? lesson?.module_order
-          ?? groups.size + 1),
+        module_order: readOrder(typeof sourceModule === "object" ? sourceModule : lesson,
+          ["module_order", "order", "position", "sequence", "module_number"],
+          readOrder(lesson, ["module_order"], groups.size + 1)),
         lessons: [],
       };
       group.lessons.push(normalizeLesson(lesson, index));
@@ -1086,4 +1097,24 @@ export async function downloadCertificate(certificateId: string) {
   } catch {
     return null;
   }
+}
+
+export function sortCourseModules<T extends { title?: unknown; name?: unknown; module_order?: unknown; order?: unknown; position?: unknown; sequence?: unknown; module_number?: unknown }>(modules: T[]) {
+  return modules
+    .map((module, index) => ({ module, index }))
+    .sort((left, right) => {
+      const getPriority = (value: T) => {
+        const title = String(value.title ?? value.name ?? "").toLowerCase();
+        if (/\b(introduction|intro|welcome|get started)\b/.test(title)) return 0;
+        if (/\b(conclusion|summary|final|wrap[- ]?up)\b/.test(title)) return Number.MAX_SAFE_INTEGER;
+        return null;
+      };
+      const leftPriority = getPriority(left.module);
+      const rightPriority = getPriority(right.module);
+      if (leftPriority !== null || rightPriority !== null) return (leftPriority ?? 1) - (rightPriority ?? 1);
+      const leftOrder = Number(left.module.module_order ?? left.module.order ?? left.module.position ?? left.module.sequence ?? left.module.module_number);
+      const rightOrder = Number(right.module.module_order ?? right.module.order ?? right.module.position ?? right.module.sequence ?? right.module.module_number);
+      return (Number.isFinite(leftOrder) ? leftOrder : left.index) - (Number.isFinite(rightOrder) ? rightOrder : right.index);
+    })
+    .map(({ module }) => module);
 }

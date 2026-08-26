@@ -1,4 +1,4 @@
-const SUPABASE_MEDIA_URL = "https://xcxuhqghaddopvzhapgw.storage.supabase.co/storage/v1/s3";
+const SUPABASE_MEDIA_URL = "https://xcxuhqghaddopvzhapgw.supabase.co/storage/v1/object/public/media";
 const SUPABASE_THUMBNAIL_PREFIX = `${SUPABASE_MEDIA_URL}/courses/thumbnails/`;
 
 export function resolveCourseThumbnail(value?: string | null) {

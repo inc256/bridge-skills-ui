@@ -1,4 +1,4 @@
-const SUPABASE_MEDIA_URL = "https://xcxuhqghaddopvzhapgw.storage.supabase.co/storage/v1/s3";
+const SUPABASE_MEDIA_URL = "https://xcxuhqghaddopvzhapgw.supabase.co/storage/v1/object/public/media";
 const SUPABASE_THUMBNAIL_PREFIX = `${SUPABASE_MEDIA_URL}/courses/thumbnails/`;
 
 export function resolveCourseThumbnail(value?: string | null) {
@@ -97,7 +97,7 @@ export function CourseThumb({ variant, color, thumbnail, title, className }: { v
             <rect x="60" y="170" width="310" height="10" rx="5" fillOpacity="0.35" />
           </g>
         )}
-      </svg>
+      </svg>}
       {title && (
         <div className="absolute inset-x-0 bottom-0 p-4">
           <div className="text-[11px] font-medium uppercase tracking-widest text-white/70">TechBridge</div>

@@ -5,8 +5,10 @@ import {
   Lock, ChevronUp,
 } from "lucide-react";
 import { useEffect, useState, useMemo, useRef } from "react";
-import { getCourse, getCourseModules, getQuizzesForCourse, getQuiz, markLessonComplete, resolveCourseMedia, submitQuizAnswers } from "@/lib/api";
+import { getCourse, getCourseModules, getQuizzesForCourse, getQuiz, markLessonComplete, resolveCourseMedia, sortCourseModules, submitQuizAnswers, syncLessonProgress } from "@/lib/api";
 import { setSelectedCourseSlug } from "@/lib/student-onboarding";
+import { AudioPlayer } from "@/components/audio-player";
+import { PdfViewer } from "@/components/pdf-viewer";
 
 export const Route = createFileRoute("/student/study/$slug")({
   loader: async ({ params }) => {
@@ -43,17 +45,19 @@ function StudyInterface() {
   const [isYouTubeReady, setIsYouTubeReady] = useState(false);
   const [youtubePlayer, setYoutubePlayer] = useState<any>(null);
   const [isYouTube, setIsYouTube] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [completionError, setCompletionError] = useState<string | null>(null);
   const [selectedResource, setSelectedResource] = useState<{ label: string; url: string; type: "pdf" | "ppt" | "audio" } | null>(null);
-  const [resourcePreviewError, setResourcePreviewError] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
   const youtubeContainerRef = useRef<HTMLDivElement>(null);
   const progressHoverRef = useRef<HTMLDivElement>(null);
   const settingsRef = useRef<HTMLDivElement>(null);
+  const lastSyncedProgressRef = useRef(0);
 
   useEffect(() => {
-    setModules(Array.isArray(initialModules) ? initialModules : []);
+    setModules(Array.isArray(initialModules) ? sortCourseModules(initialModules) : []);
     setSelectedCourseSlug(course.slug);
     void getQuizzesForCourse(course.slug).then(setQuizzes);
 
@@ -71,20 +75,33 @@ function StudyInterface() {
     };
   }, [course.slug, initialModules]);
 
+  const modulePriority = (title: unknown) => {
+    const normalizedTitle = String(title ?? "").toLowerCase();
+    if (/\b(introduction|intro|welcome|get started)\b/.test(normalizedTitle)) return 0;
+    if (/\b(conclusion|summary|final|wrap[- ]?up)\b/.test(normalizedTitle)) return Number.MAX_SAFE_INTEGER;
+    return null;
+  };
+
   const orderedModules = useMemo(() => modules
     .map((module, index) => ({ module, index }))
     .sort((left, right) => {
-      const leftOrder = Number(left.module?.module_order ?? left.module?.order ?? left.module?.position ?? left.module?.sequence ?? left.module?.module_number);
-      const rightOrder = Number(right.module?.module_order ?? right.module?.order ?? right.module?.position ?? right.module?.sequence ?? right.module?.module_number);
-      return (Number.isFinite(leftOrder) ? leftOrder : left.index) - (Number.isFinite(rightOrder) ? rightOrder : right.index);
+      const leftPriority = modulePriority(left.module?.title ?? left.module?.name);
+      const rightPriority = modulePriority(right.module?.title ?? right.module?.name);
+      if (leftPriority !== null || rightPriority !== null) {
+        return (leftPriority ?? 1) - (rightPriority ?? 1);
+      }
+      const leftOrder = Number(left.module?.module_order ?? left.module?.order ?? left.module?.position ?? left.module?.sequence ?? left.module?.module_number ?? left.module?.module_index ?? left.module?.sort_order ?? left.module?.index ?? left.module?.number);
+      const rightOrder = Number(right.module?.module_order ?? right.module?.order ?? right.module?.position ?? right.module?.sequence ?? right.module?.module_number ?? right.module?.module_index ?? right.module?.sort_order ?? right.module?.index ?? right.module?.number);
+      return (Number.isFinite(leftOrder) ? leftOrder : Number.MAX_SAFE_INTEGER - left.index)
+        - (Number.isFinite(rightOrder) ? rightOrder : Number.MAX_SAFE_INTEGER - right.index);
     })
     .map(({ module }) => ({
       ...module,
       lessons: (Array.isArray(module.lessons) ? module.lessons : [])
         .map((lesson: any, lessonIndex: number) => ({ lesson, lessonIndex }))
         .sort((left: { lesson: any; lessonIndex: number }, right: { lesson: any; lessonIndex: number }) => {
-          const leftOrder = Number(left.lesson?.lesson_order ?? left.lesson?.order ?? left.lesson?.position ?? left.lesson?.sequence ?? left.lesson?.lesson_number);
-          const rightOrder = Number(right.lesson?.lesson_order ?? right.lesson?.order ?? right.lesson?.position ?? right.lesson?.sequence ?? right.lesson?.lesson_number);
+          const leftOrder = Number(left.lesson?.lesson_order ?? left.lesson?.order ?? left.lesson?.position ?? left.lesson?.sequence ?? left.lesson?.lesson_number ?? left.lesson?.lesson_index ?? left.lesson?.sort_order ?? left.lesson?.index ?? left.lesson?.number);
+          const rightOrder = Number(right.lesson?.lesson_order ?? right.lesson?.order ?? right.lesson?.position ?? right.lesson?.sequence ?? right.lesson?.lesson_number ?? right.lesson?.lesson_index ?? right.lesson?.sort_order ?? right.lesson?.index ?? right.lesson?.number);
           return (Number.isFinite(leftOrder) ? leftOrder : left.lessonIndex) - (Number.isFinite(rightOrder) ? rightOrder : right.lessonIndex);
         })
         .map(({ lesson }: { lesson: any }) => lesson),
@@ -102,7 +119,8 @@ function StudyInterface() {
 
   useEffect(() => {
     setSelectedResource(null);
-    setResourcePreviewError(false);
+    lastSyncedProgressRef.current = 0;
+    setCompletionError(null);
   }, [currentLessonId]);
 
   const currentLesson = useMemo(() => {
@@ -181,7 +199,8 @@ function StudyInterface() {
     if (Array.isArray(course.raw?.resources)) {
       course.raw.resources.forEach((r: any) => {
         if (typeof r === 'string') {
-          allResources.push({ label: r, url: r, type: 'link' });
+          const type = inferResourceType(r);
+          allResources.push({ label: r, url: resolveResourceUrl(r, type), type });
         } else if (r.url) {
           const type = inferResourceType(r.url);
           allResources.push({ label: r.title || r.name || 'Resource', url: resolveResourceUrl(r.url, type), type });
@@ -193,7 +212,8 @@ function StudyInterface() {
     if (Array.isArray(course.raw?.materials)) {
       course.raw.materials.forEach((r: any) => {
         if (typeof r === 'string') {
-          allResources.push({ label: r, url: r, type: 'link' });
+          const type = inferResourceType(r);
+          allResources.push({ label: r, url: resolveResourceUrl(r, type), type });
         } else if (r.url) {
           const type = inferResourceType(r.url);
           allResources.push({ label: r.title || r.name || 'Material', url: resolveResourceUrl(r.url, type), type });
@@ -205,7 +225,8 @@ function StudyInterface() {
     if (Array.isArray(currentLesson?.resources)) {
       currentLesson.resources.forEach((r: any) => {
         if (typeof r === 'string') {
-          allResources.push({ label: r, url: r, type: 'link' });
+          const type = inferResourceType(r);
+          allResources.push({ label: r, url: resolveResourceUrl(r, type), type });
         } else if (r.url) {
           const type = inferResourceType(r.url);
           allResources.push({ label: r.title || r.name || 'Resource', url: resolveResourceUrl(r.url, type), type });
@@ -223,9 +244,9 @@ function StudyInterface() {
   }, [currentLesson, course.raw]);
 
   const selectResource = (resource: { label: string; url: string; type: string }) => {
-    if (!['pdf', 'ppt', 'audio'].includes(resource.type)) return;
-    setResourcePreviewError(false);
-    setSelectedResource({ label: resource.label, url: resource.url, type: resource.type as "pdf" | "ppt" | "audio" });
+    if (resource.type === "pdf" || resource.type === "ppt") {
+      setSelectedResource({ label: resource.label, url: resource.url, type: resource.type });
+    }
   };
 
   const hasYouTubeMethods = (player: any): player is { getDuration: () => number; getCurrentTime: () => number } =>
@@ -316,6 +337,10 @@ function StudyInterface() {
         if (dur > 0) {
           setCurrentTime(current);
           setProgress((current / dur) * 100);
+          if (currentLesson && current - lastSyncedProgressRef.current >= 10) {
+            lastSyncedProgressRef.current = current;
+            void syncLessonProgress(currentLesson.id, current, current);
+          }
         }
       } catch (e) {
         // Handle errors silently
@@ -323,7 +348,7 @@ function StudyInterface() {
     }, 250);
 
     return () => clearInterval(interval);
-  }, [youtubePlayer, isYouTubeReady]);
+  }, [youtubePlayer, isYouTubeReady, currentLesson]);
 
   const togglePlay = () => {
     if (videoInfo?.type === 'youtube' && youtubePlayer && isYouTubeReady) {
@@ -351,6 +376,10 @@ function StudyInterface() {
     const dur = videoRef.current.duration || 0;
     setCurrentTime(current);
     setProgress(dur ? (current / dur) * 100 : 0);
+    if (currentLesson && current - lastSyncedProgressRef.current >= 10) {
+      lastSyncedProgressRef.current = current;
+      void syncLessonProgress(currentLesson.id, current, current);
+    }
   };
 
   const handleLoadedMetadata = () => {
@@ -361,6 +390,26 @@ function StudyInterface() {
       setDuration(videoRef.current.duration);
     }
     setIsLoading(false);
+  };
+
+  const completeCurrentLesson = async () => {
+    if (!currentLesson || currentLesson.completed || isCompleting) return;
+    setIsCompleting(true);
+    setCompletionError(null);
+    try {
+      const response = await markLessonComplete(currentLesson.id);
+      if (!response) throw new Error("Unable to save lesson progress.");
+      setModules((prevModules) => prevModules.map((mod) => ({
+        ...mod,
+        lessons: (mod.lessons ?? []).map((lesson: any) =>
+          lesson.id === currentLesson.id ? { ...lesson, completed: true } : lesson
+        ),
+      })));
+    } catch (completionFailure) {
+      setCompletionError(completionFailure instanceof Error ? completionFailure.message : "Unable to save lesson progress.");
+    } finally {
+      setIsCompleting(false);
+    }
   };
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -503,21 +552,6 @@ function StudyInterface() {
     setLoadingQuiz(false);
   };
 
-  const handleMarkComplete = async () => {
-    if (!currentLesson) return;
-    const response = await markLessonComplete(currentLesson.id);
-    if (response?.completed) {
-      setModules((prevModules) =>
-        prevModules.map((mod) => ({
-          ...mod,
-          lessons: (mod.lessons ?? []).map((l: any) =>
-            l.id === currentLesson.id ? { ...l, completed: true } : l
-          ),
-        }))
-      );
-    }
-  };
-
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
@@ -533,13 +567,13 @@ function StudyInterface() {
     // Audio type
     if (lessonType === "audio" && audioUrl) {
       return (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-[#0A1A15] p-6 text-white">
-          <div className="grid h-20 w-20 place-items-center rounded-full bg-[#2ECC71]/15 text-[#2ECC71]">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-[#071a35] p-6 text-white">
+          <div className="grid h-20 w-20 place-items-center rounded-full bg-[#60A5FA]/15 text-[#60A5FA]">
             <Volume2 className="h-9 w-9" />
           </div>
           <div className="w-full max-w-xl">
             <div className="mb-3 text-center text-sm text-white/70">Audio lesson</div>
-            <audio className="w-full" controls src={audioUrl} />
+            <AudioPlayer src={audioUrl} />
           </div>
         </div>
       );
@@ -549,34 +583,52 @@ function StudyInterface() {
     if (lessonType === "document") {
       const docResources = resources.filter(r => r.type === 'pdf' || r.type === 'ppt');
       if (docResources.length > 0) {
+        const activeDocument = selectedResource?.type === "pdf" || selectedResource?.type === "ppt"
+          ? selectedResource
+          : docResources[0];
         return (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[#0A1A15] p-6 text-center text-white">
-            <FileSpreadsheet className="h-12 w-12 text-[#2ECC71]" />
-            <div>
-              <p className="font-medium">Open the lesson document</p>
-              <p className="mt-1 text-sm text-white/60">Choose a file to view or download.</p>
+          <div className="absolute inset-0 flex flex-col bg-[#071a35] text-white">
+            <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium">{activeDocument.label}</p>
+                <p className="text-xs text-white/60">Lesson document</p>
+              </div>
+              <a href={activeDocument.url} target="_blank" rel="noreferrer" className="shrink-0 text-xs text-blue-300 hover:text-white">
+                Open separately
+              </a>
             </div>
-            <div className="flex flex-wrap justify-center gap-2">
-              {docResources.map((file) => (
-                <a
-                  key={file.url}
-                  href={file.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-sm hover:bg-white/20"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  {file.label}
-                </a>
-              ))}
+            <div className="min-h-0 flex-1 bg-white">
+              {activeDocument.type === "pdf" ? (
+                <PdfViewer fileUrl={activeDocument.url} />
+              ) : (
+                <iframe
+                  title={activeDocument.label}
+                  src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(activeDocument.url)}`}
+                  className="h-full min-h-[320px] w-full border-0"
+                />
+              )}
             </div>
+            {docResources.length > 1 && (
+              <div className="flex flex-wrap gap-2 border-t border-white/10 px-4 py-3">
+                {docResources.map((file) => (
+                  <button
+                    key={file.url}
+                    type="button"
+                    onClick={() => selectResource(file)}
+                    className={`rounded-lg px-3 py-1.5 text-xs ${file.url === activeDocument.url ? "bg-blue-500 text-white" : "bg-white/10 text-white/70 hover:bg-white/20"}`}
+                  >
+                    {file.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         );
       }
       // Fallback for document type with no specific doc resources
       return (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[#0A1A15] p-6 text-center text-white">
-          <FileSpreadsheet className="h-12 w-12 text-[#2ECC71]" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[#071a35] p-6 text-center text-white">
+          <FileSpreadsheet className="h-12 w-12 text-[#60A5FA]" />
           <div>
             <p className="font-medium">Document lesson</p>
             <p className="mt-1 text-sm text-white/60">Check the resources tab for materials.</p>
@@ -588,7 +640,7 @@ function StudyInterface() {
     // Quiz type - show in main player
     if (lessonType === "quiz") {
       return (
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-[#0A1A15] text-white overflow-y-auto">
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-[#071a35] text-white overflow-y-auto">
           <div className="w-full max-w-2xl">
             <div className="flex items-center justify-between mb-4">
               <span className="text-xs text-white/50">Quiz</span>
@@ -636,7 +688,7 @@ function StudyInterface() {
                   </div>
                 ))}
                 {quizResult && (
-                  <div className="rounded-2xl border border-green-500/20 bg-green-500/5 p-4 text-sm text-green-400">
+                  <div className="rounded-2xl border border-blue-400/20 bg-blue-400/5 p-4 text-sm text-blue-300">
                     <div className="font-semibold">Quiz submitted!</div>
                     <div className="mt-1">{quizResult?.message ?? "Your answers have been submitted."}</div>
                     {quizResult?.score !== undefined && (
@@ -673,7 +725,7 @@ function StudyInterface() {
     // Assignment type
     if (lessonType === "assignment") {
       return (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[#0A1A15] p-6 text-white text-center">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[#071a35] p-6 text-white text-center">
           <div className="text-5xl mb-2 text-white/20">
             <FileText className="h-16 w-16" />
           </div>
@@ -698,7 +750,7 @@ function StudyInterface() {
     // Text/Article type
     if (lessonType === "text") {
       return (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0A1A15] p-8 text-white overflow-y-auto">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#071a35] p-8 text-white overflow-y-auto">
           <div className="max-w-3xl w-full">
             <div className="flex items-center gap-2 mb-4 text-white/40">
               <FileText className="h-5 w-5" />
@@ -717,13 +769,13 @@ function StudyInterface() {
       return (
         <>
           {videoInfo.type === 'youtube' ? (
-            <div ref={youtubeContainerRef} className="absolute inset-0 h-full w-full bg-[#0A1A15]" />
+            <div ref={youtubeContainerRef} className="absolute inset-0 h-full w-full bg-[#071a35]" />
           ) : (
             <>
               <video
                 ref={videoRef}
                 src={videoInfo.url}
-                className="absolute inset-0 h-full w-full object-contain bg-[#0A1A15]"
+                className="absolute inset-0 h-full w-full object-contain bg-[#071a35]"
                 onTimeUpdate={handleTimeUpdate}
                 onLoadedMetadata={handleLoadedMetadata}
                 onPlay={() => setIsPlaying(true)}
@@ -738,7 +790,7 @@ function StudyInterface() {
               />
 
               {isLoading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-[#0A1A15]/80">
+                <div className="absolute inset-0 flex items-center justify-center bg-[#071a35]/80">
                   <div className="flex flex-col items-center gap-3">
                     <div className="h-8 w-8 sm:h-10 sm:w-10 animate-spin rounded-full border-3 border-white/30 border-t-white" />
                     <span className="text-[10px] sm:text-xs text-white/60">Loading video...</span>
@@ -747,7 +799,7 @@ function StudyInterface() {
               )}
 
               {error && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0A1A15]/95 p-4 sm:p-6 text-center">
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#071a35]/95 p-4 sm:p-6 text-center">
                   <div className="max-w-xs sm:max-w-sm">
                     <div className="mb-3 text-3xl sm:text-4xl">⚠️</div>
                     <p className="text-xs sm:text-sm text-white/90">{error}</p>
@@ -761,7 +813,7 @@ function StudyInterface() {
                 </div>
               )}
 
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#0A1A15]/90 via-[#0A1A15]/40 to-transparent p-2 sm:p-3 pt-6 sm:pt-8">
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#071a35]/90 via-[#071a35]/40 to-transparent p-2 sm:p-3 pt-6 sm:pt-8">
                 <div 
                   className="group relative h-1 cursor-pointer rounded-full bg-white/20 hover:h-1.5 transition-all duration-200"
                   onClick={handleSeek}
@@ -785,16 +837,16 @@ function StudyInterface() {
                   }}
                 >
                   <div 
-                    className="h-full rounded-full bg-[#2ECC71] transition-all duration-150" 
+                    className="h-full rounded-full bg-[#60A5FA] transition-all duration-150"
                     style={{ width: `${progress}%` }} 
                   />
                   <div 
-                    className="absolute top-1/2 -translate-y-1/2 h-2 w-2 sm:h-3 sm:w-3 rounded-full bg-[#2ECC71] opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                    className="absolute top-1/2 -translate-y-1/2 h-2 w-2 sm:h-3 sm:w-3 rounded-full bg-[#60A5FA] opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                     style={{ left: `calc(${progress}% - 4px)` }}
                   />
                   <div 
                     id="progress-tooltip"
-                    className="absolute -top-7 sm:-top-8 -translate-x-1/2 rounded bg-[#0A1A15]/90 px-1.5 sm:px-2 py-0.5 sm:py-1 text-[8px] sm:text-[10px] font-medium opacity-0 transition-opacity pointer-events-none whitespace-nowrap"
+                    className="absolute -top-7 sm:-top-8 -translate-x-1/2 rounded bg-[#071a35]/90 px-1.5 sm:px-2 py-0.5 sm:py-1 text-[8px] sm:text-[10px] font-medium opacity-0 transition-opacity pointer-events-none whitespace-nowrap"
                   >
                     0:00
                   </div>
@@ -833,9 +885,9 @@ function StudyInterface() {
                       step="0.01"
                       value={isMuted ? 0 : volume}
                       onChange={handleVolumeChange}
-                      className="hidden sm:block w-12 sm:w-16 accent-[#2ECC71]"
+                      className="hidden sm:block w-12 sm:w-16 accent-[#60A5FA]"
                       style={{
-                        background: `linear-gradient(to right, #2ECC71 ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.2) ${(isMuted ? 0 : volume) * 100}%)`,
+                        background: `linear-gradient(to right, #60A5FA ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.2) ${(isMuted ? 0 : volume) * 100}%)`,
                         height: '3px',
                         borderRadius: '2px',
                         cursor: 'pointer',
@@ -871,14 +923,14 @@ function StudyInterface() {
                               onClick={() => changePlaybackRate(rate)}
                               className={`w-full rounded px-2 sm:px-3 py-1 sm:py-1.5 text-left text-[10px] sm:text-xs transition-colors ${
                                 playbackRate === rate 
-                                  ? 'bg-[#2ECC71]/20 text-white' 
+                                  ? 'bg-[#60A5FA]/20 text-white'
                                   : 'text-white/60 hover:text-white hover:bg-white/5'
                               }`}
                             >
                               <span className="flex items-center justify-between">
                                 {rate}x
                                 {playbackRate === rate && (
-                                  <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-[#2ECC71]" />
+                                  <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-[#60A5FA]" />
                                 )}
                               </span>
                             </button>
@@ -909,7 +961,7 @@ function StudyInterface() {
 
     // Fallback
     return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-[#0A1A15] to-[#1A2A25]">
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-[#071a35] to-[#123b73]">
         <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-white/5 flex items-center justify-center">
           <Play className="h-5 w-5 sm:h-7 sm:w-7 fill-white/30 text-white/30" />
         </div>
@@ -1003,10 +1055,10 @@ function StudyInterface() {
 
         <div className="order-1 flex flex-col lg:order-2">
           {/* Video Player Section */}
-          <div className="bg-[#0A1A15] px-0 pt-0">
+          <div className="bg-[#071a35] px-0 pt-0">
             <div 
               ref={playerContainerRef} 
-              className="relative aspect-video w-full overflow-hidden bg-[#0A1A15] text-white"
+              className="relative aspect-video w-full overflow-hidden bg-[#071a35] text-white"
             >
               {renderShowcase()}
             </div>
@@ -1048,16 +1100,21 @@ function StudyInterface() {
                   <Bookmark className="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4" />
                 </button>
                 <button 
-                  onClick={handleMarkComplete} 
-                  disabled={!currentLesson || currentLesson.completed} 
+                  onClick={completeCurrentLesson}
+                  disabled={!currentLesson || currentLesson.completed || isCompleting}
                   className="inline-flex items-center justify-center gap-1 rounded-xl bg-primary px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Check className="h-3 w-3 sm:h-4 sm:w-4" /> 
-                  <span className="hidden xs:inline">{currentLesson?.completed ? 'Completed' : 'Mark complete'}</span>
+                  <span className="hidden xs:inline">{isCompleting ? 'Saving...' : currentLesson?.completed ? 'Completed' : 'Mark complete'}</span>
                   <span className="xs:hidden">{currentLesson?.completed ? '✓' : 'Done'}</span>
                 </button>
               </div>
             </div>
+            {completionError && (
+              <div className="border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 sm:px-6">
+                {completionError}
+              </div>
+            )}
           </div>
 
           <div className="flex-1 bg-background px-3 sm:px-4 lg:px-6 py-4 sm:py-5 lg:py-6">
@@ -1093,8 +1150,7 @@ function StudyInterface() {
                   }`}
                 >
                   <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> 
-                  <span className="hidden xs:inline">{l}</span>
-                  <span className="xs:hidden">{l.charAt(0)}</span>
+                  <span>{l}</span>
                 </button>
               ))}
             </div>
@@ -1111,47 +1167,14 @@ function StudyInterface() {
                     </div>
                     <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
                   </div>
-                  {selectedResource && (
-                    <div className="mt-4 overflow-hidden rounded-xl border border-border bg-background">
-                      <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2.5">
-                        <span className="truncate text-sm font-medium">Preview: {selectedResource.label}</span>
-                        <a href={selectedResource.url} target="_blank" rel="noreferrer" className="shrink-0 text-xs text-primary hover:underline">
-                          Open separately
-                        </a>
-                      </div>
-                      {resourcePreviewError ? (
-                        <div className="p-5 text-center text-sm text-muted-foreground">
-                          Preview unavailable. Use “Open separately” to view or download this file.
-                        </div>
-                      ) : selectedResource.type === "audio" ? (
-                        <div className="p-4">
-                          <audio controls preload="metadata" className="w-full" src={selectedResource.url} onError={() => setResourcePreviewError(true)} />
-                        </div>
-                      ) : selectedResource.type === "pdf" ? (
-                        <iframe title={selectedResource.label} src={selectedResource.url} className="h-[min(70vh,620px)] w-full" onError={() => setResourcePreviewError(true)} />
-                      ) : (
-                        <iframe
-                          title={selectedResource.label}
-                          src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(selectedResource.url)}`}
-                          className="h-[min(70vh,620px)] w-full"
-                          onError={() => setResourcePreviewError(true)}
-                        />
-                      )}
-                    </div>
-                  )}
+
                   <div className="mt-3 space-y-2">
                     {resources.length ? resources.map((r, index) => (
                       <a
                         key={`${r.url}-${index}`}
                         href={r.url}
-                        target={r.type === "pdf" || r.type === "ppt" || r.type === "audio" ? undefined : "_blank"}
+                        target="_blank"
                         rel="noreferrer"
-                        onClick={(event) => {
-                          if (r.type === "pdf" || r.type === "ppt" || r.type === "audio") {
-                            event.preventDefault();
-                            selectResource(r);
-                          }
-                        }}
                         className="resource-item flex items-center gap-3 rounded-xl border border-border px-3 py-2.5 hover:border-primary/40 transition-colors hover:bg-secondary/30"
                       >
                         <span className="w-5 text-center">

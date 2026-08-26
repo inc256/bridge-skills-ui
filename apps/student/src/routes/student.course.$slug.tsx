@@ -2,7 +2,7 @@ import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-ro
 import { Award, Clock, Users, Star, Check, ChevronRight, PlayCircle, Globe, Download, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CourseThumb } from "@/components/course-thumb";
-import { checkCourseEnrollment, enrollInCourse, getCourse, getCourseModules, initiatePayment } from "@/lib/api";
+import { checkCourseEnrollment, enrollInCourse, getCourse, getCourseModules, initiatePayment, sortCourseModules } from "@/lib/api";
 import type { Course } from "@/lib/api";
 
 export const Route = createFileRoute("/student/course/$slug")({
@@ -33,7 +33,7 @@ function CourseDetails() {
   const youtubeId = getYoutubeId(course.introVideoUrl ?? raw?.intro_video_url ?? raw?.video_url ?? raw?.youtube_url);
 
   useEffect(() => {
-    void getCourseModules(course.slug).then((data) => setModules(Array.isArray(data) ? data : []));
+    void getCourseModules(course.slug).then((data) => setModules(Array.isArray(data) ? sortCourseModules(data) : []));
   }, [course.slug]);
 
   useEffect(() => {

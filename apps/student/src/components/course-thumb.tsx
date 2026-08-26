@@ -1,8 +1,16 @@
-const SUPABASE_MEDIA_URL = "https://xcxuhqghaddopvzhapgw.storage.supabase.co/storage/v1/s3";
+const SUPABASE_MEDIA_URL = "https://xcxuhqghaddopvzhapgw.supabase.co/storage/v1/object/public/media";
 const SUPABASE_THUMBNAIL_PREFIX = `${SUPABASE_MEDIA_URL}/courses/thumbnails/`;
 
-export function resolveCourseThumbnail(value?: string | null) {
-  const thumbnail = typeof value === "string" ? value.trim() : "";
+export function resolveCourseThumbnail(value?: unknown) {
+  const thumbnail = typeof value === "string"
+    ? value.trim()
+    : typeof value === "object" && value !== null
+      ? String((value as { url?: unknown; path?: unknown; file?: unknown; name?: unknown }).url
+        ?? (value as { path?: unknown }).path
+        ?? (value as { file?: unknown }).file
+        ?? (value as { name?: unknown }).name
+        ?? "").trim()
+      : "";
   if (!thumbnail) return null;
   if (thumbnail.startsWith(SUPABASE_THUMBNAIL_PREFIX)) return thumbnail;
 
@@ -13,7 +21,12 @@ export function resolveCourseThumbnail(value?: string | null) {
     .pop();
   if (!filename) return null;
 
-  return `${SUPABASE_THUMBNAIL_PREFIX}${encodeURIComponent(filename)}`;
+  let decodedFilename = filename;
+  try {
+    decodedFilename = decodeURIComponent(filename);
+  } catch {
+  }
+  return `${SUPABASE_THUMBNAIL_PREFIX}${encodeURIComponent(decodedFilename)}`;
 }
 
 // Abstract, elegant SVG course thumbnails — no external assets.
