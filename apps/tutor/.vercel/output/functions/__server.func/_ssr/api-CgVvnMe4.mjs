@@ -1,4 +1,4 @@
-//#region node_modules/.nitro/vite/services/ssr/assets/api-DR-_p2Q5.js
+//#region node_modules/.nitro/vite/services/ssr/assets/api-CgVvnMe4.js
 var API_BASE = "https://techbridge-backend-rust.vercel.app/api/v1";
 function toLessonType(rawType) {
 	const type = String(rawType ?? "video").toLowerCase();
@@ -103,11 +103,17 @@ async function apiRequest(path, init = {}, retried = false) {
 	const headers = new Headers(init.headers);
 	const isLoginPath = path.includes("/auth/login/") || path.includes("/login/");
 	let session = readSession();
+	const isPublicPath = isLoginPath || path.includes("/auth/register/") || path.includes("/auth/token/");
 	if (!isLoginPath && session?.access && isAccessTokenExpired(session.access) && session.refresh) {
 		await refreshToken();
 		session = readSession();
 	}
-	if (session?.access && !isLoginPath) headers.set("Authorization", `Bearer ${session.access}`);
+	if (!isPublicPath && !session?.access) {
+		const authError = /* @__PURE__ */ new Error("Your tutor session has expired. Please sign in again.");
+		authError.status = 401;
+		throw authError;
+	}
+	if (session?.access && !isPublicPath) headers.set("Authorization", `Bearer ${session.access}`);
 	if (!headers.has("Content-Type") && init.body && typeof init.body === "string") headers.set("Content-Type", "application/json");
 	const url = `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
 	console.log(`API Request: ${init.method || "GET"} ${url}`);
@@ -121,14 +127,12 @@ async function apiRequest(path, init = {}, retried = false) {
 		throw new Error(`The server rejected this request or did not return a CORS response. Check the backend logs for ${init.method ?? "GET"} ${path}.`);
 	}
 	if (!response.ok) {
-		if (response.status === 401 && !retried && !isLoginPath && !path.includes("/auth/token/refresh/")) {
+		if (response.status === 401 && !retried && !isPublicPath) {
 			if (await refreshToken()) return apiRequest(path, init, true);
 			clearStoredSession();
-			if (init.method === "DELETE") {
-				const authError = /* @__PURE__ */ new Error("Your tutor session has expired. Please sign in again.");
-				authError.status = 401;
-				throw authError;
-			}
+			const authError = /* @__PURE__ */ new Error("Your tutor session has expired. Please sign in again.");
+			authError.status = 401;
+			throw authError;
 		}
 		let detail = "Request failed";
 		try {

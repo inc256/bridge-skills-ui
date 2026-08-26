@@ -176,6 +176,8 @@ async function apiRequest<T>(path: string, init: RequestInit = {}, retried = fal
   const isLoginPath = path.includes("/auth/login/") || path.includes("/login/");
   let session = readSession();
 
+  const isPublicPath = isLoginPath || path.includes("/auth/register/") || path.includes("/auth/token/");
+
   // Avoid sending an expired access token first. This matters for destructive
   // requests because the backend rejects the request before the retry path can
   // provide a fresh token.
@@ -183,8 +185,14 @@ async function apiRequest<T>(path: string, init: RequestInit = {}, retried = fal
     await refreshToken();
     session = readSession();
   }
-  
-  if (session?.access && !isLoginPath) {
+
+  if (!isPublicPath && !session?.access) {
+    const authError = new Error("Your tutor session has expired. Please sign in again.") as Error & { status?: number };
+    authError.status = 401;
+    throw authError;
+  }
+
+  if (session?.access && !isPublicPath) {
     headers.set("Authorization", `Bearer ${session.access}`);
   }
   
@@ -207,17 +215,15 @@ async function apiRequest<T>(path: string, init: RequestInit = {}, retried = fal
   
   if (!response.ok) {
     // Don't try to refresh token on login failures
-    if (response.status === 401 && !retried && !isLoginPath && !path.includes("/auth/token/refresh/")) {
+    if (response.status === 401 && !retried && !isPublicPath) {
       const refreshed = await refreshToken();
       if (refreshed) {
         return apiRequest<T>(path, init, true);
       }
       clearStoredSession();
-      if (init.method === "DELETE") {
-        const authError = new Error("Your tutor session has expired. Please sign in again.") as Error & { status?: number };
-        authError.status = 401;
-        throw authError;
-      }
+      const authError = new Error("Your tutor session has expired. Please sign in again.") as Error & { status?: number };
+      authError.status = 401;
+      throw authError;
     }
 
     // Read the body exactly once, as text - a Response's body stream can only

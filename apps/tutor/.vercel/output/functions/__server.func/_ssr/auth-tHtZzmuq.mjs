@@ -1,7 +1,7 @@
 import { r as __toESM } from "../_runtime.mjs";
-import { S as logout, _ as getStoredSession, b as isAccessTokenExpired, g as getProfile, t as clearStoredSession, x as login } from "./api-DR-_p2Q5.mjs";
+import { S as logout, _ as getStoredSession, b as isAccessTokenExpired, g as getProfile, t as clearStoredSession, x as login } from "./api-CgVvnMe4.mjs";
 import { n as require_jsx_runtime, r as require_react } from "../_libs/react+tanstack__react-query.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/auth-CQ-yvO7i.js
+//#region node_modules/.nitro/vite/services/ssr/assets/auth-tHtZzmuq.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var AuthContext = (0, import_react.createContext)(void 0);
@@ -11,7 +11,7 @@ function AuthProvider({ children }) {
 	(0, import_react.useEffect)(() => {
 		const loadUser = async () => {
 			const session = getStoredSession();
-			if (!session?.access || isAccessTokenExpired(session.access)) {
+			if (!session?.access || isAccessTokenExpired(session.access) && !session.refresh) {
 				clearStoredSession();
 				setUser(null);
 				setIsLoading(false);
