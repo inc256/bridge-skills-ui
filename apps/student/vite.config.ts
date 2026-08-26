@@ -1,40 +1,38 @@
-// @lovable.dev/vite-tanstack-config already includes the following — do NOT add them manually
-// or the app will break with duplicate plugins:
-//   - TanStack devtools (dev-only, first), tanstackStart, viteReact, tailwindcss, tsConfigPaths,
-//     nitro (build-only using cloudflare as a default target), VITE_* env injection, @ path alias,
-//     React/TanStack dedupe, error logger plugins, and sandbox detection (port/host/strictPort).
-// You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
-import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { defineConfig } from "vite";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import { nitro } from "nitro/vite";
+import viteReact from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import tsconfigPaths from "vite-tsconfig-paths";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-  nitro: {
-    preset: "vercel",
+  plugins: [tsconfigPaths(), tailwindcss(), tanstackStart(), nitro({ preset: "vercel" }), viteReact()],
+  resolve: {
+    alias: { "@": path.resolve(__dirname, "./src") },
+    dedupe: ["react", "react-dom", "@tanstack/react-router", "@tanstack/react-start"],
   },
-  tanstackStart: {
-    // Use TanStack Start's generated server entry so private package imports
-    // are rewritten during the Vercel SSR build.
+  ssr: {
+    external: ["canvas"],
+    noExternal: ["@tanstack/react-start", "@tanstack/react-start-server", "@tanstack/start-server-core"],
   },
-  vite: {
-    ssr: {
-      external: ["canvas"],
-      noExternal: [
-        "@tanstack/react-start",
-        "@tanstack/react-start-server",
-        "@tanstack/start-server-core",
-      ],
+  environments: {
+    nitro: {
+      resolve: { noExternal: ["@tanstack/start-server-core"] },
     },
-    build: {
-      rolldownOptions: {
-        external: ["canvas"],
-      },
-    },
-    server: {
-      proxy: {
-        "/api": {
-          target: "https://techbridge-backend-rust.vercel.app",
-          changeOrigin: true,
-          secure: false,
-        },
+  },
+  build: {
+    rolldownOptions: { external: ["canvas"] },
+  },
+  server: {
+    proxy: {
+      "/api": {
+        target: "https://techbridge-backend-rust.vercel.app",
+        changeOrigin: true,
+        secure: false,
       },
     },
   },
