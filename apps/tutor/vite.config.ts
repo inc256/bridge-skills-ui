@@ -16,12 +16,16 @@ export default defineConfig({
     dedupe: ["react", "react-dom", "@tanstack/react-router", "@tanstack/react-start"],
   },
   ssr: {
+    external: ["canvas"],
     noExternal: ["@tanstack/react-start", "@tanstack/react-start-server", "@tanstack/start-server-core"],
   },
   environments: {
     nitro: {
       resolve: { noExternal: ["@tanstack/start-server-core"] },
     },
+  },
+  build: {
+    rolldownOptions: { external: ["canvas"] },
   },
   server: {
     proxy: {
