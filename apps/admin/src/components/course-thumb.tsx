@@ -1,7 +1,25 @@
+const SUPABASE_MEDIA_URL = "https://xcxuhqghaddopvzhapgw.storage.supabase.co/storage/v1/s3";
+const SUPABASE_THUMBNAIL_PREFIX = `${SUPABASE_MEDIA_URL}/courses/thumbnails/`;
+
+export function resolveCourseThumbnail(value?: string | null) {
+  const thumbnail = typeof value === "string" ? value.trim() : "";
+  if (!thumbnail) return null;
+  if (thumbnail.startsWith(SUPABASE_THUMBNAIL_PREFIX)) return thumbnail;
+
+  const filename = thumbnail
+    .split(/[?#]/, 1)[0]
+    .replace(/\\/g, "/")
+    .split("/")
+    .pop();
+  if (!filename) return null;
+
+  return `${SUPABASE_THUMBNAIL_PREFIX}${encodeURIComponent(filename)}`;
+}
+
 // Abstract, elegant SVG course thumbnails — no external assets.
 export function CourseThumb({ variant, color, thumbnail, title, className }: { variant: string; color: string; thumbnail?: string | null; title?: string; className?: string }) {
   const bg = color;
-  const safeThumbnail = typeof thumbnail === "string" && thumbnail.trim() ? thumbnail.trim() : null;
+  const safeThumbnail = resolveCourseThumbnail(thumbnail);
   return (
     <div
       className={`relative w-full overflow-hidden ${className ?? "aspect-[16/10]"}`}

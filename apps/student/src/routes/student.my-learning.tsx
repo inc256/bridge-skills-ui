@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { BookOpen, ChevronRight, Clock, Star, Users, Play, CheckCircle, Heart, Sparkles, TrendingUp } from "lucide-react";
 import { getMyEnrollments, getWishlistCourses } from "@/lib/api";
 import type { Course } from "@/lib/api";
+import { resolveCourseThumbnail } from "@/components/course-thumb";
 
 export const Route = createFileRoute("/student/my-learning")({
   component: MyLearning,
@@ -232,9 +233,9 @@ function CourseCard({ course, tab }: { course: Course; tab: string }) {
     >
       {/* Course Image */}
       <div className={`h-32 sm:h-36 md:h-40 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-3xl sm:text-4xl font-bold relative overflow-hidden`}>
-        {course.thumbnail ? (
+        {resolveCourseThumbnail(course.thumbnail) ? (
           <img
-            src={course.thumbnail}
+            src={resolveCourseThumbnail(course.thumbnail) ?? undefined}
             alt={course.title}
             className="h-full w-full object-cover"
           />

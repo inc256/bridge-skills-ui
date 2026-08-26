@@ -1,4 +1,14 @@
 const API_BASE = (import.meta.env?.VITE_API_BASE_URL as string | undefined) ?? "https://techbridge-backend-rust.vercel.app/api/v1";
+const SUPABASE_MEDIA_URL = "https://xcxuhqghaddopvzhapgw.storage.supabase.co/storage/v1/s3";
+
+export function resolveCourseMedia(value: unknown, folder: "audio" | "pdf" | "ppt") {
+  const media = typeof value === "string" ? value.trim() : "";
+  if (!media) return "";
+  if (/^https?:\/\//i.test(media) && media.includes("/storage/v1/s3/media/")) return media;
+  if (/^https?:\/\//i.test(media) && !/\/media\//i.test(media)) return media;
+  const filename = media.split(/[?#]/, 1)[0].replace(/\\/g, "/").split("/").pop();
+  return filename ? `${SUPABASE_MEDIA_URL}/media/courses/${folder}/${encodeURIComponent(filename)}` : "";
+}
 
 type ApiEnvelope<T> = {
   count?: number;
@@ -893,6 +903,9 @@ export async function getCourseModules(slug: string) {
       ?? lesson?.content_url
       ?? lesson?.media_url
       ?? "",
+    audio_file: resolveCourseMedia(lesson?.audio_file ?? lesson?.audio_url, "audio"),
+    pdf_file: resolveCourseMedia(lesson?.pdf_file ?? lesson?.pdf_url, "pdf"),
+    ppt_file: resolveCourseMedia(lesson?.ppt_file ?? lesson?.ppt_url, "ppt"),
     ...(() => {
       const rawContent = String(lesson?.content ?? lesson?.body ?? lesson?.text ?? lesson?.description ?? "");
       const marker = rawContent.match(/\[\[bridge-module:([^\]]+)\]\]/);

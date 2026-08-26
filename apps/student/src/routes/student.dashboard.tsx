@@ -9,6 +9,7 @@ import {
 import { useState, useEffect } from "react";
 import { getCourses, getMeStats, getMyEnrollments, getMyCertificates, getProfile } from "@/lib/api";
 import type { Course } from "@/lib/api";
+import { resolveCourseThumbnail } from "@/components/course-thumb";
 
 export const Route = createFileRoute("/student/dashboard")({
   component: Dashboard,
@@ -294,8 +295,8 @@ function Dashboard() {
                         className="group flex items-center gap-4 p-3 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all active:scale-[0.98]"
                       >
                         <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg overflow-hidden shrink-0">
-                          {course.thumbnail ? (
-                            <img src={course.thumbnail} alt={course.title} className="h-full w-full object-cover" />
+                          {resolveCourseThumbnail(course.thumbnail) ? (
+                            <img src={resolveCourseThumbnail(course.thumbnail) ?? undefined} alt={course.title} className="h-full w-full object-cover" />
                           ) : (
                             course.title?.[0]?.toUpperCase() || 'C'
                           )}
@@ -354,8 +355,8 @@ function Dashboard() {
                       className="group bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all hover:-translate-y-1 active:scale-[0.98]"
                     >
                       <div className="h-36 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-3xl font-bold overflow-hidden">
-                        {c.thumbnail ? (
-                          <img src={c.thumbnail} alt={c.title} className="h-full w-full object-cover" />
+                        {resolveCourseThumbnail(c.thumbnail) ? (
+                          <img src={resolveCourseThumbnail(c.thumbnail) ?? undefined} alt={c.title} className="h-full w-full object-cover" />
                         ) : (
                           c.title?.[0]?.toUpperCase() || 'C'
                         )}

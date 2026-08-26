@@ -4,6 +4,7 @@ import { Search, SlidersHorizontal, ChevronDown, X, Filter, Sparkles, TrendingUp
 import { useEffect, useState, useCallback } from "react";
 import { getCourses, enrollInCourse, getMyEnrollments } from "@/lib/api";
 import type { Course } from "@/lib/api";
+import { resolveCourseThumbnail } from "@/components/course-thumb";
 
 export const Route = createFileRoute("/student/explore")({
   component: Explore,
@@ -397,9 +398,9 @@ function CourseCard({
 >
   {/* Course Image */}
   <div className={`h-32 sm:h-36 md:h-40 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-3xl sm:text-4xl font-bold relative overflow-hidden`}>
-    {course.thumbnail ? (
+    {resolveCourseThumbnail(course.thumbnail) ? (
       <img
-        src={course.thumbnail}
+        src={resolveCourseThumbnail(course.thumbnail) ?? undefined}
         alt={course.title}
         className="h-full w-full object-cover"
       />
