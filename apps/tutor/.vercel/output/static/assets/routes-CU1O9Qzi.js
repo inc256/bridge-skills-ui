@@ -1,1 +1,0 @@
-import{t as e}from"./tutor-auth-page-CfMGy67z.js";var t=e;export{t as component};
