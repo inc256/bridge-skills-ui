@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
-import { Award, Clock, Users, Star, Check, ChevronRight, PlayCircle, Globe, Download, Loader2 } from "lucide-react";
+import { Award, Clock, Users, Star, Check, ChevronRight, PlayCircle, Globe, Download } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CourseThumb } from "@/components/course-thumb";
 import { checkCourseEnrollment, enrollInCourse, getCourse, getCourseModules, initiatePayment, sortCourseModules } from "@/lib/api";
@@ -239,7 +239,7 @@ function CourseDetails() {
                 disabled={enrolling}
                 className="mt-5 flex w-full items-center justify-center gap-2 rounded-[14px] bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors disabled:cursor-wait disabled:opacity-60"
               >
-                {enrolling && <Loader2 className="h-4 w-4 animate-spin" />}
+                {enrolling && <span className="skeleton h-4 w-16 rounded" aria-hidden="true" />}
                 {enrolling ? "Processing..." : isFree ? "Enroll and start" : "Pay and enroll"}
               </button>
             )}
