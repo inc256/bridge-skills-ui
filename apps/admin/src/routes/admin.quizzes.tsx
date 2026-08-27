@@ -504,7 +504,7 @@ function AdminQuizzes() {
     }
   };
 
-  const deleteQuiz = async (quiz: Quiz) => {
+  const handleDeleteQuiz = async (quiz: Quiz) => {
     if (!window.confirm(`Delete quiz "${quiz.title}"?`)) return;
     try {
       await deleteQuiz(quiz.id);
@@ -539,7 +539,7 @@ function AdminQuizzes() {
     setQSaving(true);
     try {
       const response = await createQuestion(selQuiz.id, { ...qForm });
-      const qid = response.data?.id || response.id;
+      const qid = response.id;
       
       // Add answers for MCQ types
       if (['mcq_single', 'mcq_multi', 'true_false'].includes(qForm.qtype)) {
@@ -572,7 +572,7 @@ function AdminQuizzes() {
     }
   };
 
-  const deleteQuestion = async (question: Question) => {
+  const handleDeleteQuestion = async (question: Question) => {
     if (!selQuiz) return;
     try {
       await deleteQuestion(selQuiz.id, question.id);
@@ -798,7 +798,7 @@ function AdminQuizzes() {
                 key={quiz.id}
                 quiz={quiz}
                 onEdit={openEdit}
-                onDelete={deleteQuiz}
+                onDelete={handleDeleteQuiz}
                 onManageQuestions={openQuestions}
               />
             ))
@@ -925,7 +925,7 @@ function AdminQuizzes() {
                   {questions.filter(q => q.answers?.some(a => a.is_correct)).length} have correct answers
                 </span>
               </div>
-              <QuestionList questions={questions} onDelete={deleteQuestion} />
+              <QuestionList questions={questions} onDelete={handleDeleteQuestion} />
             </div>
 
             {/* Add Question Form */}

@@ -359,7 +359,7 @@ function AdminLessons() {
     }
   };
 
-  const deleteLesson = async (lesson: Lesson) => {
+  const handleDeleteLesson = async (lesson: Lesson) => {
     if (!window.confirm(`Delete "${lesson.title}"?`)) return;
     try {
       await deleteLesson(lesson.id);
@@ -669,7 +669,7 @@ function AdminLessons() {
                         <Edit2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       </button>
                       <button
-                        onClick={() => deleteLesson(lesson)}
+                        onClick={() => handleDeleteLesson(lesson)}
                         className="p-1.5 sm:p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-gray-400 hover:text-red-600 dark:hover:text-red-400"
                         title="Delete"
                       >

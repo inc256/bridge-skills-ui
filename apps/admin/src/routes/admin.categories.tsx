@@ -296,7 +296,7 @@ function AdminCategories() {
     }
   };
 
-  const deleteCategory = async (category: Category) => {
+  const handleDeleteCategory = async (category: Category) => {
     if (!window.confirm(`Delete category "${category.name}"? This may affect courses.`)) return;
     try {
       await deleteCategory(category.id);
@@ -429,7 +429,7 @@ function AdminCategories() {
               key={category.id}
               category={category}
               onEdit={openEditModal}
-              onDelete={deleteCategory}
+              onDelete={handleDeleteCategory}
             />
           ))
         )}

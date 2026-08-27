@@ -13,6 +13,7 @@ interface Student {
   id: string;
   full_name: string;
   username: string;
+  name?: string;
   email: string;
   role: string;
   first_name?: string;

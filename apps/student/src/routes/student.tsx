@@ -122,7 +122,7 @@ function StudentLayout() {
         // If user is already loaded from auth context, use it
         if (user) {
           // Check if user has the correct role
-          if (!ALLOWED_ROLES.includes(user.role)) {
+          if (!ALLOWED_ROLES.includes(user.role ?? "")) {
             await router.navigate({ to: "/student" });
           }
           if (!cancelled) setChecking(false);

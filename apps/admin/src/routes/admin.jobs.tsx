@@ -375,7 +375,7 @@ function AdminJobs() {
     }
   };
 
-  const deleteJob = async (job: Job) => {
+  const handleDeleteJob = async (job: Job) => {
     if (!window.confirm(`Delete "${job.title}" at ${job.company_name}?`)) return;
     try {
       await deleteJob(job.id);
@@ -550,7 +550,7 @@ function AdminJobs() {
               key={job.id}
               job={job}
               onEdit={openEditModal}
-              onDelete={deleteJob}
+              onDelete={handleDeleteJob}
               onToggleActive={toggleActive}
             />
           ))

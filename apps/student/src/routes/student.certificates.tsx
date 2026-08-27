@@ -10,7 +10,7 @@ export const Route = createFileRoute("/student/certificates")({
 });
 
 // Certificate with additional fields
-interface ExtendedCertificate extends Certificate {
+interface ExtendedCertificate extends Omit<Certificate, "issued" | "credentialId"> {
   number?: string;
   credentialId?: string;
   course_title?: string;

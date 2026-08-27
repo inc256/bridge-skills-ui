@@ -5,7 +5,7 @@ import { CourseThumb } from "./course-thumb";
 
 export function CourseCard({ course, href }: { course: Course; href?: string }) {
   const to = href ?? "/student/course/$slug";
-  const isFree = course.price.toLowerCase() === "free" || course.price === "$0";
+  const isFree = String(course.price ?? "").toLowerCase() === "free" || course.price === "$0";
   const actionLabel = course.progress != null ? "Continue" : "Enroll";
   const ActionIcon = course.progress != null ? Play : ShoppingCart;
   const primaryInitials = course.instructor

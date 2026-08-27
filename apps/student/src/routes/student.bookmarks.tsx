@@ -235,7 +235,7 @@ function Bookmarks() {
                     <h4 className="font-semibold text-gray-900 truncate text-sm sm:text-base flex-1">
                       {course.title}
                     </h4>
-                    <span className={`text-[10px] sm:text-xs font-medium px-1.5 sm:px-2 py-0.5 rounded-full ${getLevelColor(course.level)}`}>
+                    <span className={`text-[10px] sm:text-xs font-medium px-1.5 sm:px-2 py-0.5 rounded-full ${getLevelColor(course.level || 'Beginner')}`}>
                       {course.level || 'Beginner'}
                     </span>
                   </div>

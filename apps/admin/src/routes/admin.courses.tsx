@@ -26,6 +26,7 @@ interface Course {
   instructor: string;
   category: string;
   category_id: string;
+  language?: string;
   level: 'beginner' | 'intermediate' | 'advanced';
   status: 'draft' | 'published' | 'archived' | 'pending' | 'in_review';
   pricing: 'free' | 'paid' | 'subscription';
@@ -270,7 +271,7 @@ function AdminCourses() {
       pricing: course.pricing || 'free',
       price: course.price?.toString() || '0',
       language: course.language || 'English',
-      status: course.status || 'draft',
+      status: course.status === 'in_review' ? 'draft' : course.status || 'draft',
       has_certificate: course.has_certificate || false,
       category: course.category_id || ''
     });
