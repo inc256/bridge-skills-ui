@@ -29,6 +29,7 @@ import {
   Volume2
 } from "lucide-react";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 import { createCourse, patchCourse, getCourse, getCourseModules, getCourseCategories, createTutorModule, updateTutorModule, createTutorLesson, updateTutorLesson, deleteTutorLesson, generateCourseDescription, generateCourseTitle, resolveTutorMedia } from "@/lib/api";
 
 export const Route = createFileRoute("/tutor/builder")({
@@ -158,6 +159,7 @@ function Builder() {
   const [subtitle, setSubtitle] = useState("");
   const [modules, setModules] = useState<BuilderModule[]>([]);
   const [originalLessonIds, setOriginalLessonIds] = useState<string[]>([]);
+  const [originalModuleIds, setOriginalModuleIds] = useState<string[]>([]);
   const [isEdit, setIsEdit] = useState(false);
   const [originalSlug, setOriginalSlug] = useState<string | null>(null);
   const [savedDraft, setSavedDraft] = useState<any | null>(null);
@@ -177,7 +179,9 @@ function Builder() {
   // old draft sitting in localStorage). Once every draft has gone through a
   // load/save cycle this can be removed - `_persisted` should always be set.
   function looksPersistedId(id: unknown) {
-    return typeof id === "string" && id.length >= 20 && !id.startsWith("module-") && !id.startsWith("lesson-");
+    if (typeof id !== "string" && typeof id !== "number") return false;
+    const value = String(id);
+    return value.length > 0 && !value.startsWith("module-") && !value.startsWith("lesson-");
   }
 
   // Load categories
@@ -224,7 +228,7 @@ function Builder() {
             setLoadingCourse(false);
             return;
           }
-          const course = { ...(serverCourse ?? {}), ...(savedCourse ?? {}) };
+          const course = serverCourse ?? savedCourse;
           const curriculum = Array.isArray(serverModules) && serverModules.length > 0
             ? serverModules
             : Array.isArray(course.modules) && course.modules.length > 0
@@ -272,6 +276,9 @@ function Builder() {
           
           // Handle modules and lessons if they exist
           if (Array.isArray(curriculum) && curriculum.length > 0) {
+            setOriginalModuleIds(curriculum
+              .filter((module: any) => module._persisted ?? looksPersistedId(module.id))
+              .map((module: any) => String(module.id)));
             setOriginalLessonIds(curriculum.flatMap((module: any) => Array.isArray(module.lessons)
               ? module.lessons
                   .filter((lesson: any) => (lesson._persisted ?? looksPersistedId(lesson.id)))
@@ -371,6 +378,18 @@ function Builder() {
     window.localStorage.setItem("bridge_skills_tutor_course_draft", JSON.stringify(draft));
   }, [title, slug, subtitle, description, courseTimeline, thumbnailUrl, categoryId, level, language, pricing, price, status, modules, outcomes, requirements, resources, isEdit]);
 
+  useEffect(() => {
+    if (typeof window === "undefined" || saving) return;
+    const hasDraft = Boolean(title.trim() || description.trim() || modules.length || resources.length);
+    if (!hasDraft) return;
+    const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warnBeforeLeaving);
+    return () => window.removeEventListener("beforeunload", warnBeforeLeaving);
+  }, [title, description, modules.length, resources.length, saving]);
+
   function slugify(value: string) {
     return value
       .toLowerCase()
@@ -381,6 +400,7 @@ function Builder() {
 
   async function handleGenerate() {
     setAiBusy(true);
+    setError(null);
     try {
       const [titleResponse, descriptionResponse] = await Promise.all([
         generateCourseTitle(prompt),
@@ -388,6 +408,10 @@ function Builder() {
       ]);
       setTitleSuggestion(titleResponse?.title ?? titleResponse?.suggestion ?? null);
       setDescriptionSuggestion(descriptionResponse?.description ?? descriptionResponse?.result ?? null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unable to generate course suggestions.";
+      setError(message);
+      toast.error(message);
     } finally {
       setAiBusy(false);
     }
@@ -612,6 +636,7 @@ function Builder() {
 
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (saving) return;
     setError(null);
     setSaving(true);
     
@@ -675,6 +700,8 @@ function Builder() {
       } else {
         // Create new course
         saved = await createCourse(payload);
+        setIsEdit(true);
+        setOriginalSlug(saved?.slug ?? newSlug);
         toast.success("Course created successfully!");
       }
 
@@ -685,7 +712,8 @@ function Builder() {
       }
 
       const courseSlug = saved?.slug ?? newSlug;
-      const persistedModules = await Promise.all(modules.map(async (module, moduleIndex) => {
+      const persistedModules: BuilderModule[] = [];
+      for (const [moduleIndex, module] of modules.entries()) {
         const isPersistedModule = module._persisted ?? looksPersistedId(module.id);
         const data = {
           course: saved?.id,
@@ -696,13 +724,17 @@ function Builder() {
         };
         if (isPersistedModule) {
           await updateTutorModule(module.id, data);
-          return { ...module, id: module.id, _persisted: true };
+          persistedModules.push({ ...module, id: String(module.id), _persisted: true });
+          setModules([...persistedModules, ...modules.slice(moduleIndex + 1)]);
+          continue;
         }
         const createdModule = await createTutorModule(courseSlug, data);
         const moduleId = String(createdModule?.id ?? createdModule?.module?.id ?? "");
         if (!moduleId) throw new Error(`Unable to create module "${module.title}".`);
-        return { ...module, id: moduleId, _persisted: true };
-      }));
+        persistedModules.push({ ...module, id: moduleId, _persisted: true });
+        setModules([...persistedModules, ...modules.slice(moduleIndex + 1)]);
+      }
+      setModules(persistedModules);
 
       const lessonPayloads = persistedModules.flatMap((module, moduleIndex) =>
         module.lessons.map((lesson, lessonIndex) => {
@@ -729,7 +761,7 @@ function Builder() {
           description: lesson.description ?? "",
           content: lesson.content ?? "",
           module: module.id,
-          duration: 0,
+          duration: lesson.duration ?? "15 min",
           xp_reward: Math.max(0, Number(lesson.xpReward ?? 10)),
           is_free: Boolean(lesson.isFree ?? (moduleIndex === 0 && lessonIndex === 0)),
           is_drip: Boolean(lesson.isDrip),
@@ -740,14 +772,26 @@ function Builder() {
         }),
       );
 
-      await Promise.all(lessonPayloads.map(async (lesson) => {
+      const reconciledModules = persistedModules.map((module) => ({ ...module, lessons: [...module.lessons] }));
+      for (const lesson of lessonPayloads) {
         const { id, _persisted, ...payload } = lesson;
+        let persistedId = id;
         if (isEdit && _persisted) {
           await updateTutorLesson(id, payload);
         } else {
-          await createTutorLesson(courseSlug, payload);
+          const createdLesson = await createTutorLesson(courseSlug, payload);
+          const lessonId = String(createdLesson?.id ?? createdLesson?.lesson?.id ?? "");
+          if (!lessonId) throw new Error(`Unable to create lesson "${lesson.title}".`);
+          persistedId = lessonId;
         }
-      }));
+        const module = reconciledModules.find((item) => item.id === String(lesson.module));
+        const lessonIndex = module?.lessons.findIndex((item) => item.id === id) ?? -1;
+        if (module && lessonIndex >= 0) {
+          module.lessons[lessonIndex] = { ...module.lessons[lessonIndex], id: persistedId, _persisted: true };
+        }
+        setModules(reconciledModules.map((item) => ({ ...item, lessons: [...item.lessons] })));
+      }
+      setModules(reconciledModules);
 
       if (isEdit) {
         const currentLessonIds = new Set(
@@ -818,10 +862,15 @@ function Builder() {
 
   if (loadingCourse) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-gray-500">Loading course data...</p>
+      <div className="space-y-6 p-4 sm:p-6 max-w-7xl mx-auto">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-56" />
+          <Skeleton className="h-4 w-80 max-w-full" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-28 w-full md:col-span-2" />
         </div>
       </div>
     );

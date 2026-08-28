@@ -1,5 +1,6 @@
 // apps/student/src/routes/student.account.tsx
 import { createFileRoute } from "@tanstack/react-router";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { 
   User, Mail, MapPin, Globe, Phone, AtSign, 
   Edit, Save, X, Camera, Award, TrendingUp, 
@@ -142,7 +143,7 @@ function Account() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <PageSkeleton rows={4} />
           <p className="text-sm text-gray-500">Loading your profile...</p>
         </div>
       </div>

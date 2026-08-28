@@ -1,5 +1,6 @@
 // apps/student/src/routes/student.certificates.tsx
 import { createFileRoute } from "@tanstack/react-router";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Award, Download, Share2, ExternalLink, Check, Search, Shield, RefreshCw, Sparkles, Users, Clock, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getMyCertificates, verifyCertificate, getMe } from "@/lib/api";
@@ -188,7 +189,7 @@ function Certificates() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <PageSkeleton rows={4} />
           <p className="text-xs sm:text-sm text-gray-500">Loading certificates...</p>
         </div>
       </div>

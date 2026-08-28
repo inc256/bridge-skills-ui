@@ -1,5 +1,6 @@
 // apps/tutor/src/routes/tutor/settings.tsx
 import { createFileRoute } from "@tanstack/react-router";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { useEffect, useState, type FormEvent } from "react";
 import { 
   User, 
@@ -145,7 +146,7 @@ function TutorSettings() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <PageSkeleton rows={4} />
           <p className="text-sm text-gray-500">Loading settings...</p>
         </div>
       </div>

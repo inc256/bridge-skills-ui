@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { 
   Plus, Edit2, Trash2, RefreshCw, X, Briefcase, MapPin, ExternalLink,
   Building2, Calendar, Clock, CheckCircle, AlertCircle, Filter,
@@ -426,7 +427,7 @@ function AdminJobs() {
   if (busy) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-3 border-gray-200 dark:border-gray-700 border-t-blue-600"></div>
+        <PageSkeleton rows={5} />
       </div>
     );
   }

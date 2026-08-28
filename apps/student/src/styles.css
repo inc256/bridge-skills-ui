@@ -206,11 +206,3 @@
   to { background-position: -200% 0; }
 }
 
-div.animate-spin,
-span.animate-spin {
-  animation: skeletonShimmer 1.4s ease-in-out infinite;
-  background: linear-gradient(90deg, var(--color-blue-50), var(--color-blue-100), var(--color-blue-50));
-  background-size: 200% 100%;
-  border: 0;
-  border-radius: 6px;
-}

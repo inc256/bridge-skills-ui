@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { 
   Plus, Edit2, Trash2, RefreshCw, X, ChevronDown, ChevronRight, 
   HelpCircle, CheckCircle, BookOpen, Search, Filter, Layers,
@@ -784,7 +785,7 @@ function AdminQuizzes() {
         <div className="space-y-3">
           {busy ? (
             <div className="flex justify-center py-10">
-              <div className="animate-spin rounded-full h-8 w-8 border-3 border-gray-200 dark:border-gray-700 border-t-blue-600"></div>
+              <PageSkeleton rows={5} />
             </div>
           ) : quizzes.length === 0 ? (
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 sm:p-12 text-center shadow-sm">

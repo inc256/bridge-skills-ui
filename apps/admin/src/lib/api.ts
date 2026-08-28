@@ -182,6 +182,9 @@ export function getStoredSession() {
 
 export function clearStoredSession() {
   writeSession(null);
+  if (typeof window !== "undefined" && !window.location.pathname.replace(/\/$/, "").endsWith("/admin")) {
+    window.location.assign("/admin");
+  }
 }
 
 export function isAccessTokenExpired(token: string | undefined) {

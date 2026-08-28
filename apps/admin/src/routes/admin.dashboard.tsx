@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { 
   Users, 
   GraduationCap, 
@@ -413,7 +414,7 @@ function AdminDashboard() {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-        <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <PageSkeleton rows={4} />
         <p className="text-sm text-gray-500 dark:text-gray-400">Loading dashboard...</p>
       </div>
     );

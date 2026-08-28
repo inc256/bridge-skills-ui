@@ -1,5 +1,6 @@
 // apps/student/src/routes/student.bookmarks.tsx
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { BookMarked, Trash2, Heart, BookOpen, Sparkles, TrendingUp, Clock, Users, Star, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getWishlistCourses, removeFromWishlist } from "@/lib/api";
@@ -74,7 +75,7 @@ function Bookmarks() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <PageSkeleton rows={4} />
           <p className="text-xs sm:text-sm text-gray-500">Loading bookmarks...</p>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { 
   Plus, RefreshCw, Search, Trash2, Edit2, X, TrendingUp, 
   Users, BookOpen, CheckCircle, Clock, AlertCircle, Filter,
@@ -457,7 +458,7 @@ function AdminEnrollments() {
   if (busy) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-3 border-gray-200 dark:border-gray-700 border-t-blue-600"></div>
+        <PageSkeleton rows={5} />
       </div>
     );
   }

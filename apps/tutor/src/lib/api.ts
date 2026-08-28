@@ -155,6 +155,9 @@ export function getStoredSession() {
 
 export function clearStoredSession() {
   writeSession(null);
+  if (typeof window !== "undefined" && !window.location.pathname.replace(/\/$/, "").endsWith("/tutor")) {
+    window.location.assign("/tutor");
+  }
 }
 
 export function isAccessTokenExpired(token: string | undefined) {
@@ -644,7 +647,7 @@ export async function getCourseModules(slug: string) {
         lessons: [],
         // This synthetic "unassigned" group isn't a real module row, so it
         // must NOT be treated as persisted - it needs to be created on save.
-        _persisted: false,
+        _persisted: moduleId !== "module-unassigned",
       };
       group.lessons.push({
         id: lesson?.id ?? lesson?.slug ?? `lesson-${index + 1}`,

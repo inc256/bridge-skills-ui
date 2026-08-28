@@ -163,6 +163,9 @@ export function getStoredSession() {
 
 export function clearStoredSession() {
   writeSession(null);
+  if (typeof window !== "undefined" && !window.location.pathname.replace(/\/$/, "").endsWith("/student")) {
+    window.location.assign("/student");
+  }
 }
 
 export function isAccessTokenExpired(token: string | undefined) {

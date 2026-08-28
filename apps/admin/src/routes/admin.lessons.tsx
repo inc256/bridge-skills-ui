@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { 
   Plus, Edit2, Trash2, RefreshCw, X, Video, FileText, HelpCircle, 
   UploadCloud, BookOpen, Search, CheckCircle, Gift,
@@ -604,7 +605,7 @@ function AdminLessons() {
           {/* Lessons Content */}
           {busy ? (
             <div className="flex justify-center py-10 sm:py-16">
-              <div className="animate-spin rounded-full h-8 w-8 border-3 border-gray-200 dark:border-gray-700 border-t-blue-600"></div>
+              <PageSkeleton rows={5} />
             </div>
           ) : filteredLessons.length === 0 ? (
             <div className="py-10 sm:py-16 text-center">

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Search, UserPlus, RefreshCw, X, Edit2, Users, Mail, Calendar, Award, TrendingUp } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { apiRequest } from "@/lib/api";
@@ -399,7 +400,7 @@ function AdminStudents() {
               {busy ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center">
-                    <div className="inline-block w-8 h-8 border-3 border-gray-200 dark:border-gray-700 border-t-blue-600 rounded-full animate-spin" />
+                    <PageSkeleton rows={5} />
                     <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Loading students...</p>
                   </td>
                 </tr>

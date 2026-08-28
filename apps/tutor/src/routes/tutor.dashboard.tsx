@@ -25,6 +25,7 @@ import {
   getTutorAnalytics,
   getProfile,
 } from '../lib/api';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export const Route = createFileRoute('/tutor/dashboard')({
   component: TutorDashboard,
@@ -46,10 +47,10 @@ function TutorDashboard() {
         setError(null);
 
         const [profileData, analyticsData, coursesData, studentsData] = await Promise.all([
-          getProfile().catch(() => null),
-          getTutorAnalytics().catch(() => null),
-          getCourses().catch(() => []),
-          getStudents().catch(() => [])
+          getProfile(),
+          getTutorAnalytics(),
+          getCourses(),
+          getStudents(),
         ]);
 
         if (profileData) setProfile(profileData);
@@ -85,8 +86,13 @@ function TutorDashboard() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-gray-500">Loading dashboard...</p>
+          <div className="w-full max-w-5xl space-y-6 px-4">
+            <div className="space-y-2"><Skeleton className="h-8 w-64" /><Skeleton className="h-4 w-80" /></div>
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+              {Array.from({ length: 4 }, (_, index) => <Skeleton key={index} className="h-28 w-full" />)}
+            </div>
+            <Skeleton className="h-64 w-full" />
+          </div>
         </div>
       </div>
     );
