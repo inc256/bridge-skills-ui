@@ -54,15 +54,15 @@ export function AdminAuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F7F2] flex items-center justify-center p-4">
-      <div className="w-full max-w-[380px]">
+    <div className="flex h-dvh items-center justify-center overflow-hidden bg-[#F5F7F2] p-3 sm:p-4">
+      <div className="w-full max-w-[380px] max-h-full">
         {/* Logo */}
         <div className="flex justify-center mb-8">
           <Logo />
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm">
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-8">
           <h1 className="text-[22px] font-bold text-gray-900 mb-1">Admin Sign In</h1>
           <p className="text-sm text-gray-400 mb-6">Enter your credentials to access the admin portal.</p>
 

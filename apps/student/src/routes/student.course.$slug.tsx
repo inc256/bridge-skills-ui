@@ -2,7 +2,8 @@ import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-ro
 import { Award, Clock, Users, Star, Check, ChevronRight, PlayCircle, Globe, Download } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CourseThumb } from "@/components/course-thumb";
-import { checkCourseEnrollment, enrollInCourse, getCourse, getCourseModules, initiatePayment, sortCourseModules } from "@/lib/api";
+import { jsPDF } from "jspdf";
+import { checkCourseEnrollment, enrollInCourse, getCourse, getCourseModules, getLocalWishlistCourses, initiatePayment, sortCourseModules, toggleLocalWishlist } from "@/lib/api";
 import type { Course } from "@/lib/api";
 
 export const Route = createFileRoute("/student/course/$slug")({
@@ -22,6 +23,8 @@ function CourseDetails() {
   const [enrolled, setEnrolled] = useState(course.progress != null);
   const [enrolling, setEnrolling] = useState(false);
   const [enrollmentError, setEnrollmentError] = useState<string | null>(null);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [bookmarking, setBookmarking] = useState(false);
   const raw = course.raw as Record<string, any>;
 
   const getYoutubeId = (url: string | undefined) => {
@@ -40,7 +43,55 @@ function CourseDetails() {
     void checkCourseEnrollment(course.slug).then((result) => {
       if (result) setEnrolled(Boolean(result.enrolled ?? result.is_enrolled ?? result.status === "active"));
     });
+    const wishlist = getLocalWishlistCourses();
+    setIsBookmarked(wishlist.some((item) => item.slug === course.slug));
   }, [course.slug]);
+
+  async function handleBookmark() {
+    setBookmarking(true);
+    setEnrollmentError(null);
+    try {
+      const nextBookmarked = toggleLocalWishlist(course);
+      setIsBookmarked(nextBookmarked);
+    } catch (error) {
+      setEnrollmentError(error instanceof Error ? error.message : "Unable to update bookmarks right now.");
+    } finally {
+      setBookmarking(false);
+    }
+  }
+
+  function downloadSyllabus() {
+    const pdf = new jsPDF();
+    const margin = 18;
+    const lineWidth = 174;
+    let y = 20;
+    const write = (text: string, size = 11, gap = 6) => {
+      pdf.setFontSize(size);
+      const lines = pdf.splitTextToSize(text, lineWidth);
+      pdf.text(lines, margin, y);
+      y += lines.length * (size * 0.45) + gap;
+      if (y > 275) {
+        pdf.addPage();
+        y = 20;
+      }
+    };
+
+    write(course.title, 20, 10);
+    write(course.description || "Course syllabus", 11, 10);
+    courseDetails.forEach(({ l, v }) => write(`${l}: ${v}`, 10, 4));
+    if (course.learningOutcomes?.length) {
+      write("What you will learn", 14, 6);
+      course.learningOutcomes.forEach((outcome: string) => write(`• ${outcome}`, 10, 3));
+    }
+    if (modules.length) {
+      write("Course curriculum", 14, 6);
+      modules.forEach((module, index) => {
+        write(`Module ${index + 1}: ${module.title}`, 12, 4);
+        (module.lessons ?? []).forEach((lesson: any) => write(`• ${lesson.title}${lesson.duration ? ` (${lesson.duration})` : ""}`, 10, 3));
+      });
+    }
+    pdf.save(`${course.slug}-syllabus.pdf`);
+  }
 
   const isFree = course.price.toLowerCase() === "free" || Number(raw?.price ?? 0) === 0;
 
@@ -244,8 +295,13 @@ function CourseDetails() {
               </button>
             )}
             {enrollmentError && <p className="mt-3 text-xs text-destructive">{enrollmentError}</p>}
-            <button className="mt-2 w-full rounded-[14px] border border-border px-4 py-3 text-sm font-medium hover:bg-secondary transition-colors">
-              Add to bookmarks
+            <button
+              type="button"
+              onClick={() => void handleBookmark()}
+              disabled={bookmarking}
+              className="mt-2 w-full rounded-[14px] border border-border px-4 py-3 text-sm font-medium transition-colors hover:bg-secondary disabled:cursor-wait disabled:opacity-60"
+            >
+              {bookmarking ? "Updating..." : isBookmarked ? "Remove from bookmarks" : "Add to bookmarks"}
             </button>
             <div className="mt-6 space-y-3 text-sm">
               {courseDetails.map((r) => (
@@ -255,7 +311,7 @@ function CourseDetails() {
                 </div>
               ))}
             </div>
-            <button className="mt-4 inline-flex w-full items-center justify-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground">
+            <button type="button" onClick={downloadSyllabus} className="mt-4 inline-flex w-full items-center justify-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground">
               <Download className="h-3.5 w-3.5" /> Download syllabus (PDF)
             </button>
           </div>

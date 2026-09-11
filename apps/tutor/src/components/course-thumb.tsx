@@ -1,9 +1,20 @@
 const SUPABASE_MEDIA_URL = "https://xcxuhqghaddopvzhapgw.supabase.co/storage/v1/object/public/media";
 const SUPABASE_THUMBNAIL_PREFIX = `${SUPABASE_MEDIA_URL}/courses/thumbnails/`;
+const API_BASE = (import.meta.env?.VITE_API_BASE_URL as string | undefined) ?? "https://techbridge-backend-rust.vercel.app/api/v1";
 
 export function resolveCourseThumbnail(value?: string | null) {
   const thumbnail = typeof value === "string" ? value.trim() : "";
   if (!thumbnail) return null;
+  if (/^https?:\/\/[^/]+\/storage\/v1\/s3\/media\//i.test(thumbnail)) {
+    return thumbnail.replace(/\/storage\/v1\/s3\/media\//i, "/storage/v1/object/public/media/");
+  }
+  if (/^(?:https?:|blob:|data:)/i.test(thumbnail)) return thumbnail;
+  if (/^\/?(?:media|api\/)/i.test(thumbnail)) {
+    const origin = API_BASE.startsWith("/")
+      ? (typeof window === "undefined" ? "" : window.location.origin)
+      : new URL(API_BASE).origin;
+    return `${origin}/${thumbnail.replace(/^\/+/, "")}`;
+  }
   if (thumbnail.startsWith(SUPABASE_THUMBNAIL_PREFIX)) return thumbnail;
 
   const filename = thumbnail

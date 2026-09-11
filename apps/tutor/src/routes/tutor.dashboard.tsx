@@ -17,7 +17,6 @@ import {
   ClipboardCheck,
   BarChart3,
   MessageSquare,
-  PlayCircle
 } from 'lucide-react';
 import { 
   getCourses, 
@@ -25,6 +24,7 @@ import {
   getTutorAnalytics,
   getProfile,
 } from '../lib/api';
+import { CourseThumb } from '@/components/course-thumb';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export const Route = createFileRoute('/tutor/dashboard')({
@@ -261,7 +261,7 @@ function TutorDashboard() {
               })}
             </p>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">
-              {getGreeting()}, {getUserName()} 👋
+              {getGreeting()}, {getUserName()}
             </h1>
             <p className="text-sm text-gray-500 mt-1">
               Here's your instructor workspace overview
@@ -328,8 +328,14 @@ function TutorDashboard() {
                   className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer"
                   onClick={() => navigate({ to: '/tutor/courses' })}
                 >
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex-shrink-0 flex items-center justify-center text-white shadow-md">
-                    <PlayCircle className="w-6 h-6 sm:w-7 sm:h-7" />
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden flex-shrink-0 shadow-md">
+                    <CourseThumb
+                      variant={course.image || 'code'}
+                      color={course.color}
+                      thumbnail={course.thumbnail}
+                      title={course.title}
+                      className="h-full"
+                    />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900 truncate">{course.title || 'Untitled'}</p>

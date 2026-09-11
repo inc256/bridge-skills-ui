@@ -12,7 +12,10 @@ export function resolveCourseMedia(value: unknown, folder: "audio" | "pdf" | "pp
         ?? "").trim()
       : "";
   if (!media) return "";
-  if (/^https?:\/\//i.test(media) && media.includes("/storage/v1/object/public/media/")) return media;
+  if (/^https?:\/\/[^/]+\/storage\/v1\/s3\/media\//i.test(media)) {
+    return media.replace(/\/storage\/v1\/s3\/media\//i, "/storage/v1/object/public/media/");
+  }
+  if (/^https?:\/\/[^/]+\/storage\/v1\/object\/public\/media\//i.test(media)) return media;
   if (/^https?:\/\//i.test(media) && !/\/media\//i.test(media)) return media;
   const filename = media.split(/[?#]/, 1)[0].replace(/\\/g, "/").split("/").pop();
   if (!filename) return "";
@@ -156,6 +159,9 @@ function writeSession(session: AuthSession | null) {
 }
 
 let refreshInFlight: Promise<boolean> | null = null;
+let lessonCompletionEndpointUnavailable = false;
+let lessonSyncEndpointUnavailable = false;
+let lessonProgressEndpointUnavailable = false;
 
 export function getStoredSession() {
   return readSession();
@@ -283,7 +289,9 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}, retrie
           detail = "Request failed";
         }
       }
-      throw new Error(detail || `Request failed with ${response.status}`);
+      const requestError = new Error(detail || `Request failed with ${response.status}`) as Error & { status?: number };
+      requestError.status = response.status;
+      throw requestError;
     }
 
     if (response.status === 204) {
@@ -292,7 +300,12 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}, retrie
 
     return (await response.json()) as T;
   } catch (error) {
-    console.error(`API Request failed for ${path}:`, error);
+    const status = (error as { status?: number })?.status;
+    const isKnownLessonPersistenceFailure = status === 500
+      && /^\/lessons\/[^/]+\/(complete|sync|progress)\/$/.test(path);
+    if (!isKnownLessonPersistenceFailure) {
+      console.error(`API Request failed for ${path}:`, error);
+    }
     throw error;
   }
 }
@@ -514,7 +527,7 @@ function normalizeCourse(item: any): Course {
     image: deriveThumbVariant(item?.title ?? "", category ?? ""),
     thumbnail: item?.thumbnail ?? item?.thumbnail_url ?? item?.thumbnail_url_resolved ?? item?.cover_image ?? item?.image ?? null,
     color: deriveColor(category ?? ""),
-    description: item?.subtitle ?? item?.description ?? "",
+    description: String(item?.description ?? "").trim() || String(item?.subtitle ?? "").trim(),
     modules: Math.max(0, moduleCount),
     lessons,
     language: item?.language ?? item?.course_language ?? undefined,
@@ -848,22 +861,44 @@ export async function verifyCertificate(number: string) {
 // ===================== LESSON FUNCTIONS =====================
 
 export async function markLessonComplete(lessonId: string) {
+  if (lessonCompletionEndpointUnavailable) return null;
   try {
-    return await apiRequest<any>(`/lessons/${lessonId}/complete/`, {
+    const response = await apiRequest<any>(`/lessons/${lessonId}/complete/`, {
       method: "POST",
+      body: JSON.stringify({}),
     });
-  } catch {
+    return response ?? { success: true };
+  } catch (error) {
+    if ((error as { status?: number })?.status && (error as { status?: number }).status! >= 500) {
+      lessonCompletionEndpointUnavailable = true;
+    }
     return null;
   }
 }
 
 export async function syncLessonProgress(lessonId: string, position: number, watchTime: number) {
+  if (lessonSyncEndpointUnavailable) return null;
   try {
     return await apiRequest<any>(`/lessons/${lessonId}/sync/`, {
       method: "POST",
       body: JSON.stringify({ position, watch_time: watchTime }),
     });
-  } catch {
+  } catch (error) {
+    if ((error as { status?: number })?.status && (error as { status?: number }).status! >= 500) {
+      lessonSyncEndpointUnavailable = true;
+    }
+    return null;
+  }
+}
+
+export async function getLessonProgress(lessonId: string) {
+  if (lessonProgressEndpointUnavailable) return null;
+  try {
+    return await apiRequest<any>(`/lessons/${lessonId}/progress/`);
+  } catch (error) {
+    if ((error as { status?: number })?.status && (error as { status?: number }).status! >= 500) {
+      lessonProgressEndpointUnavailable = true;
+    }
     return null;
   }
 }
@@ -1041,11 +1076,11 @@ export async function getCourseModules(slug: string) {
   }));
 }
 
-// ===================== COURSE PROGRESS =====================
+// ===================== ENROLLMENT PROGRESS =====================
 
-export async function getCourseProgress(courseSlug: string) {
+export async function getEnrollmentProgress(enrollmentId: string) {
   try {
-    return await apiRequest<any>(`/courses/${courseSlug}/progress/`);
+    return await apiRequest<any>(`/enrollments/${enrollmentId}/progress/`);
   } catch {
     return null;
   }
@@ -1077,9 +1112,10 @@ export async function createCourseReview(courseSlug: string, data: { rating: num
 
 export async function addToWishlist(courseSlug: string) {
   try {
-    return await apiRequest<any>(`/courses/${courseSlug}/wishlist/`, {
+    const response = await apiRequest<any>(`/courses/${courseSlug}/wishlist/`, {
       method: "POST",
     });
+    return response ?? { success: true };
   } catch {
     return null;
   }
@@ -1087,9 +1123,10 @@ export async function addToWishlist(courseSlug: string) {
 
 export async function removeFromWishlist(courseSlug: string) {
   try {
-    return await apiRequest<any>(`/courses/${courseSlug}/wishlist/`, {
-      method: "DELETE",
+    const response = await apiRequest<any>(`/courses/${courseSlug}/wishlist/`, {
+      method: "POST",
     });
+    return response ?? { success: true };
   } catch {
     return null;
   }
@@ -1132,4 +1169,33 @@ export function sortCourseModules<T extends { title?: unknown; name?: unknown; m
       return (Number.isFinite(leftOrder) ? leftOrder : left.index) - (Number.isFinite(rightOrder) ? rightOrder : right.index);
     })
     .map(({ module }) => module);
+}
+
+const LOCAL_WISHLIST_KEY = "bridge-student-wishlist";
+
+export function getLocalWishlistCourses(): Course[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(LOCAL_WISHLIST_KEY) ?? "[]");
+    return Array.isArray(saved) ? saved as Course[] : [];
+  } catch {
+    return [];
+  }
+}
+
+export function toggleLocalWishlist(course: Course) {
+  const current = getLocalWishlistCourses();
+  const exists = current.some((item) => item.slug === course.slug);
+  const next = exists ? current.filter((item) => item.slug !== course.slug) : [...current, course];
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem(LOCAL_WISHLIST_KEY, JSON.stringify(next));
+  }
+  return !exists;
+}
+
+export function removeLocalWishlist(courseSlug: string) {
+  const next = getLocalWishlistCourses().filter((item) => item.slug !== courseSlug);
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem(LOCAL_WISHLIST_KEY, JSON.stringify(next));
+  }
 }

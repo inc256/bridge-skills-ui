@@ -43,6 +43,17 @@ interface Certificate {
   instructor: string;
 }
 
+function getLocalStudyProgress(courseSlug: string) {
+  if (typeof window === "undefined") return 0;
+  try {
+    const state = JSON.parse(window.localStorage.getItem(`bridge-study-${courseSlug}`) ?? "{}") as { progress?: number };
+    const progress = Number(state.progress ?? 0);
+    return Number.isFinite(progress) ? Math.max(0, Math.min(100, progress)) : 0;
+  } catch {
+    return 0;
+  }
+}
+
 function Dashboard() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
@@ -129,9 +140,14 @@ function Dashboard() {
   const greeting = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
   const name = user?.first_name || user?.username || 'Student';
 
-  const inProgress = enrollments.filter((e: Enrollment) => 
-    e.status === 'active' || ((e.progress || 0) > 0 && (e.progress || 0) < 100)
-  );
+  const inProgress = enrollments
+    .map((enrollment: Enrollment) => ({
+      ...enrollment,
+      progress: Math.max(enrollment.progress || 0, getLocalStudyProgress(enrollment.course?.slug ?? "")),
+    }))
+    .filter((e: Enrollment) =>
+      e.status === 'active' || ((e.progress || 0) > 0 && (e.progress || 0) < 100)
+    );
 
   const recommended = courses.filter((c: Course) => (c.progress ?? 0) <= 0);
   const completedCourses = enrollments.filter((e: Enrollment) => (e.progress || 0) >= 100);
@@ -167,7 +183,7 @@ function Dashboard() {
                   {dayName}, {today.getDate()} {monthName}
                 </p>
                 <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mt-1">
-                  {greeting}, {name}! 👋
+                  {greeting}, {name}!
                 </h2>
                 <p className="mt-1 text-blue-100 text-sm sm:text-base">
                   {stats.streak > 0 

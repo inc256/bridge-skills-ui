@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { useEffect, useState } from "react";
 import { BookOpen, ChevronRight, Clock, Star, Users, Play, CheckCircle, Heart, Sparkles, TrendingUp } from "lucide-react";
-import { getMyEnrollments, getWishlistCourses } from "@/lib/api";
+import { getLocalWishlistCourses, getMyEnrollments } from "@/lib/api";
 import type { Course } from "@/lib/api";
 import { resolveCourseThumbnail } from "@/components/course-thumb";
 
@@ -43,7 +43,7 @@ function MyLearning() {
         
         // Load wishlist
         try {
-          const wishlistData = await getWishlistCourses();
+          const wishlistData = getLocalWishlistCourses();
           setWishlistCourses(Array.isArray(wishlistData) ? wishlistData : []);
         } catch (e) {
           console.error('Failed to load wishlist:', e);

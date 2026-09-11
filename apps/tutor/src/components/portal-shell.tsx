@@ -47,6 +47,7 @@ export function PortalShell({
   const router = useRouter();
   const { user, logout, isLoading } = auth || { user: null, logout: async () => {}, isLoading: false };
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isNavigating = useRouterState({ select: (s) => s.status === "pending" });
   const accentLabel = accent === "student" ? "Student" : accent === "tutor" ? "Tutor" : "Admin";
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -409,9 +410,19 @@ export function PortalShell({
             </div>
           </div>
         </header>
-        <main className="mx-auto max-w-[1400px] px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-          <Outlet />
-        </main>
+        <div className="relative">
+          {isNavigating && (
+            <div className="absolute inset-0 z-20 flex min-h-[calc(100vh-4rem)] items-start justify-center bg-background/80 pt-20 backdrop-blur-[2px]" role="status" aria-live="polite">
+              <div className="sticky top-20 flex items-center gap-3 rounded-xl border border-border bg-card/95 px-4 py-3 text-sm font-medium text-foreground shadow-lg">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-border border-t-primary" aria-hidden="true" />
+                Loading page...
+              </div>
+            </div>
+          )}
+          <main className="mx-auto min-h-[calc(100vh-4rem)] max-w-[1400px] px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+            <Outlet />
+          </main>
+        </div>
         <Toaster />
       </div>
     </div>

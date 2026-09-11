@@ -78,20 +78,20 @@ function TutorLayout() {
           icon: <HelpCircle className="h-4 w-4" />,
           section: "analytics"
         },
-        { 
-          label: "Analytics", 
-          to: "/tutor/analytics", 
-          icon: <BarChart3 className="h-4 w-4" />,
-          section: "analytics"
-        },
+        // { 
+        //   label: "Analytics", 
+        //   to: "/tutor/analytics", 
+        //   icon: <BarChart3 className="h-4 w-4" />,
+        //   section: "analytics"
+        // },
         
         // Communication Section
-        { 
-          label: "Messages", 
-          to: "/tutor/messages", 
-          icon: <MessageCircle className="h-4 w-4" />,
-          section: "communication"
-        },
+        // { 
+        //   label: "Messages", 
+        //   to: "/tutor/messages", 
+        //   icon: <MessageCircle className="h-4 w-4" />,
+        //   section: "communication"
+        // },
         { 
           label: "Certificates", 
           to: "/tutor/certificates", 

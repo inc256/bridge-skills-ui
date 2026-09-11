@@ -90,26 +90,26 @@ export function StudentAuthPage() {
   // Don't render on server, show loading state
   if (!isClient) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="flex h-dvh items-center justify-center overflow-hidden bg-gray-50">
         <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-blue-600" />
       </div>
     );
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="auth-page relative flex h-dvh items-center justify-center overflow-hidden bg-gradient-to-br from-gray-50 via-white to-gray-50 px-2 py-2 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 sm:px-4 sm:py-4">
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.08),transparent_60%),radial-gradient(circle_at_bottom_right,rgba(96,165,250,0.05),transparent_50%)]" />
       <div className="absolute left-[-10rem] top-[-10rem] -z-10 h-[40rem] w-[40rem] rounded-full bg-blue-500/5 blur-3xl" />
       <div className="absolute bottom-[-10rem] right-[-10rem] -z-10 h-[40rem] w-[40rem] rounded-full bg-sky-400/5 blur-3xl" />
 
-      <div className="w-full max-w-md px-4">
-        <div className="rounded-[32px] border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-blue-50/50 via-white to-blue-50/50 dark:from-gray-800/50 dark:via-gray-800 dark:to-gray-800/50 p-6 shadow-lg sm:p-8">
-          <div className="rounded-[28px] border border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-800/95 p-6 sm:p-8 backdrop-blur-sm">
+      <div className="auth-shell w-full max-w-md max-h-full">
+        <div className="auth-card rounded-[32px] border border-gray-200 bg-gradient-to-br from-blue-50/50 via-white to-blue-50/50 p-4 shadow-lg dark:border-gray-700 dark:from-gray-800/50 dark:via-gray-800 dark:to-gray-800/50 sm:p-6">
+          <div className="auth-panel rounded-[28px] border border-gray-200 bg-white/95 p-4 backdrop-blur-sm dark:border-gray-700 dark:bg-gray-800/95 sm:p-6">
             <div className="text-center">
-              <div className="mx-auto w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-4">
-                <GraduationCap className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+              <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30 sm:mb-3 sm:h-14 sm:w-14">
+                <GraduationCap className="h-6 w-6 text-blue-600 dark:text-blue-400 sm:h-7 sm:w-7" />
               </div>
-              <h2 className="text-[28px] font-bold tracking-tight text-gray-900 dark:text-white">
+              <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-[28px]">
                 {isRegistering ? "Create student account" : "Student Sign In"}
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -117,7 +117,7 @@ export function StudentAuthPage() {
               </p>
             </div>
 
-            <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+            <form className="mt-4 space-y-3 sm:mt-5 sm:space-y-4" onSubmit={handleSubmit}>
               {isRegistering && (
                 <div className="grid gap-4 sm:grid-cols-2">
                   <input value={firstName} onChange={(event) => setFirstName(event.target.value)} placeholder="First name" className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm outline-none" required autoComplete="given-name" />
@@ -216,7 +216,7 @@ export function StudentAuthPage() {
               </button>
             </form>
 
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2 border-t border-gray-200 pt-3 dark:border-gray-700 sm:mt-5 sm:gap-3 sm:pt-4">
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 {isRegistering ? "Already have an account?" : "Don't have an account?"}
               </p>
@@ -233,7 +233,7 @@ export function StudentAuthPage() {
               </button>
             </div>
 
-            <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+            <div className="mt-3 flex items-center justify-center gap-4 text-xs text-gray-500 dark:text-gray-400 sm:mt-4">
               <span className="flex items-center gap-1">
                 <Shield className="h-3.5 w-3.5 text-blue-500" />
                 Secure

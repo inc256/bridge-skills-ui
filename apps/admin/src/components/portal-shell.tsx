@@ -56,6 +56,7 @@ export function PortalShell({
 }) {
   const safeUser = user ?? { name: "Loading…", role: "User", initials: "…" };
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isNavigating = useRouterState({ select: (s) => s.status === "pending" });
   
   const accentLabel = accent === "student" ? "Student" : accent === "tutor" ? "Tutor" : "Admin";
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -420,9 +421,19 @@ export function PortalShell({
             </div>
           </div>
         </header>
-        <main className="mx-auto max-w-[1400px] px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-          <Outlet />
-        </main>
+        <div className="relative">
+          {isNavigating && (
+            <div className="absolute inset-0 z-20 flex min-h-[calc(100vh-4rem)] items-start justify-center bg-gray-50/80 pt-20 backdrop-blur-[2px] dark:bg-gray-900/80" role="status" aria-live="polite">
+              <div className="sticky top-20 flex items-center gap-3 rounded-xl border border-gray-200 bg-white/95 px-4 py-3 text-sm font-medium text-gray-700 shadow-lg dark:border-gray-700 dark:bg-gray-800/95 dark:text-gray-200">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-200 border-t-blue-600 dark:border-gray-600 dark:border-t-blue-400" aria-hidden="true" />
+                Loading page...
+              </div>
+            </div>
+          )}
+          <main className="mx-auto min-h-[calc(100vh-4rem)] max-w-[1400px] px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+            <Outlet />
+          </main>
+        </div>
         <Toaster />
       </div>
     </div>

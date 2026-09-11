@@ -100,7 +100,7 @@ export function TutorAuthPage() {
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="auth-page relative flex h-dvh items-center justify-center overflow-hidden bg-gradient-to-br from-gray-50 via-white to-gray-50 px-2 py-2 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 sm:px-4 sm:py-4">
       {/* Background Decorations */}
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.08),transparent_60%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.05),transparent_50%)]" />
       <div className="absolute left-[-10rem] top-[-10rem] -z-10 h-[40rem] w-[40rem] rounded-full bg-blue-500/5 blur-3xl" />
@@ -109,11 +109,11 @@ export function TutorAuthPage() {
       <div className="absolute bottom-20 right-10 w-80 h-80 rounded-full bg-blue-400/10 blur-3xl -z-10" />
 
       {/* Centered Auth Card */}
-      <div className="w-full max-w-md px-4">
-        <div className="rounded-[32px] border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-blue-50/50 via-white to-purple-50/50 dark:from-gray-800/50 dark:via-gray-800 dark:to-gray-800/50 p-6 shadow-lg sm:p-8">
-          <div className="rounded-[28px] border border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-800/95 p-6 sm:p-8 backdrop-blur-sm">
-            <div className="flex items-center justify-center mb-2">
-              <BriefcaseBusiness className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+      <div className="auth-shell w-full max-w-md max-h-full">
+        <div className="auth-card rounded-[32px] border border-gray-200 bg-gradient-to-br from-blue-50/50 via-white to-purple-50/50 p-4 shadow-lg dark:border-gray-700 dark:from-gray-800/50 dark:via-gray-800 dark:to-gray-800/50 sm:p-6">
+          <div className="auth-panel rounded-[28px] border border-gray-200 bg-white/95 p-4 backdrop-blur-sm dark:border-gray-700 dark:bg-gray-800/95 sm:p-6">
+            <div className="mb-1 flex items-center justify-center">
+              <BriefcaseBusiness className="h-7 w-7 text-blue-600 dark:text-blue-400" />
             </div>
             <h2 className="text-[28px] font-bold tracking-tight text-gray-900 dark:text-white text-center">
               {isRegistering ? "Create tutor account" : "Sign in"}
@@ -122,7 +122,7 @@ export function TutorAuthPage() {
               {isRegistering ? "Create your instructor workspace" : "Instructor workspace"}
             </p>
 
-            <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+            <form className="mt-4 space-y-3 sm:mt-5 sm:space-y-4" onSubmit={handleSubmit}>
               {isRegistering && (
                 <div className="grid gap-4 sm:grid-cols-2">
                   <input value={firstName} onChange={(event) => setFirstName(event.target.value)} placeholder="First name" className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm outline-none" required autoComplete="given-name" />
@@ -223,7 +223,7 @@ export function TutorAuthPage() {
               </button>
             </form>
 
-            <button type="button" onClick={() => { setIsRegistering((current) => !current); setError(null); }} className="mt-5 w-full text-sm font-medium text-blue-600 hover:text-blue-700">
+            <button type="button" onClick={() => { setIsRegistering((current) => !current); setError(null); }} className="mt-4 w-full text-sm font-medium text-blue-600 hover:text-blue-700 sm:mt-5">
               {isRegistering ? "Already have an account? Sign in" : "Create tutor account"}
             </button>
           </div>

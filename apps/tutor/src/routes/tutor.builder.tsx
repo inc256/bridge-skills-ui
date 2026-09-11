@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
-import { createCourse, patchCourse, getCourse, getCourseModules, getCourseCategories, createTutorModule, updateTutorModule, createTutorLesson, updateTutorLesson, deleteTutorLesson, generateCourseDescription, generateCourseTitle, resolveTutorMedia } from "@/lib/api";
+import { createCourse, patchCourse, getCourse, getCourseModules, getCourseCategories, createTutorModule, updateTutorModule, deleteTutorModule, createTutorLesson, updateTutorLesson, deleteTutorLesson, generateCourseDescription, generateCourseTitle, resolveTutorMedia } from "@/lib/api";
 
 export const Route = createFileRoute("/tutor/builder")({
   component: Builder,
@@ -173,7 +173,8 @@ function Builder() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loadingCourse, setLoadingCourse] = useState(false);
-  const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
+  const [expandedLessons, setExpandedLessons] = useState<Record<string, string | null>>({});
+  const [quickLessonDrafts, setQuickLessonDrafts] = useState<Record<string, { title: string; type: BuilderLesson["type"] }>>({});
 
   // Fallback heuristic for drafts saved before `_persisted` existed (e.g. an
   // old draft sitting in localStorage). Once every draft has gone through a
@@ -312,7 +313,7 @@ function Builder() {
                 _persisted: l._persisted ?? looksPersistedId(l.id),
               })) : []
             })));
-            setExpandedModules(Object.fromEntries(curriculum.map((m: any, index: number) => [String(m.id || index), index === 0])));
+            setExpandedLessons(Object.fromEntries(curriculum.map((m: any) => [String(m.id), null])));
           }
           
           // Handle resources if they exist
@@ -435,52 +436,84 @@ function Builder() {
         _persisted: false,
       },
     ]);
-    setExpandedModules((current) => ({ ...current, [moduleId]: true }));
+    setExpandedLessons((current) => ({ ...current, [moduleId]: null }));
     setStep(2);
   }
 
   function handleRemoveModule(index: number) {
+    const module = modules[index];
+    if (!module || !window.confirm(`Remove "${module.title}" and all of its lessons?`)) return;
     setModules((prev) => prev.filter((_, idx) => idx !== index));
+    setExpandedLessons((current) => {
+      const next = { ...current };
+      delete next[module.id];
+      return next;
+    });
   }
 
   function handleUpdateModule(index: number, patch: Partial<BuilderModule>) {
     setModules((prev) => prev.map((module, idx) => (idx === index ? { ...module, ...patch } : module)));
   }
 
-  function handleAddLesson(moduleIndex: number) {
+  function createLesson(title = "New lesson", type: BuilderLesson["type"] = "video"): BuilderLesson {
+    return {
+      id: `lesson-${getNewId()}`,
+      title,
+      duration: "15 min",
+      type,
+      videoUrl: "",
+      description: "",
+      content: "",
+      videoFile: "",
+      pdfFile: "",
+      audioFile: "",
+      pptFile: "",
+      thumbnail: "",
+      subtitleVtt: "",
+      xpReward: 10,
+      isFree: false,
+      isDrip: false,
+      dripAfter: 0,
+      isPublished: true,
+      _persisted: false,
+    };
+  }
+
+  function handleAddLesson(moduleIndex: number, lessonTitle?: string, lessonType?: BuilderLesson["type"]) {
+    const newLesson = createLesson(lessonTitle?.trim() || "New lesson", lessonType ?? "video");
     setModules((prev) =>
       prev.map((module, idx) =>
         idx === moduleIndex
           ? {
               ...module,
-              lessons: [
-                ...module.lessons,
-                {
-                  id: `lesson-${getNewId()}`,
-                  title: "New lesson",
-                  duration: "15 min",
-                  type: "video",
-                  videoUrl: "",
-                  description: "",
-                  content: "",
-                  videoFile: "",
-                  pdfFile: "",
-                  audioFile: "",
-                  pptFile: "",
-                  thumbnail: "",
-                  subtitleVtt: "",
-                  xpReward: 10,
-                  isFree: false,
-                  isDrip: false,
-                  dripAfter: 0,
-                  isPublished: true,
-                  _persisted: false,
-                },
-              ],
+              lessons: [...module.lessons, newLesson],
             }
           : module,
       ),
     );
+    setExpandedLessons((current) => Object.fromEntries(Object.keys(current).map((moduleId) => [moduleId, null])));
+  }
+
+  function toggleLesson(moduleId: string, lessonId: string) {
+    setExpandedLessons((current) => ({
+      ...current,
+      [moduleId]: current[moduleId] === lessonId ? null : lessonId,
+    }));
+  }
+
+  function updateQuickLesson(moduleId: string, patch: Partial<{ title: string; type: BuilderLesson["type"] }>) {
+    setQuickLessonDrafts((current) => {
+      const draft = current[moduleId] ?? { title: "", type: "video" as const };
+      return { ...current, [moduleId]: { title: patch.title ?? draft.title, type: patch.type ?? draft.type } };
+    });
+  }
+
+  function addQuickLesson(moduleIndex: number) {
+    const module = modules[moduleIndex];
+    const draft = quickLessonDrafts[module?.id ?? ""] ?? { title: "", type: "video" as const };
+    if (!draft.title.trim()) return;
+    handleAddLesson(moduleIndex, draft.title, draft.type);
+    setQuickLessonDrafts((current) => ({ ...current, [module.id]: { title: "", type: "video" } }));
   }
 
   function handleUpdateLesson(moduleIndex: number, lessonIndex: number, patch: Partial<BuilderLesson>) {
@@ -507,6 +540,13 @@ function Builder() {
           : module,
       ),
     );
+    setExpandedLessons((current) => {
+      const moduleId = modules[moduleIndex]?.id;
+      if (moduleId && current[moduleId] === modules[moduleIndex]?.lessons[lessonIndex]?.id) {
+        return { ...current, [moduleId]: null };
+      }
+      return current;
+    });
   }
 
   function handleAddOutcome() {
@@ -803,6 +843,12 @@ function Builder() {
           originalLessonIds
             .filter((id) => !currentLessonIds.has(id))
             .map((id) => deleteTutorLesson(id)),
+        );
+        const currentModuleIds = new Set(persistedModules.map((module) => String(module.id)));
+        await Promise.all(
+          originalModuleIds
+            .filter((id) => !currentModuleIds.has(id))
+            .map((id) => deleteTutorModule(id)),
         );
       }
 
@@ -1346,119 +1392,63 @@ function Builder() {
 
               <div className="space-y-4">
                 {modules.map((module, moduleIndex) => (
-                  <div key={module.id} className="border border-gray-200 rounded-xl p-4">
-                    <div className="flex items-start gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setExpandedModules((current) => ({ ...current, [module.id]: !current[module.id] }))}
-                        className="mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50"
-                        aria-label={`${expandedModules[module.id] ? "Collapse" : "Expand"} ${module.title}`}
-                      >
-                        {expandedModules[module.id] ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                      </button>
-                      <div className="flex-1 space-y-3">
-                        <label className="space-y-1">
-                          <span className="text-sm font-medium text-gray-700">Module Title</span>
-                          <input
-                            value={module.title}
-                            onChange={(event) => handleUpdateModule(moduleIndex, { title: event.target.value })}
-                            className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
-                          />
-                        </label>
-                        <label className="space-y-1">
-                          <span className="text-sm font-medium text-gray-700">Module Description</span>
-                          <textarea
-                            value={module.description}
-                            onChange={(event) => handleUpdateModule(moduleIndex, { description: event.target.value })}
-                            rows={2}
-                            className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all resize-y"
-                          />
-                        </label>
+                  <div key={module.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
+                    <div className="flex flex-wrap items-start gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <input value={module.title} onChange={(event) => handleUpdateModule(moduleIndex, { title: event.target.value })} className="min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-2 py-1 text-base font-semibold text-gray-900 outline-none transition-colors hover:border-gray-200 focus:border-blue-500 focus:bg-white" aria-label="Module title" />
+                          <span className="shrink-0 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">{module.lessons.length} {module.lessons.length === 1 ? "lesson" : "lessons"}</span>
+                        </div>
+                        <textarea value={module.description} onChange={(event) => handleUpdateModule(moduleIndex, { description: event.target.value })} rows={1} className="mt-1 w-full resize-y rounded-lg border border-transparent bg-transparent px-2 py-1 text-sm text-gray-500 outline-none transition-colors hover:border-gray-200 focus:border-blue-500 focus:bg-white" placeholder="Describe what this module covers" aria-label="Module description" />
                       </div>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleAddLesson(moduleIndex)}
-                          className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                        >
-                          + Lesson
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveModule(moduleIndex)}
-                          className="px-3 py-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium"
-                        >
-                          Remove
-                        </button>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <button type="button" onClick={() => handleAddLesson(moduleIndex)} className="grid h-9 w-9 place-items-center rounded-lg bg-blue-600 text-white transition-colors hover:bg-blue-700" aria-label={`Add lesson to ${module.title}`} title="Add lesson"><Plus className="h-4 w-4" /></button>
+                        <button type="button" onClick={() => handleRemoveModule(moduleIndex)} className="grid h-9 w-9 place-items-center rounded-lg border border-red-200 text-red-600 transition-colors hover:bg-red-50" aria-label={`Remove ${module.title}`} title="Remove module"><Trash2 className="h-4 w-4" /></button>
                       </div>
                     </div>
 
-                    {expandedModules[module.id] && <div className="mt-4 space-y-3 border-t border-gray-100 pt-4">
+                    <div className="mt-4 space-y-2">
+                      {module.lessons.length === 0 && <p className="rounded-lg border border-dashed border-gray-200 px-3 py-4 text-center text-sm text-gray-500">No lessons yet. Add one below.</p>}
                       {module.lessons.map((lesson, lessonIndex) => {
                         const LessonIcon = getLessonTypeIcon(lesson.type);
+                        const isExpanded = expandedLessons[module.id] === lesson.id;
                         return (
-                          <div key={lesson.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                            <div className="flex items-start justify-between gap-3 mb-3">
-                              <div className="flex items-center gap-2">
-                                <LessonIcon className="w-4 h-4 text-blue-600" />
-                                <span className="text-sm font-medium text-gray-700">Lesson {lessonIndex + 1}</span>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveLesson(moduleIndex, lessonIndex)}
-                                className="text-gray-400 hover:text-red-500 transition-colors"
-                              >
-                                <Trash2 className="w-4 h-4" />
+                          <div key={lesson.id} className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50 transition-shadow hover:shadow-sm">
+                            <div className={`flex items-center gap-2 p-2 ${isExpanded ? "bg-blue-50/60" : ""}`}>
+                              <button type="button" onClick={() => toggleLesson(module.id, lesson.id)} className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-gray-500 transition-colors hover:bg-white hover:text-blue-600" aria-label={`${isExpanded ? "Collapse" : "Expand"} ${lesson.title}`}>
+                                {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                               </button>
+                              <LessonIcon className="h-4 w-4 shrink-0 text-blue-600" />
+                              <input value={lesson.title} onChange={(event) => handleUpdateLesson(moduleIndex, lessonIndex, { title: event.target.value })} className="min-w-0 flex-1 bg-transparent px-1 py-1 text-sm font-medium text-gray-800 outline-none" aria-label={`Lesson ${lessonIndex + 1} title`} />
+                              <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[11px] font-medium capitalize text-gray-600">{lesson.type}</span>
+                              <button type="button" onClick={() => handleRemoveLesson(moduleIndex, lessonIndex)} className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500" aria-label={`Remove ${lesson.title}`} title="Remove lesson"><Trash2 className="h-4 w-4" /></button>
                             </div>
-                            <div className="grid gap-3 sm:grid-cols-2">
-                              <label className="space-y-1">
-                                <span className="text-xs text-gray-500">Title</span>
-                                <input
-                                  value={lesson.title}
-                                  onChange={(event) => handleUpdateLesson(moduleIndex, lessonIndex, { title: event.target.value })}
-                                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
-                                />
-                              </label>
-                              <label className="space-y-1">
-                                <span className="text-xs text-gray-500">Type</span>
-                                <select
-                                  value={lesson.type}
-                                  onChange={(event) => handleUpdateLesson(moduleIndex, lessonIndex, { type: normalizeLessonType(event.target.value) })}
-                                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
-                                >
-                                  <option value="video">Video</option>
-                                  <option value="text">Text / Article</option>
-                                  <option value="audio">Audio</option>
-                                  <option value="document">Document</option>
-                                  <option value="quiz">Quiz</option>
-                                  <option value="assignment">Assignment</option>
-                                </select>
-                              </label>
-                              <label className="space-y-1 sm:col-span-2">
-                                <span className="text-xs text-gray-500">Description / content (HTML)</span>
-                                <textarea
-                                  value={lesson.content ?? ""}
-                                  onChange={(event) => handleUpdateLesson(moduleIndex, lessonIndex, { content: event.target.value })}
-                                  rows={3}
-                                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
-                                  placeholder="Add lesson instructions, transcript, or notes"
-                                />
-                              </label>
-                              {lesson.type === "video" && <LessonField label="Video URL" value={lesson.videoUrl} placeholder="https://youtube.com/..." onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { videoUrl: value })} />}
-                              {lesson.type !== "video" && <LessonField label="Video URL (supplementary)" value={lesson.videoUrl} placeholder="https://..." onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { videoUrl: value })} />}
-                              {lesson.type === "video" && <LessonFileField label="Video file" value={lesson.videoFile} accept="video/*" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { videoFile: value })} />}
-                              <LessonFileField label="Audio file (optional)" value={lesson.audioFile} accept="audio/*" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { audioFile: value })} />
-                              <LessonFileField label="PDF file (optional)" value={lesson.pdfFile} accept="application/pdf" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { pdfFile: value })} />
-                              <LessonFileField label="PowerPoint file (optional)" value={lesson.pptFile} accept=".ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { pptFile: value })} />
-                              <LessonFileField label="Lesson thumbnail (optional)" value={lesson.thumbnail} accept="image/*" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { thumbnail: value })} />
-                              <LessonFileField label="Subtitles VTT (optional)" value={lesson.subtitleVtt} accept=".vtt,text/vtt" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { subtitleVtt: value })} />
-                              <label className="flex items-center gap-2 text-xs text-gray-600 sm:col-span-2"><input type="checkbox" checked={lesson.isDrip ?? false} onChange={(event) => handleUpdateLesson(moduleIndex, lessonIndex, { isDrip: event.target.checked })} /> Release after enrollment day <input type="number" min="0" value={lesson.dripAfter ?? 0} onChange={(event) => handleUpdateLesson(moduleIndex, lessonIndex, { dripAfter: Number(event.target.value) })} className="w-20 rounded border border-gray-200 px-2 py-1" /></label>
-                            </div>
+                            {isExpanded && <div className="animate-in slide-in-from-top-2 border-t border-gray-200 bg-white p-4 duration-200">
+                              <div className="grid gap-3 sm:grid-cols-2">
+                                <LessonField label="Lesson title" value={lesson.title} placeholder="Lesson title" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { title: value })} />
+                                <label className="space-y-1"><span className="text-xs text-gray-500">Lesson type</span><select value={lesson.type} onChange={(event) => handleUpdateLesson(moduleIndex, lessonIndex, { type: normalizeLessonType(event.target.value) })} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-200"><option value="video">Video</option><option value="text">Text / Article</option><option value="audio">Audio</option><option value="document">Document</option><option value="quiz">Quiz</option><option value="assignment">Assignment</option></select></label>
+                                <LessonField label="Duration" value={lesson.duration} placeholder="15 min" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { duration: value })} />
+                                <LessonField label="Video URL" value={lesson.videoUrl} placeholder="https://youtube.com/..." onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { videoUrl: value })} />
+                                <label className="space-y-1 sm:col-span-2"><span className="text-xs text-gray-500">Description / content (HTML)</span><textarea value={lesson.content ?? ""} onChange={(event) => handleUpdateLesson(moduleIndex, lessonIndex, { content: event.target.value, description: event.target.value })} rows={3} className="w-full resize-y rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-200" placeholder="Add lesson instructions, transcript, or notes" /></label>
+                                <LessonFileField label="Video file" value={lesson.videoFile} accept="video/*" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { videoFile: value })} />
+                                <LessonFileField label="PDF file" value={lesson.pdfFile} accept=".pdf,application/pdf" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { pdfFile: value })} />
+                                <LessonFileField label="Audio file" value={lesson.audioFile} accept="audio/*" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { audioFile: value })} />
+                                <LessonFileField label="PowerPoint file" value={lesson.pptFile} accept=".ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { pptFile: value })} />
+                                <LessonFileField label="Lesson thumbnail" value={lesson.thumbnail} accept="image/*" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { thumbnail: value })} />
+                                <LessonFileField label="Subtitles (VTT)" value={lesson.subtitleVtt} accept=".vtt,text/vtt" onChange={(value) => handleUpdateLesson(moduleIndex, lessonIndex, { subtitleVtt: value })} />
+                                <label className="flex flex-wrap items-center gap-2 text-xs text-gray-600 sm:col-span-2"><input type="checkbox" checked={lesson.isDrip ?? false} onChange={(event) => handleUpdateLesson(moduleIndex, lessonIndex, { isDrip: event.target.checked })} className="h-4 w-4 rounded border-gray-300 text-blue-600" /> Release after enrollment day <input type="number" min="0" value={lesson.dripAfter ?? 0} onChange={(event) => handleUpdateLesson(moduleIndex, lessonIndex, { dripAfter: Number(event.target.value) })} className="w-20 rounded-lg border border-gray-200 px-2 py-1.5 text-sm" /></label>
+                              </div>
+                            </div>}
                           </div>
                         );
                       })}
-                    </div>}
+                    </div>
+
+                    <div className="mt-3 flex flex-col gap-2 rounded-lg border border-dashed border-blue-200 bg-blue-50/40 p-3 sm:flex-row">
+                      <input value={quickLessonDrafts[module.id]?.title ?? ""} onChange={(event) => updateQuickLesson(module.id, { title: event.target.value })} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addQuickLesson(moduleIndex); } }} className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200" placeholder="Quick-add lesson title" aria-label="New lesson title" />
+                      <select value={quickLessonDrafts[module.id]?.type ?? "video"} onChange={(event) => updateQuickLesson(module.id, { type: normalizeLessonType(event.target.value) })} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200" aria-label="New lesson type"><option value="video">Video</option><option value="text">Text</option><option value="audio">Audio</option><option value="document">Document</option><option value="quiz">Quiz</option><option value="assignment">Assignment</option></select>
+                      <button type="button" onClick={() => addQuickLesson(moduleIndex)} className="inline-flex items-center justify-center gap-1 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"><Plus className="h-4 w-4" /> Add lesson</button>
+                    </div>
                   </div>
                 ))}
 

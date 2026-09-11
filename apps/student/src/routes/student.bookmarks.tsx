@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { BookMarked, Trash2, Heart, BookOpen, Sparkles, TrendingUp, Clock, Users, Star, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getWishlistCourses, removeFromWishlist } from "@/lib/api";
+import { getLocalWishlistCourses, removeLocalWishlist } from "@/lib/api";
 import type { Course } from "@/lib/api";
 
 export const Route = createFileRoute("/student/bookmarks")({
@@ -27,7 +27,7 @@ function Bookmarks() {
       setIsLoading(true);
       setError(null);
       try {
-        const data = await getWishlistCourses();
+        const data = getLocalWishlistCourses();
         // If the API returns courses directly, wrap them in wishlist items
         if (Array.isArray(data)) {
           const wishlistItems = data.map((course, index) => ({
@@ -53,7 +53,7 @@ function Bookmarks() {
   const handleRemove = async (courseSlug: string) => {
     setRemoving(courseSlug);
     try {
-      await removeFromWishlist(courseSlug);
+      removeLocalWishlist(courseSlug);
       setItems(prev => prev.filter(item => item.course.slug !== courseSlug));
     } catch (err) {
       console.error('Failed to remove bookmark:', err);

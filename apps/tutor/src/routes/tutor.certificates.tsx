@@ -1,465 +1,139 @@
-// apps/tutor/src/routes/tutor/certificates.tsx
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { Award, CheckCircle, Download, Plus, RefreshCw, Search, ShieldCheck, X } from "lucide-react";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
-import { useState, useEffect } from "react";
-import { 
-  Award, 
-  Download, 
-  Share2, 
-  Search,
-  Filter,
-  CheckCircle,
-  Clock,
-  Users,
-  FileText,
-  Eye,
-  Mail,
-  Plus,
-  Sparkles
-} from "lucide-react";
-import { toast } from "sonner";
-import { getCourses, getStudents, getProfile } from "@/lib/api";
+import { getCourses, getMyCertificates, getTutorEnrollments, issueCertificate } from "@/lib/api";
 
-export const Route = createFileRoute("/tutor/certificates")({
-  component: TutorCertificates,
-});
+export const Route = createFileRoute("/tutor/certificates")({ component: TutorCertificates });
 
-// Types
-interface Certificate {
-  id: string | number;
-  certificate_number?: string;
-  course_title: string;
-  student_name: string;
-  student_email: string;
-  issued_at: string;
-  status: 'valid' | 'expired' | 'pending';
-  score?: number;
+type Certificate = {
+  id: string;
+  number: string;
+  courseTitle: string;
+  recipient: string;
+  issuedAt: string;
+  isValid: boolean;
+  pdfUrl?: string;
+};
+
+function normalizeCertificate(item: any, index: number): Certificate {
+  const user = item?.user ?? item?.student ?? item?.recipient ?? {};
+  const recipient = item?.student_name ?? item?.recipient_name ?? item?.user_name ?? user?.full_name ?? user?.email ?? "Certificate holder";
+  return {
+    id: String(item?.id ?? item?.number ?? index),
+    number: String(item?.number ?? item?.certificate_number ?? item?.credential_id ?? item?.credentialId ?? "Unavailable"),
+    courseTitle: item?.course_title ?? item?.course?.title ?? item?.title ?? "Course completion",
+    recipient,
+    issuedAt: item?.issued_at ?? item?.issued ?? item?.created_at ?? "",
+    isValid: item?.is_valid ?? item?.status !== "revoked",
+    pdfUrl: item?.pdf_url,
+  };
+}
+
+function formatDate(value: string) {
+  if (!value) return "Not available";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
 }
 
 function TutorCertificates() {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
-  const [students, setStudents] = useState<any[]>([]);
+  const [enrollments, setEnrollments] = useState<any[]>([]);
+  const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState<"all" | "valid" | "pending">("all");
+  const [error, setError] = useState<string | null>(null);
+  const [showIssueForm, setShowIssueForm] = useState(false);
+  const [selectedCourseId, setSelectedCourseId] = useState("");
+  const [selectedEnrollmentId, setSelectedEnrollmentId] = useState("");
+  const [certificateNumber, setCertificateNumber] = useState("");
+  const [isIssuing, setIsIssuing] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        // Fetch real data from API
-        const [coursesData, studentsData] = await Promise.all([
-          getCourses().catch(() => []),
-          getStudents().catch(() => [])
-        ]);
-
-        setCourses(coursesData);
-        setStudents(studentsData);
-
-        // Generate certificates from real data
-        // Certificates are generated when students complete courses
-        const certs: Certificate[] = studentsData
-          .filter((s: any) => s.progress >= 100) // Only completed students get certificates
-          .map((s: any, index: number) => ({
-            id: `cert-${index}`,
-            certificate_number: `TBS-${String(index + 1).padStart(6, '0')}`,
-            course_title: s.course || 'Course Completion',
-            student_name: s.name || 'Student',
-            student_email: s.email || '',
-            issued_at: s.enrolled || new Date().toISOString(),
-            status: 'valid' as const,
-            score: Math.round(70 + Math.random() * 30) // Calculate from actual scores if available
-          }));
-
-        setCertificates(certs);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        toast.error('Failed to load certificates');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  // Filter certificates
-  const filteredCerts = certificates.filter(c => {
-    // Status filter
-    if (filterStatus === "valid" && c.status !== 'valid') return false;
-    if (filterStatus === "pending" && c.status !== 'pending') return false;
-    
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const certNumber = c.certificate_number?.toLowerCase() || '';
-      const courseTitle = c.course_title?.toLowerCase() || '';
-      const studentName = c.student_name?.toLowerCase() || '';
-      
-      return certNumber.includes(query) || 
-             courseTitle.includes(query) || 
-             studentName.includes(query);
-    }
-    
-    return true;
-  });
-
-  // Calculate stats from real data
-  const totalIssued = certificates.length;
-  const validCerts = certificates.filter(c => c.status === 'valid').length;
-  const recentIssued = certificates.filter(c => {
-    const issuedDate = new Date(c.issued_at);
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    return issuedDate >= thirtyDaysAgo;
-  }).length;
-
-  // Templates from real courses
-  const templates = courses
-    .filter(c => c.status === 'published')
-    .slice(0, 4)
-    .map((course, index) => ({
-      id: course.id || index,
-      name: course.title,
-      description: `Certificate for ${course.title}`,
-      issued_count: Math.floor(Math.random() * 100) + 50, // This would come from real data
-      is_active: true,
-      color: ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B'][index % 4]
-    }));
-
-  const statCards = [
-    {
-      icon: Award,
-      value: totalIssued,
-      label: 'Total Issued',
-      subtext: `${recentIssued} in last 30 days`,
-      color: 'blue'
-    },
-    {
-      icon: FileText,
-      value: courses.filter(c => c.status === 'published').length,
-      label: 'Active Templates',
-      subtext: `${courses.length} total courses`,
-      color: 'emerald'
-    },
-    {
-      icon: Users,
-      value: students.length,
-      label: 'Total Students',
-      subtext: `${validCerts} certified`,
-      color: 'purple'
-    },
-    {
-      icon: Sparkles,
-      value: students.length > 0 ? Math.round((validCerts / Math.max(students.length, 1)) * 100) + '%' : '0%',
-      label: 'Certification Rate',
-      subtext: 'Students with certificates',
-      color: 'amber'
-    }
-  ];
-
-  const statColorMap = {
-    blue: 'bg-blue-50 text-blue-600',
-    emerald: 'bg-emerald-50 text-emerald-600',
-    purple: 'bg-purple-50 text-purple-600',
-    amber: 'bg-amber-50 text-amber-600'
-  };
-
-  const getStatusBadge = (status: string) => {
-    const config = {
-      valid: { label: 'Valid', className: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
-      expired: { label: 'Expired', className: 'bg-red-50 text-red-600 border-red-200' },
-      pending: { label: 'Pending', className: 'bg-amber-50 text-amber-600 border-amber-200' }
-    };
-    return config[status as keyof typeof config] || config.valid;
-  };
-
-  const formatDate = (dateString: string) => {
+  const loadCertificates = async () => {
+    setIsLoading(true);
+    setError(null);
     try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return '—';
-      return date.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
-      });
-    } catch {
-      return '—';
+      const [data, courseList, enrollmentList] = await Promise.all([
+        getMyCertificates(),
+        getCourses(),
+        getTutorEnrollments().catch(() => []),
+      ]);
+      setCertificates(data.map(normalizeCertificate));
+      setCourses(courseList);
+      setEnrollments(enrollmentList);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not load certificates.");
+      setCertificates([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-4">
-          <PageSkeleton rows={4} />
-          <p className="text-sm text-gray-500">Loading certificates...</p>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => { void loadCertificates(); }, []);
+
+  const courseId = (course: any) => String(course?.id ?? course?.raw?.id ?? "");
+  const enrollmentCourseId = (enrollment: any) => String(enrollment?.course_id ?? enrollment?.course?.id ?? enrollment?.course?.course_id ?? "");
+  const enrollmentUserId = (enrollment: any) => String(enrollment?.user_id ?? enrollment?.user?.id ?? enrollment?.student_id ?? enrollment?.student?.id ?? "");
+  const enrollmentName = (enrollment: any) => {
+    const user = enrollment?.user ?? enrollment?.student ?? {};
+    return user?.full_name ?? ([user?.first_name, user?.last_name].filter(Boolean).join(" ") || user?.username || user?.email || "Student");
+  };
+  const selectedCourse = courses.find((course) => courseId(course) === selectedCourseId);
+  const availableEnrollments = enrollments.filter((enrollment) => enrollmentCourseId(enrollment) === selectedCourseId);
+
+  const handleIssue = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const enrollment = availableEnrollments.find((item) => String(item?.id ?? "") === selectedEnrollmentId);
+    const userId = enrollmentUserId(enrollment);
+    if (!selectedCourseId || !selectedEnrollmentId || !userId) {
+      setError("Choose a course and an enrollment with a student before issuing a certificate.");
+      return;
+    }
+    setIsIssuing(true);
+    setError(null);
+    try {
+      await issueCertificate({
+        course_id: selectedCourseId,
+        enrollment_id: selectedEnrollmentId,
+        user_id: userId,
+        ...(certificateNumber.trim() ? { number: certificateNumber.trim() } : {}),
+      });
+      setShowIssueForm(false);
+      setSelectedEnrollmentId("");
+      setCertificateNumber("");
+      await loadCertificates();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Certificate could not be issued.");
+    } finally {
+      setIsIssuing(false);
+    }
+  };
+
+  const filtered = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) return certificates;
+    return certificates.filter((certificate) => [certificate.number, certificate.courseTitle, certificate.recipient].some((value) => value.toLowerCase().includes(normalized)));
+  }, [certificates, query]);
+
+  const download = (certificate: Certificate) => {
+    if (certificate.pdfUrl) {
+      window.open(certificate.pdfUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+    window.print();
+  };
+
+  if (isLoading) return <div className="flex min-h-[60vh] items-center justify-center"><PageSkeleton rows={4} /></div>;
 
   return (
-    <div className="space-y-6 p-4 sm:p-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Certificates</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            Manage certificates issued to students who complete your courses
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium border border-blue-200">
-            {totalIssued} issued
-          </span>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        {statCards.map((stat, index) => {
-          const Icon = stat.icon;
-          const colorClass = statColorMap[stat.color as keyof typeof statColorMap];
-          return (
-            <div key={index} className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${colorClass}`}>
-                  <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
-                </div>
-                <div>
-                  <p className="text-lg sm:text-xl font-bold text-gray-900">{stat.value}</p>
-                  <p className="text-xs sm:text-sm text-gray-500">{stat.label}</p>
-                  <p className="text-[10px] sm:text-xs text-gray-400">{stat.subtext}</p>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Templates Section */}
-      {templates.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="p-4 sm:p-6 border-b border-gray-200">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900">Certificate Templates</h3>
-                <p className="text-xs text-gray-500">Templates available for your courses</p>
-              </div>
-              <span className="text-xs text-gray-400 bg-gray-50 px-3 py-1 rounded-full">
-                {templates.filter(t => t.is_active).length} active
-              </span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-4 sm:p-6">
-            {templates.map((template) => (
-              <div 
-                key={template.id} 
-                className={`border rounded-xl p-4 transition-all ${
-                  template.is_active 
-                    ? 'border-gray-200 hover:border-blue-300 hover:shadow-md' 
-                    : 'border-gray-200 opacity-60'
-                }`}
-              >
-                <div 
-                  className="aspect-[4/3] rounded-lg p-4 text-center relative overflow-hidden"
-                  style={{ 
-                    background: `linear-gradient(135deg, ${template.color}15, ${template.color}05)`,
-                    border: `1px solid ${template.color}30`
-                  }}
-                >
-                  <div className="absolute inset-0 opacity-5" style={{ background: `radial-gradient(circle at center, ${template.color}, transparent 70%)` }} />
-                  <div className="relative">
-                    <div className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">Certificate</div>
-                    <div className="mt-4 text-sm font-semibold" style={{ color: template.color }}>
-                      {template.name}
-                    </div>
-                    <div className="mt-2 w-12 h-0.5 mx-auto" style={{ background: template.color }} />
-                    <div className="mt-2 text-[10px] text-gray-400">
-                      {template.issued_count.toLocaleString()} issued
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-900 truncate">{template.name}</span>
-                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                      template.is_active 
-                        ? 'bg-emerald-50 text-emerald-600' 
-                        : 'bg-gray-50 text-gray-400'
-                    }`}>
-                      {template.is_active ? 'Active' : 'Inactive'}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1 truncate">{template.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Recent Certificates */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="p-4 sm:p-6 border-b border-gray-200">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900">Recent Certificates</h3>
-              <p className="text-xs text-gray-500">Certificates issued to students</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search certificates..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 w-full sm:w-48"
-                />
-              </div>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as "all" | "valid" | "pending")}
-                className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              >
-                <option value="all">All Status</option>
-                <option value="valid">Valid</option>
-                <option value="pending">Pending</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {filteredCerts.length === 0 ? (
-          <div className="text-center py-12">
-            <Award className="w-16 h-16 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 font-medium">No certificates found</p>
-            <p className="text-sm text-gray-400 mt-1">
-              {searchQuery ? 'Try adjusting your search' : 'Certificates will appear when students complete your courses'}
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200 bg-gray-50/80 text-left text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  <th className="py-3 px-4 sm:px-6">Certificate</th>
-                  <th className="py-3 px-4 hidden sm:table-cell">Student</th>
-                  <th className="py-3 px-4 hidden md:table-cell">Course</th>
-                  <th className="py-3 px-4 hidden lg:table-cell">Issued</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 sm:px-6 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCerts.slice(0, 10).map((cert) => {
-                  const statusConfig = getStatusBadge(cert.status);
-                  return (
-                    <tr key={cert.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
-                      <td className="py-3 px-4 sm:px-6">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center flex-shrink-0">
-                            <Award className="w-4 h-4 text-amber-600" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">
-                              #{cert.certificate_number || 'N/A'}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 hidden sm:table-cell">
-                        <div>
-                          <p className="text-sm text-gray-700">{cert.student_name}</p>
-                          <p className="text-xs text-gray-400">{cert.student_email}</p>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 hidden md:table-cell text-sm text-gray-600">
-                        {cert.course_title}
-                      </td>
-                      <td className="py-3 px-4 hidden lg:table-cell text-sm text-gray-500">
-                        {formatDate(cert.issued_at)}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full border ${statusConfig.className}`}>
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          {statusConfig.label}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 sm:px-6 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <button 
-                            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-blue-600 transition-colors"
-                            title="Download PDF"
-                          >
-                            <Download className="w-4 h-4" />
-                          </button>
-                          <button 
-                            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-blue-600 transition-colors"
-                            title="View Certificate"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button 
-                            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-blue-600 transition-colors"
-                            title="Share"
-                          >
-                            <Share2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-        
-        {filteredCerts.length > 10 && (
-          <div className="p-4 text-center border-t border-gray-100">
-            <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-              View all {filteredCerts.length} certificates
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow text-center">
-          <div className="p-2 bg-blue-50 rounded-lg inline-block mb-2">
-            <Plus className="w-5 h-5 text-blue-600" />
-          </div>
-          <p className="text-sm font-medium text-gray-900">New Template</p>
-          <p className="text-xs text-gray-400">Create certificate template</p>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow text-center">
-          <div className="p-2 bg-emerald-50 rounded-lg inline-block mb-2">
-            <FileText className="w-5 h-5 text-emerald-600" />
-          </div>
-          <p className="text-sm font-medium text-gray-900">Bulk Issue</p>
-          <p className="text-xs text-gray-400">Issue multiple certificates</p>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow text-center">
-          <div className="p-2 bg-purple-50 rounded-lg inline-block mb-2">
-            <Mail className="w-5 h-5 text-purple-600" />
-          </div>
-          <p className="text-sm font-medium text-gray-900">Email Templates</p>
-          <p className="text-xs text-gray-400">Customize email notifications</p>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow text-center">
-          <div className="p-2 bg-amber-50 rounded-lg inline-block mb-2">
-            <Sparkles className="w-5 h-5 text-amber-600" />
-          </div>
-          <p className="text-sm font-medium text-gray-900">Settings</p>
-          <p className="text-xs text-gray-400">Configure certificate options</p>
-        </div>
-      </div>
+    <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6">
+      <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center"><div><h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">Certificates</h2><p className="mt-1 text-sm text-gray-500">Certificates returned by your authenticated TechBridge account.</p></div><button onClick={() => void loadCertificates()} className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"><RefreshCw className="h-4 w-4" /> Refresh</button></header>
+      <div className="flex justify-end"><button onClick={() => setShowIssueForm(true)} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700"><Plus className="h-4 w-4" /> Add certificate</button></div>
+      {showIssueForm && <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-5"><div className="mb-4 flex items-center justify-between"><div><h3 className="font-semibold text-gray-900">Issue course certificate</h3><p className="mt-1 text-xs text-gray-500">Select an existing enrollment so the certificate keeps its course, student, and enrollment relationships.</p></div><button type="button" onClick={() => setShowIssueForm(false)} className="rounded-lg p-2 text-gray-400 hover:bg-white"><X className="h-4 w-4" /></button></div><form onSubmit={handleIssue} className="grid gap-3 sm:grid-cols-2"><label className="text-sm font-medium text-gray-700">Course<select value={selectedCourseId} onChange={(event) => { setSelectedCourseId(event.target.value); setSelectedEnrollmentId(""); }} className="mt-1.5 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm" required><option value="">Select a course</option>{courses.map((course) => <option key={courseId(course)} value={courseId(course)}>{course.title}</option>)}</select></label><label className="text-sm font-medium text-gray-700">Enrollment<select value={selectedEnrollmentId} onChange={(event) => setSelectedEnrollmentId(event.target.value)} className="mt-1.5 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm" required disabled={!selectedCourseId}><option value="">{selectedCourse ? (availableEnrollments.length ? "Select a student enrollment" : "No enrollments found") : "Select a course first"}</option>{availableEnrollments.map((enrollment) => <option key={enrollment.id} value={enrollment.id}>{enrollmentName(enrollment)}{enrollment.status ? ` (${enrollment.status})` : ""}</option>)}</select></label><label className="text-sm font-medium text-gray-700 sm:col-span-2">Certificate number <span className="font-normal text-gray-400">(optional)</span><input value={certificateNumber} onChange={(event) => setCertificateNumber(event.target.value)} placeholder="Leave blank to let the backend generate one" className="mt-1.5 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm" maxLength={50} /></label><div className="flex justify-end gap-2 sm:col-span-2"><button type="button" onClick={() => setShowIssueForm(false)} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700">Cancel</button><button type="submit" disabled={isIssuing || !availableEnrollments.length} className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">{isIssuing ? "Issuing..." : "Issue certificate"}</button></div></form></div>}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3"><div className="rounded-xl border border-gray-200 bg-white p-4"><p className="text-2xl font-bold text-gray-900">{certificates.length}</p><p className="text-sm text-gray-500">Certificates</p></div><div className="rounded-xl border border-gray-200 bg-white p-4"><p className="text-2xl font-bold text-emerald-600">{certificates.filter((certificate) => certificate.isValid).length}</p><p className="text-sm text-gray-500">Valid</p></div><div className="rounded-xl border border-gray-200 bg-white p-4"><p className="text-2xl font-bold text-gray-700">{new Set(certificates.map((certificate) => certificate.courseTitle)).size}</p><p className="text-sm text-gray-500">Courses represented</p></div></div>
+      <div className="relative rounded-xl border border-gray-200 bg-white p-3"><Search className="absolute left-6 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by certificate number, course, or recipient..." className="w-full rounded-lg bg-gray-50 py-2.5 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-blue-200" /></div>
+      {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+      {filtered.length === 0 ? <div className="rounded-xl border border-gray-200 bg-white p-12 text-center"><Award className="mx-auto mb-3 h-12 w-12 text-gray-300" /><p className="font-medium text-gray-700">No certificates found</p><p className="mt-1 text-sm text-gray-400">The backend returns certificates available to the signed-in account.</p></div> : <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white"><table className="w-full min-w-[680px] text-left"><thead className="border-b border-gray-200 bg-gray-50 text-xs uppercase tracking-wide text-gray-500"><tr><th className="px-5 py-3">Certificate</th><th className="px-5 py-3">Course</th><th className="px-5 py-3">Recipient</th><th className="px-5 py-3">Issued</th><th className="px-5 py-3">Status</th><th className="px-5 py-3 text-right">Action</th></tr></thead><tbody>{filtered.map((certificate) => <tr key={certificate.id} className="border-b border-gray-100 last:border-0"><td className="px-5 py-4"><div className="flex items-center gap-3"><div className="rounded-lg bg-amber-50 p-2 text-amber-600"><Award className="h-4 w-4" /></div><span className="font-medium text-gray-900">{certificate.number}</span></div></td><td className="px-5 py-4 text-sm text-gray-700">{certificate.courseTitle}</td><td className="px-5 py-4 text-sm text-gray-700">{certificate.recipient}</td><td className="px-5 py-4 text-sm text-gray-500">{formatDate(certificate.issuedAt)}</td><td className="px-5 py-4"><span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium ${certificate.isValid ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-red-200 bg-red-50 text-red-700"}`}>{certificate.isValid ? <CheckCircle className="h-3 w-3" /> : <ShieldCheck className="h-3 w-3" />}{certificate.isValid ? "Valid" : "Revoked"}</span></td><td className="px-5 py-4 text-right"><button onClick={() => download(certificate)} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"><Download className="h-4 w-4" /> Download</button></td></tr>)}</tbody></table></div>}
     </div>
   );
 }

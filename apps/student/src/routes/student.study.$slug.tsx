@@ -5,10 +5,12 @@ import {
   Lock, ChevronUp,
 } from "lucide-react";
 import { useEffect, useState, useMemo, useRef } from "react";
-import { getCourse, getCourseModules, getQuizzesForCourse, getQuiz, markLessonComplete, resolveCourseMedia, sortCourseModules, submitQuizAnswers, syncLessonProgress } from "@/lib/api";
+import { getCourse, getCourseModules, getLessonProgress, getQuizzesForCourse, getQuiz, markLessonComplete, resolveCourseMedia, sortCourseModules, submitQuizAnswers, syncLessonProgress } from "@/lib/api";
 import { setSelectedCourseSlug } from "@/lib/student-onboarding";
 import { AudioPlayer } from "@/components/audio-player";
 import { PdfViewer } from "@/components/pdf-viewer";
+import { PptViewer } from "@/components/ppt-viewer";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export const Route = createFileRoute("/student/study/$slug")({
   loader: async ({ params }) => {
@@ -19,8 +21,37 @@ export const Route = createFileRoute("/student/study/$slug")({
   component: StudyInterface,
 });
 
+type LocalStudyState = {
+  currentLessonId?: string;
+  progress?: number;
+  positions?: Record<string, number>;
+};
+
+function getLocalStudyState(courseSlug: string): LocalStudyState {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(window.localStorage.getItem(`bridge-study-${courseSlug}`) ?? "{}") as LocalStudyState;
+  } catch {
+    return {};
+  }
+}
+
+function saveLocalStudyState(courseSlug: string, update: Partial<LocalStudyState>) {
+  if (typeof window === "undefined") return;
+  const current = getLocalStudyState(courseSlug);
+  window.localStorage.setItem(`bridge-study-${courseSlug}`, JSON.stringify({ ...current, ...update }));
+}
+
+function saveLocalLessonPosition(courseSlug: string, lessonId: string, position: number) {
+  const state = getLocalStudyState(courseSlug);
+  saveLocalStudyState(courseSlug, {
+    positions: { ...(state.positions ?? {}), [lessonId]: Math.max(0, Math.floor(position)) },
+  });
+}
+
 function StudyInterface() {
   const { course, modules: initialModules } = Route.useLoaderData();
+  const isMobile = useIsMobile();
   const [tab, setTab] = useState<"resources" | "discussion">("resources");
   const [showOutline, setShowOutline] = useState(true);
   const [modules, setModules] = useState<any[]>(initialModules ?? []);
@@ -47,7 +78,11 @@ function StudyInterface() {
   const [isYouTube, setIsYouTube] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
   const [completionError, setCompletionError] = useState<string | null>(null);
+  const [xpRewardMessage, setXpRewardMessage] = useState<string | null>(null);
   const [selectedResource, setSelectedResource] = useState<{ label: string; url: string; type: "pdf" | "ppt" | "audio" } | null>(null);
+  const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
+  const [savedPosition, setSavedPosition] = useState(0);
+  const navigationExpanded = isMobile || showOutline;
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
@@ -112,16 +147,45 @@ function StudyInterface() {
 
   useEffect(() => {
     if (lessonList.length > 0) {
+      const savedLessonId = getLocalStudyState(course.slug).currentLessonId;
       const firstIncomplete = lessonList.find((lesson: any) => !lesson.completed);
-      setCurrentLessonId(firstIncomplete?.id ?? lessonList[0]?.id);
+      const savedLesson = lessonList.find((lesson: any) => lesson.id === savedLessonId);
+      setCurrentLessonId(savedLesson?.id ?? firstIncomplete?.id ?? lessonList[0]?.id);
     }
-  }, [lessonList]);
+  }, [course.slug, lessonList]);
+
+  useEffect(() => {
+    if (orderedModules.length === 0) return;
+    setExpandedModules((current) => current.size > 0
+      ? current
+      : new Set([String(orderedModules[0].id ?? `${orderedModules[0].title}-0`)]));
+  }, [orderedModules]);
 
   useEffect(() => {
     setSelectedResource(null);
+    const localState = currentLessonId ? getLocalStudyState(course.slug) : {};
+    const localPosition = currentLessonId ? Number(localState.positions?.[currentLessonId] ?? 0) : 0;
+    setSavedPosition(Number.isFinite(localPosition) ? localPosition : 0);
     lastSyncedProgressRef.current = 0;
     setCompletionError(null);
-  }, [currentLessonId]);
+    setXpRewardMessage(null);
+    if (!currentLessonId) return;
+    saveLocalStudyState(course.slug, { currentLessonId });
+
+    let cancelled = false;
+    void getLessonProgress(currentLessonId).then((lessonProgress) => {
+      if (cancelled) return;
+      const position = Number(lessonProgress?.position ?? lessonProgress?.last_position ?? lessonProgress?.current_time ?? 0);
+      if (Number.isFinite(position) && position > 0) {
+        setSavedPosition(position);
+        saveLocalLessonPosition(course.slug, currentLessonId, position);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [course.slug, currentLessonId]);
 
   const currentLesson = useMemo(() => {
     if (!currentLessonId) return null;
@@ -136,7 +200,19 @@ function StudyInterface() {
 
   const completed = lessonList.filter((lesson: any) => lesson.completed === true).length;
   const total = lessonList.length;
-  const pct = total ? Math.round((completed / total) * 100) : 0;
+  const pct = total === 0
+    ? 0
+    : completed === total
+      ? 100
+      : currentLessonIndex >= 0
+        ? Math.round((currentLessonIndex / total) * 100)
+        : 0;
+
+  useEffect(() => {
+    if (currentLessonIndex >= 0) {
+      saveLocalStudyState(course.slug, { progress: pct });
+    }
+  }, [course.slug, currentLessonIndex, pct]);
 
   // Get lesson type - this comes from the database field
   const lessonType = currentLesson?.type?.toLowerCase() || "video";
@@ -289,6 +365,10 @@ function StudyInterface() {
                 } else {
                   setDuration(event.target.getDuration());
                 }
+                if (savedPosition > 0) {
+                  event.target.seekTo(savedPosition, true);
+                  setCurrentTime(savedPosition);
+                }
                 setIsYouTube(true);
               },
               onStateChange: (event: any) => {
@@ -324,7 +404,16 @@ function StudyInterface() {
       setYoutubePlayer(null);
       setIsYouTube(false);
     };
-  }, [videoInfo, dbDuration]);
+  }, [videoInfo, dbDuration, savedPosition]);
+
+  useEffect(() => {
+    if (videoInfo?.type !== "direct" || !videoRef.current || savedPosition <= 0) return;
+    videoRef.current.currentTime = savedPosition;
+    setCurrentTime(savedPosition);
+    if (videoRef.current.duration > 0) {
+      setProgress((savedPosition / videoRef.current.duration) * 100);
+    }
+  }, [videoInfo, savedPosition]);
 
   // YouTube progress tracking
   useEffect(() => {
@@ -337,9 +426,12 @@ function StudyInterface() {
         if (dur > 0) {
           setCurrentTime(current);
           setProgress((current / dur) * 100);
-          if (currentLesson && current - lastSyncedProgressRef.current >= 10) {
-            lastSyncedProgressRef.current = current;
-            void syncLessonProgress(currentLesson.id, current, current);
+          if (currentLesson) {
+            saveLocalLessonPosition(course.slug, currentLesson.id, current);
+            if (current - lastSyncedProgressRef.current >= 10) {
+              lastSyncedProgressRef.current = current;
+              void syncLessonProgress(currentLesson.id, current, current);
+            }
           }
         }
       } catch (e) {
@@ -376,9 +468,12 @@ function StudyInterface() {
     const dur = videoRef.current.duration || 0;
     setCurrentTime(current);
     setProgress(dur ? (current / dur) * 100 : 0);
-    if (currentLesson && current - lastSyncedProgressRef.current >= 10) {
-      lastSyncedProgressRef.current = current;
-      void syncLessonProgress(currentLesson.id, current, current);
+    if (currentLesson) {
+      saveLocalLessonPosition(course.slug, currentLesson.id, current);
+      if (current - lastSyncedProgressRef.current >= 10) {
+        lastSyncedProgressRef.current = current;
+        void syncLessonProgress(currentLesson.id, current, current);
+      }
     }
   };
 
@@ -389,11 +484,17 @@ function StudyInterface() {
     } else {
       setDuration(videoRef.current.duration);
     }
+    if (savedPosition > 0) {
+      videoRef.current.currentTime = savedPosition;
+      setCurrentTime(savedPosition);
+      setProgress((savedPosition / (videoRef.current.duration || dbDuration)) * 100);
+    }
     setIsLoading(false);
   };
 
   const completeCurrentLesson = async () => {
-    if (!currentLesson || currentLesson.completed || isCompleting) return;
+    if (!currentLesson || currentLesson.completed) return true;
+    if (isCompleting) return false;
     setIsCompleting(true);
     setCompletionError(null);
     try {
@@ -405,8 +506,13 @@ function StudyInterface() {
           lesson.id === currentLesson.id ? { ...lesson, completed: true } : lesson
         ),
       })));
+      const lessonXp = Math.max(0, Number(currentLesson.xp_reward ?? currentLesson.xp ?? 0));
+      setXpRewardMessage(`Lesson complete. +${lessonXp} XP`);
+      return true;
     } catch (completionFailure) {
       setCompletionError(completionFailure instanceof Error ? completionFailure.message : "Unable to save lesson progress.");
+      setXpRewardMessage("XP was not awarded because the backend completion request failed. Please try again after the learning service is restored.");
+      return false;
     } finally {
       setIsCompleting(false);
     }
@@ -505,8 +611,12 @@ function StudyInterface() {
     }
   };
 
-  const handleNextLesson = () => {
+  const handleNextLesson = async () => {
     if (currentLessonIndex < lessonList.length - 1) {
+      const completedCurrentLesson = await completeCurrentLesson();
+      if (!completedCurrentLesson) {
+        setCompletionError("Lesson progress could not be saved because the learning service is unavailable. You can continue, and progress will retry when the service recovers.");
+      }
       const nextLesson = lessonList[currentLessonIndex + 1];
       setCurrentLessonId(nextLesson.id);
       resetPlayer();
@@ -601,11 +711,7 @@ function StudyInterface() {
               {activeDocument.type === "pdf" ? (
                 <PdfViewer fileUrl={activeDocument.url} />
               ) : (
-                <iframe
-                  title={activeDocument.label}
-                  src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(activeDocument.url)}`}
-                  className="h-full min-h-[320px] w-full border-0"
-                />
+                <PptViewer fileUrl={activeDocument.url} />
               )}
             </div>
             {docResources.length > 1 && (
@@ -783,6 +889,8 @@ function StudyInterface() {
                 onEnded={() => {
                   setIsPlaying(false);
                   setProgress(100);
+                  if (currentLesson) saveLocalLessonPosition(course.slug, currentLesson.id, videoRef.current?.duration ?? currentTime);
+                  if (currentLesson) void syncLessonProgress(currentLesson.id, videoRef.current?.duration ?? currentTime, videoRef.current?.duration ?? currentTime);
                 }}
                 onWaiting={() => setIsLoading(true)}
                 onCanPlay={() => setIsLoading(false)}
@@ -974,37 +1082,59 @@ function StudyInterface() {
 
   return (
     <div className="-mx-4 -my-6 sm:-mx-6 lg:-mx-8 lg:-my-8">
-      <div className="grid min-h-[calc(100vh-4rem)] grid-cols-1 lg:grid-cols-[340px_1fr]">
-        <aside className="order-2 border-r border-border bg-card lg:order-1">
-          <div className="border-b border-border p-4 sm:p-5">
-            <Link to="/student/course/$slug" params={{ slug: course.slug }} className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground">
+      <div className={`grid min-h-[calc(100vh-4rem)] grid-cols-1 ${navigationExpanded ? "lg:grid-cols-[340px_1fr]" : "lg:grid-cols-[56px_1fr]"}`}>
+        <aside className="order-2 border-r border-border bg-card shadow-[1px_0_0_rgba(15,23,42,0.02)] lg:order-1 lg:sticky lg:top-0 lg:h-[calc(100vh-4rem)]">
+          {navigationExpanded ? <>
+          <div className="border-b border-border bg-card px-4 py-4 sm:px-5 sm:py-5">
+            <Link to="/student/course/$slug" params={{ slug: course.slug }} className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition-colors hover:text-foreground">
               <ChevronLeft className="h-3.5 w-3.5" /> Course overview
             </Link>
-            <h2 className="mt-2 sm:mt-3 text-sm sm:text-[15px] font-semibold leading-snug line-clamp-2">{course.title}</h2>
-            <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-secondary">
-                <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+            <h2 className="mt-3 text-base font-semibold leading-snug tracking-tight line-clamp-2">{course.title}</h2>
+            <div className="mt-4 rounded-xl border border-border/80 bg-background/60 p-3">
+              <div className="flex items-center justify-between text-[11px] font-medium text-muted-foreground">
+                <span>Course progress</span>
+                <span className="font-semibold text-foreground">{pct}%</span>
               </div>
-              <span className="font-semibold text-foreground whitespace-nowrap">{pct}%</span>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-secondary">
+                <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${pct}%` }} />
+              </div>
             </div>
             <button
               onClick={() => setShowOutline((s) => !s)}
-              className="mt-4 inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-[12px] border border-border px-3 py-1.5 text-xs font-medium hover:bg-secondary lg:hidden"
+              aria-expanded={showOutline}
+              className="mt-4 hidden w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-secondary lg:inline-flex"
             >
-              {showOutline ? "Hide" : "Show"} lesson outline <ChevronDown className={`h-3 w-3 transition-transform ${showOutline ? 'rotate-180' : ''}`} />
+              Collapse navigation <ChevronLeft className="h-3.5 w-3.5" />
             </button>
           </div>
-          <div className={`p-2 sm:p-3 lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto ${showOutline ? "block" : "hidden lg:block"}`}>
+          <div className="p-2 sm:p-3 lg:h-[calc(100vh-18rem)] lg:overflow-y-auto">
             {orderedModules.map((m, mi) => (
-              <details key={m.id ?? `${m.title}-${mi}`} open={mi === 0} className="group mb-1 rounded-xl">
-                <summary className="flex cursor-pointer items-center justify-between gap-2 rounded-xl px-2 sm:px-3 py-2.5 hover:bg-secondary">
+                <details
+                  key={m.id ?? `${m.title}-${mi}`}
+                  open={expandedModules.has(String(m.id ?? `${m.title}-${mi}`))}
+                  onToggle={(event) => {
+                    const moduleId = String(m.id ?? `${m.title}-${mi}`);
+                    const isOpen = event.currentTarget.open;
+                    setExpandedModules((current) => {
+                      const next = new Set(current);
+                      if (isOpen) next.add(moduleId);
+                      else next.delete(moduleId);
+                      return next;
+                    });
+                  }}
+                  className="group mb-1 rounded-xl"
+                >
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-xl border border-transparent px-2.5 py-3 transition-colors hover:border-border hover:bg-secondary [&::-webkit-details-marker]:hidden">
                   <div className="min-w-0">
-                    <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Module {mi + 1}</div>
-                    <div className="mt-0.5 truncate text-xs sm:text-sm font-semibold">{m.title}</div>
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Module {mi + 1}</div>
+                    <div className="mt-1 truncate text-xs sm:text-sm font-semibold">{m.title}</div>
                   </div>
-                  <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="text-[10px] font-medium text-muted-foreground">{m.lessons?.filter((lesson: any) => lesson.completed).length ?? 0}/{m.lessons?.length ?? 0}</span>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
+                  </div>
                 </summary>
-                <ul className="mt-1 space-y-0.5 pb-2">
+                <ul className="mt-1 space-y-0.5 border-l border-border/80 pb-2 pl-2">
                   {(Array.isArray(m.lessons) ? m.lessons : []).map((l: any) => {
                     const lessonIndex = lessonList.findIndex((lesson: any) => lesson.id === l.id);
                     const isCurrent = l.id === currentLessonId;
@@ -1021,7 +1151,7 @@ function StudyInterface() {
                             resetPlayer();
                           }}
                           className={`flex w-full items-center gap-2 sm:gap-3 rounded-lg px-2 sm:px-3 py-2 text-left text-xs sm:text-sm transition-colors ${
-                            isCurrent ? "bg-primary/10 text-primary" : isLocked ? "cursor-not-allowed opacity-45" : "hover:bg-secondary"
+                            isCurrent ? "bg-primary/10 font-medium text-primary ring-1 ring-inset ring-primary/10" : isLocked ? "cursor-not-allowed opacity-45" : "hover:bg-secondary"
                           }`}
                         >
                           <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full ${
@@ -1037,7 +1167,7 @@ function StudyInterface() {
                             }
                           </span>
                           <span className="min-w-0 flex-1 truncate">{l.title}</span>
-                          <span className="text-[9px] uppercase tracking-wider text-muted-foreground bg-white/30 px-1.5 py-0.5 rounded">
+                          <span className="rounded bg-secondary/80 px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-muted-foreground">
                             {lessonTypeDisplay}
                           </span>
                           <span className="text-[10px] sm:text-[11px] text-muted-foreground whitespace-nowrap">
@@ -1051,14 +1181,56 @@ function StudyInterface() {
               </details>
             ))}
           </div>
+          </> : (
+            <button
+              type="button"
+              onClick={() => setShowOutline(true)}
+              title="Expand course navigation"
+              aria-label="Expand course navigation"
+              className="flex h-12 w-full items-center justify-center border-b border-border bg-card text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground lg:h-16"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          )}
         </aside>
 
         <div className="order-1 flex flex-col lg:order-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-card px-3 sm:px-6 py-3 sm:py-4">
+            <button
+              onClick={handlePreviousLesson}
+              disabled={currentLessonIndex <= 0}
+              className="inline-flex items-center gap-1 sm:gap-2 rounded-[14px] border border-border px-3 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-sm font-medium hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Previous</span>
+              <span className="xs:hidden">Prev</span>
+            </button>
+            <div className="text-[10px] sm:text-xs text-muted-foreground text-center px-2">
+              {total > 0 && currentLesson ? `Lesson ${currentLessonIndex + 1} of ${total}` : "Lesson overview"}
+              {dbDuration > 0 && ` · ${formatTime(dbDuration)}`}
+            </div>
+            <button
+              onClick={handleNextLesson}
+              disabled={isCompleting || currentLessonIndex < 0 || currentLessonIndex >= lessonList.length - 1}
+              className="inline-flex items-center gap-1 sm:gap-2 rounded-[14px] bg-primary px-3 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <span className="hidden xs:inline">Next lesson</span>
+              <span className="xs:hidden">Next</span>
+              <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </button>
+          </div>
+
           {/* Video Player Section */}
           <div className="bg-[#071a35] px-0 pt-0">
-            <div 
-              ref={playerContainerRef} 
-              className="relative aspect-video w-full overflow-hidden bg-[#071a35] text-white"
+            <div
+              ref={playerContainerRef}
+              className={`relative w-full overflow-hidden bg-[#071a35] text-white ${
+                lessonType === "document"
+                  ? "aspect-[16/9] min-h-0"
+                  : ["text", "quiz", "assignment", "audio"].includes(lessonType)
+                    ? "min-h-[560px] sm:aspect-video"
+                  : "aspect-video"
+              }`}
             >
               {renderShowcase()}
             </div>
@@ -1099,20 +1271,16 @@ function StudyInterface() {
                 >
                   <Bookmark className="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4" />
                 </button>
-                <button 
-                  onClick={completeCurrentLesson}
-                  disabled={!currentLesson || currentLesson.completed || isCompleting}
-                  className="inline-flex items-center justify-center gap-1 rounded-xl bg-primary px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Check className="h-3 w-3 sm:h-4 sm:w-4" /> 
-                  <span className="hidden xs:inline">{isCompleting ? 'Saving...' : currentLesson?.completed ? 'Completed' : 'Mark complete'}</span>
-                  <span className="xs:hidden">{currentLesson?.completed ? '✓' : 'Done'}</span>
-                </button>
               </div>
             </div>
             {completionError && (
               <div className="border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 sm:px-6">
                 {completionError}
+              </div>
+            )}
+            {xpRewardMessage && (
+              <div className="border-b border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 sm:px-6">
+                {xpRewardMessage}
               </div>
             )}
           </div>
@@ -1252,30 +1420,6 @@ function StudyInterface() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border bg-card px-3 sm:px-6 py-3 sm:py-4">
-            <button 
-              onClick={handlePreviousLesson}
-              disabled={currentLessonIndex === 0}
-              className="inline-flex items-center gap-1 sm:gap-2 rounded-[14px] border border-border px-3 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-sm font-medium hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> 
-              <span className="hidden xs:inline">Previous</span>
-              <span className="xs:hidden">Prev</span>
-            </button>
-            <div className="text-[10px] sm:text-xs text-muted-foreground text-center px-2">
-              {total > 0 && currentLesson ? `Lesson ${currentLessonIndex + 1} of ${total}` : "Lesson overview"}
-              {dbDuration > 0 && ` · ${formatTime(dbDuration)}`}
-            </div>
-            <button 
-              onClick={handleNextLesson}
-              disabled={currentLessonIndex === lessonList.length - 1}
-              className="inline-flex items-center gap-1 sm:gap-2 rounded-[14px] bg-primary px-3 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <span className="hidden xs:inline">Next lesson</span>
-              <span className="xs:hidden">Next</span>
-              <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            </button>
-          </div>
         </div>
       </div>
     </div>

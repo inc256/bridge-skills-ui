@@ -1,6 +1,5 @@
 const SUPABASE_MEDIA_URL = "https://xcxuhqghaddopvzhapgw.supabase.co/storage/v1/object/public/media";
 const SUPABASE_THUMBNAIL_PREFIX = `${SUPABASE_MEDIA_URL}/courses/thumbnails/`;
-
 export function resolveCourseThumbnail(value?: unknown) {
   const thumbnail = typeof value === "string"
     ? value.trim()
@@ -12,7 +11,6 @@ export function resolveCourseThumbnail(value?: unknown) {
         ?? "").trim()
       : "";
   if (!thumbnail) return null;
-  if (thumbnail.startsWith(SUPABASE_THUMBNAIL_PREFIX)) return thumbnail;
 
   const filename = thumbnail
     .split(/[?#]/, 1)[0]

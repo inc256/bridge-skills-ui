@@ -65,7 +65,10 @@ export function resolveTutorMedia(value: unknown, folder: "audio" | "pdf" | "ppt
         ?? "").trim()
       : "";
   if (!media) return "";
-  if (/^https?:\/\//i.test(media) && media.includes("/storage/v1/object/public/media/")) return media;
+  if (/^https?:\/\/[^/]+\/storage\/v1\/s3\/media\//i.test(media)) {
+    return media.replace(/\/storage\/v1\/s3\/media\//i, "/storage/v1/object/public/media/");
+  }
+  if (/^(?:https?:|blob:|data:)/i.test(media)) return media;
   const filename = media.split(/[?#]/, 1)[0].replace(/\\/g, "/").split("/").pop();
   if (!filename) return "";
   let decodedFilename = filename;
@@ -386,7 +389,7 @@ export async function getCourses() {
       image: item?.title?.toLowerCase().includes("network") ? "network" : item?.title?.toLowerCase().includes("security") ? "security" : "code",
       thumbnail: resolveTutorMedia(item?.thumbnail ?? item?.thumbnail_url ?? item?.cover_image ?? item?.image, "thumbnails") || null,
       color: "#3B82F6",
-      description: item?.subtitle ?? "",
+      description: String(item?.description ?? "").trim() || String(item?.subtitle ?? "").trim(),
       modules: Number(item?.total_modules ?? item?.module_count ?? item?.sections_count ?? item?.modules_count ?? 0),
       lessons: Number(item?.total_lessons ?? item?.lesson_count ?? item?.lessons_count ?? 0),
       raw: item,
@@ -419,12 +422,36 @@ export async function getStudents() {
     };
   };
 
+  let enrollmentStudents: any[] = [];
   try {
     const payload = await apiRequest<any>("/enrollments/");
-    const list = Array.isArray(payload) ? payload : payload?.results ?? [];
-    const directStudents = list.length > 0 ? list.map((item: any, index: number) => normalizeStudent(item, index)) : [];
-    if (directStudents.length > 0) return directStudents;
+    const list = Array.isArray(payload)
+      ? payload
+      : payload?.results ?? payload?.enrollments ?? payload?.students ?? payload?.data ?? [];
+    enrollmentStudents = list.map((item: any, index: number) => normalizeStudent(item, index));
+  } catch {
+    enrollmentStudents = [];
+  }
+  if (enrollmentStudents.length > 0) return enrollmentStudents;
 
+  try {
+    const usersPayload = await apiRequest<any>("/users/?role=student");
+    const users = Array.isArray(usersPayload)
+      ? usersPayload
+      : usersPayload?.results ?? usersPayload?.users ?? usersPayload?.data ?? [];
+    if (users.length > 0) {
+      return users.map((item: any, index: number) => normalizeStudent({
+        ...item,
+        user: item,
+        course: item?.course ?? item?.course_detail,
+        progress: item?.progress ?? item?.completion_percentage ?? 0,
+      }, index));
+    }
+  } catch {
+    // Fall through to course-embedded enrollment data.
+  }
+
+  try {
     const courses = await getCourses();
     const embeddedStudents = courses.flatMap((course: any) => {
       const raw = course?.raw ?? {};
@@ -558,6 +585,33 @@ export async function getCourseReviews(courseSlug: string) {
 
 export async function getProfile() {
   return await apiRequest<any>("/auth/me/");
+}
+
+export async function getMyCertificates() {
+  const payload = await apiRequest<any>("/certificates/mine/");
+  return (Array.isArray(payload) ? payload : payload?.results ?? payload?.certificates ?? []) as any[];
+}
+
+export async function getTutorEnrollments() {
+  const payload = await apiRequest<any>("/enrollments/");
+  return (Array.isArray(payload) ? payload : payload?.results ?? payload?.enrollments ?? payload?.data ?? []) as any[];
+}
+
+export async function issueCertificate(data: { user_id: string; course_id: string; enrollment_id: string; number?: string }) {
+  return apiRequest<any>("/certificates/admin/issue/", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getQuizzesForCourse(courseSlug: string) {
+  const payload = await apiRequest<any>(`/quizzes/course/${courseSlug}/`);
+  return (Array.isArray(payload) ? payload : payload?.results ?? payload?.quizzes ?? []) as any[];
+}
+
+export async function getQuizAttempts(quizId: string) {
+  const payload = await apiRequest<any>(`/quizzes/${quizId}/attempts/`);
+  return (Array.isArray(payload) ? payload : payload?.results ?? payload?.attempts ?? []) as any[];
 }
 
 export async function patchProfile(data: Record<string, any>) {
@@ -695,6 +749,12 @@ export async function updateTutorModule(moduleId: string, data: Record<string, a
   return await apiRequest<any>(`/lessons/modules/${moduleId}/`, {
     method: "PATCH",
     body: JSON.stringify(data),
+  });
+}
+
+export async function deleteTutorModule(moduleId: string) {
+  return await apiRequest<void>(`/lessons/modules/${moduleId}/`, {
+    method: "DELETE",
   });
 }
 
