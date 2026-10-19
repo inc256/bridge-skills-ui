@@ -10,7 +10,7 @@ export function TutorAuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [isRegistering, setIsRegistering] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -41,7 +41,7 @@ export function TutorAuthPage() {
         await register({ email: email.trim(), username: email.trim().split("@")[0], password, password2, first_name: firstName.trim(), last_name: lastName.trim(), role: "instructor" });
       }
 
-      const session = await login(email.trim(), password);
+      const session = await login(email.trim(), password, rememberMe);
       
       if (!session) {
         setError("Invalid credentials. Please check your email and password.");
@@ -102,7 +102,7 @@ export function TutorAuthPage() {
   return (
     <div className="auth-page relative flex h-dvh items-center justify-center overflow-hidden bg-gradient-to-br from-gray-50 via-white to-gray-50 px-2 py-2 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 sm:px-4 sm:py-4">
       {/* Background Decorations */}
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.08),transparent_60%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.05),transparent_50%)]" />
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(34,197,94,0.08),transparent_60%),radial-gradient(circle_at_bottom_right,rgba(34,197,94,0.05),transparent_50%)]" />
       <div className="absolute left-[-10rem] top-[-10rem] -z-10 h-[40rem] w-[40rem] rounded-full bg-blue-500/5 blur-3xl" />
       <div className="absolute bottom-[-10rem] right-[-10rem] -z-10 h-[40rem] w-[40rem] rounded-full bg-blue-500/5 blur-3xl" />
       <div className="absolute top-20 left-10 w-72 h-72 rounded-full bg-blue-400/10 blur-3xl -z-10" />

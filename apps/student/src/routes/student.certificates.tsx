@@ -126,9 +126,9 @@ function Certificates() {
             <title>Certificate</title>
             <style>
               body{font-family:Georgia,serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f5f0}
-              .c{border:3px solid #2563EB;padding:60px;max-width:700px;text-align:center;background:#fff;border-radius:20px}
+              .c{border:3px solid #15803D;padding:60px;max-width:700px;text-align:center;background:#fff;border-radius:20px}
               .gold{color:#D4A24E}
-              .blue{color:#2563EB}
+              .blue{color:#15803D}
             </style>
           </head>
           <body>
@@ -137,7 +137,7 @@ function Certificates() {
               <p style="color:#6B7280;margin:0">This certifies that</p>
               <p style="font-size:36px;font-weight:700;margin:10px 0">${name}</p>
               <p style="color:#6B7280;margin:0">has successfully completed</p>
-              <p style="font-size:22px;font-weight:700;color:#2563EB;margin:10px 0">${title}</p>
+              <p style="font-size:22px;font-weight:700;color:#15803D;margin:10px 0">${title}</p>
               <p style="color:#6B7280;font-size:12px;margin-top:30px;border-top:1px solid #e5e7eb;padding-top:20px">
                 Issued ${issued} | ID: ${id}
               </p>

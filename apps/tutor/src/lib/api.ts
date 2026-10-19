@@ -99,24 +99,12 @@ function formatDurationSeconds(totalSeconds: number): string {
   return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
 }
 
-function lessonDurationSeconds(value: unknown) {
-  if (typeof value === "number" && Number.isFinite(value)) return Math.max(0, value);
-  const text = String(value ?? "").trim().toLowerCase();
-  const hours = Number(text.match(/(\d+(?:\.\d+)?)\s*h/)?.[1] ?? 0);
-  const minutes = Number(text.match(/(\d+(?:\.\d+)?)\s*m/)?.[1] ?? 0);
-  if (hours || minutes) return hours * 3600 + minutes * 60;
-  const numeric = Number(text);
-  return Number.isFinite(numeric) ? Math.max(0, numeric) : 0;
-}
-
-async function getCourseDuration(slug: string, fallback: string) {
-  try {
-    const lessons = await getCourseLessons(slug);
-    const totalSeconds = lessons.reduce((sum: number, lesson: any) => sum + lessonDurationSeconds(lesson?.duration), 0);
-    return lessons.length > 0 ? formatDurationSeconds(totalSeconds) : fallback;
-  } catch {
-    return fallback;
-  }
+function formatCourseDuration(value: unknown, fallback: string) {
+  const duration = String(value ?? "").trim();
+  if (!duration) return fallback;
+  const seconds = Number(duration);
+  if (!Number.isFinite(seconds)) return duration;
+  return seconds > 0 ? formatDurationSeconds(seconds) : fallback;
 }
 
 function getStorageKey() {
@@ -126,19 +114,25 @@ function getStorageKey() {
 function readSession() {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(getStorageKey());
+    const raw = window.localStorage.getItem(getStorageKey())
+      ?? window.sessionStorage.getItem(getStorageKey());
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
 }
 
-function writeSession(session: any | null) {
+function writeSession(session: any | null, keepSignedIn?: boolean) {
   if (typeof window === "undefined") return;
   if (session) {
-    window.localStorage.setItem(getStorageKey(), JSON.stringify(session));
+    const persist = keepSignedIn ?? (window.localStorage.getItem(getStorageKey()) !== null);
+    const storage = persist ? window.localStorage : window.sessionStorage;
+    const otherStorage = persist ? window.sessionStorage : window.localStorage;
+    storage.setItem(getStorageKey(), JSON.stringify(session));
+    otherStorage.removeItem(getStorageKey());
   } else {
     window.localStorage.removeItem(getStorageKey());
+    window.sessionStorage.removeItem(getStorageKey());
   }
 }
 
@@ -311,7 +305,7 @@ async function apiRequest<T>(path: string, init: RequestInit = {}, retried = fal
   return (await response.json()) as T;
 }
 
-export async function login(email: string, password: string) {
+export async function login(email: string, password: string, keepSignedIn = true) {
   const cleanEmail = email.trim();
   const cleanPassword = password.trim();
 
@@ -335,7 +329,7 @@ export async function login(email: string, password: string) {
       body: JSON.stringify({ [field]: cleanEmail, password: cleanPassword }),
     });
     if (session?.access) {
-      writeSession(session);
+      writeSession(session, keepSignedIn);
     }
     return session;
   }
@@ -371,7 +365,7 @@ export async function getCourses() {
   try {
     const payload = await apiRequest<any>("/courses/mine/");
     const list = Array.isArray(payload) ? payload : payload?.results ?? [];
-    return await Promise.all(list.map(async (item: any) => ({
+    return list.map((item: any) => ({
       id: item?.id ?? item?.slug,
       slug: item?.slug,
       title: item?.title,
@@ -379,7 +373,7 @@ export async function getCourses() {
       instructorTitle: item?.instructor?.headline ?? "Instructor",
       category: item?.category?.name ?? "General",
       level: (item?.level || "beginner").toLowerCase() === "advanced" ? "Advanced" : (item?.level || "beginner").toLowerCase() === "intermediate" ? "Intermediate" : "Beginner",
-      duration: await getCourseDuration(item?.slug, item?.duration ?? "8h"),
+      duration: formatCourseDuration(item?.duration, "8h"),
       students: item?.total_students ?? 0,
       rating: Number(item?.avg_rating ?? 0),
       reviews: Number(item?.total_reviews ?? 0),
@@ -388,12 +382,12 @@ export async function getCourses() {
       status: item?.status ?? "draft",
       image: item?.title?.toLowerCase().includes("network") ? "network" : item?.title?.toLowerCase().includes("security") ? "security" : "code",
       thumbnail: resolveTutorMedia(item?.thumbnail ?? item?.thumbnail_url ?? item?.cover_image ?? item?.image, "thumbnails") || null,
-      color: "#3B82F6",
+      color: "#15803D",
       description: String(item?.description ?? "").trim() || String(item?.subtitle ?? "").trim(),
       modules: Number(item?.total_modules ?? item?.module_count ?? item?.sections_count ?? item?.modules_count ?? 0),
       lessons: Number(item?.total_lessons ?? item?.lesson_count ?? item?.lessons_count ?? 0),
       raw: item,
-    })));
+    }));
   } catch {
     return [];
   }

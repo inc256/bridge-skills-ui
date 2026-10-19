@@ -130,6 +130,17 @@ function formatTotalDuration(totalSeconds: number, fallback: string) {
   return minutes ? `${hours}h ${minutes}m` : `${hours}h`;
 }
 
+function formatCourseDuration(value: unknown, fallback: string) {
+  const duration = String(value ?? "").trim();
+  if (!duration) return fallback;
+  const seconds = Number(duration);
+  return Number.isFinite(seconds) && seconds > 0
+    ? formatTotalDuration(seconds, fallback)
+    : Number.isFinite(seconds)
+      ? fallback
+      : duration;
+}
+
 function lessonDurationSeconds(value: unknown) {
   if (typeof value === "number" && Number.isFinite(value)) return Math.max(0, value);
   const text = String(value ?? "").trim().toLowerCase();
@@ -158,19 +169,28 @@ function getStorageKey() {
 function readSession() {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(getStorageKey());
+    const raw = window.localStorage.getItem(getStorageKey())
+      ?? window.sessionStorage.getItem(getStorageKey());
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
 }
 
-function writeSession(session: any | null) {
+function writeSession(session: any | null, keepSignedIn?: boolean) {
   if (typeof window === "undefined") return;
   if (session) {
-    window.localStorage.setItem(getStorageKey(), JSON.stringify(session));
+    const persist = keepSignedIn ?? (
+      window.localStorage.getItem(getStorageKey()) !== null
+      || window.sessionStorage.getItem(getStorageKey()) === null
+    );
+    const storage = persist ? window.localStorage : window.sessionStorage;
+    const otherStorage = persist ? window.sessionStorage : window.localStorage;
+    storage.setItem(getStorageKey(), JSON.stringify(session));
+    otherStorage.removeItem(getStorageKey());
   } else {
     window.localStorage.removeItem(getStorageKey());
+    window.sessionStorage.removeItem(getStorageKey());
   }
 }
 
@@ -332,7 +352,7 @@ export function decodeJwt(token: string): any | null {
  * server-provided error message on failure — callers should surface
  * err.message directly rather than a generic fallback.
  */
-export async function login(identifier: string, password: string) {
+export async function login(identifier: string, password: string, keepSignedIn = true) {
   const cleanIdentifier = identifier.trim();
   const cleanPassword = password.trim();
 
@@ -354,7 +374,7 @@ export async function login(identifier: string, password: string) {
     throw new Error("Login response did not include an access token.");
   }
 
-  writeSession(session);
+  writeSession(session, keepSignedIn);
   return session;
 }
 
@@ -616,7 +636,7 @@ export async function getCoursesWithPagination(pageSize: number = 5, page: numbe
           category: item?.category?.name || item?.category_name || "General",
           category_id: item?.category?.id || "",
           level: item?.level || "All Levels",
-          duration: await getCourseDuration(item?.slug || item?.id, item?.duration || "0 hours"),
+          duration: formatCourseDuration(item?.duration, "0 hours"),
           total_students: Number(item?.total_students || item?.students || 0),
           students: Number(item?.students || item?.total_students || 0),
           total_lessons: Number(item?.total_lessons || item?.lessons || item?.modules || 0),
@@ -655,15 +675,15 @@ export async function getCourses() {
   try {
     const payload = await apiRequest<any>("/courses/");
     const list = Array.isArray(payload) ? payload : payload?.results ?? [];
-    return await Promise.all(list.map(
-      async (item: any): Promise<Course> => ({
+    return list.map(
+      (item: any): Course => ({
         id: item?.id || item?.slug || "",
         slug: item?.slug || "",
         title: item?.title || "Untitled Course",
         instructor: item?.instructor?.full_name || item?.instructor_name || "Instructor",
         category: item?.category?.name || item?.category_name || "General",
         level: item?.level || "All Levels",
-        duration: await getCourseDuration(item?.slug || item?.id, item?.duration || "0 hours"),
+        duration: formatCourseDuration(item?.duration, "0 hours"),
         students: Number(item?.total_students || item?.students || 0),
         rating: Number(item?.avg_rating || item?.rating || 0),
         reviews: Number(item?.reviews || 0),
@@ -675,7 +695,7 @@ export async function getCourses() {
         progress: item?.progress || 0,
         modules: Number(item?.modules || item?.total_lessons || 0),
       })
-    ));
+    );
   } catch (error) {
     console.error("Error fetching courses:", error);
     return [];
@@ -768,7 +788,7 @@ export async function getCategories() {
       students: Number(item?.total_students || 0),
       courses: Number(item?.courses_count || 0),
       percentage: totalStudents > 0 ? Math.round((Number(item?.total_students || 0) / totalStudents) * 100) : 0,
-      color: item?.color || "#3B82F6",
+      color: item?.color || "#15803D",
     }));
   } catch (error) {
     console.error("Error fetching categories:", error);

@@ -142,19 +142,25 @@ function getStorageKey() {
 function readSession(): AuthSession | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(getStorageKey());
+    const raw = window.localStorage.getItem(getStorageKey())
+      ?? window.sessionStorage.getItem(getStorageKey());
     return raw ? (JSON.parse(raw) as AuthSession) : null;
   } catch {
     return null;
   }
 }
 
-function writeSession(session: AuthSession | null) {
+function writeSession(session: AuthSession | null, keepSignedIn?: boolean) {
   if (typeof window === "undefined") return;
   if (session) {
-    window.localStorage.setItem(getStorageKey(), JSON.stringify(session));
+    const persist = keepSignedIn ?? (window.localStorage.getItem(getStorageKey()) !== null);
+    const storage = persist ? window.localStorage : window.sessionStorage;
+    const otherStorage = persist ? window.sessionStorage : window.localStorage;
+    storage.setItem(getStorageKey(), JSON.stringify(session));
+    otherStorage.removeItem(getStorageKey());
   } else {
     window.localStorage.removeItem(getStorageKey());
+    window.sessionStorage.removeItem(getStorageKey());
   }
 }
 
@@ -329,7 +335,7 @@ export async function patchProfile(data: Record<string, any>) {
   }
 }
 
-export async function login(email: string, password: string) {
+export async function login(email: string, password: string, keepSignedIn = true) {
   try {
     console.log("Attempting login for:", email);
     
@@ -352,7 +358,7 @@ export async function login(email: string, password: string) {
       });
       
       if (session?.access) {
-        writeSession(session);
+        writeSession(session, keepSignedIn);
         console.log("Login successful with email");
         return session;
       }
@@ -371,7 +377,7 @@ export async function login(email: string, password: string) {
         });
         
         if (session?.access) {
-          writeSession(session);
+          writeSession(session, keepSignedIn);
           console.log("Login successful with username");
           return session;
         }
@@ -404,7 +410,7 @@ export async function register(payload: {
   first_name?: string; 
   last_name?: string; 
   role?: string 
-}) {
+}, keepSignedIn = true) {
   try {
     console.log("Attempting registration for:", payload.email);
     
@@ -415,7 +421,7 @@ export async function register(payload: {
     
     console.log("Registration response:", resp);
       if (resp?.access) {
-        writeSession(resp as AuthSession);
+        writeSession(resp as AuthSession, keepSignedIn);
       }
     return resp;
   } catch (err) {
@@ -427,6 +433,19 @@ export async function register(payload: {
 function titleCase(value: string) {
   const lower = (value || "").toLowerCase();
   return lower.charAt(0).toUpperCase() + lower.slice(1);
+}
+
+function formatCourseDuration(value: unknown) {
+  const duration = String(value ?? "").trim();
+  if (!duration) return "";
+  const seconds = Number(duration);
+  if (!Number.isFinite(seconds)) return duration;
+  if (seconds <= 0) return "";
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return remainingMinutes ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
 }
 
 function normalizeLevel(value: string | undefined) {
@@ -452,42 +471,7 @@ function deriveColor(category: string) {
   if (name.includes("security")) return "#0D2922";
   if (name.includes("ai") || name.includes("machine")) return "#D4A24E";
   if (name.includes("design")) return "#587267";
-  return "#3B82F6";
-}
-
-function formatTotalDuration(totalSeconds: number, fallback = "") {
-  if (!totalSeconds) return fallback;
-  const totalMinutes = Math.round(totalSeconds / 60);
-  if (totalMinutes < 60) return `${totalMinutes} min`;
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  return minutes ? `${hours}h ${minutes}m` : `${hours}h`;
-}
-
-function lessonDurationSeconds(value: unknown) {
-  if (typeof value === "number" && Number.isFinite(value)) return Math.max(0, value);
-  const text = String(value ?? "").trim().toLowerCase();
-  const hours = Number(text.match(/(\d+(?:\.\d+)?)\s*h/)?.[1] ?? 0);
-  const minutes = Number(text.match(/(\d+(?:\.\d+)?)\s*m/)?.[1] ?? 0);
-  if (hours || minutes) return hours * 3600 + minutes * 60;
-  const numeric = Number(text);
-  return Number.isFinite(numeric) ? Math.max(0, numeric) : 0;
-}
-
-function readLessonItems(payload: any) {
-  if (Array.isArray(payload)) return payload;
-  return payload?.results ?? payload?.lessons ?? payload?.data ?? [];
-}
-
-async function getCourseDuration(slug: string, fallback: string) {
-  try {
-    const payload = await apiRequest<any>(`/lessons/course/${slug}/`);
-    const lessons = readLessonItems(payload);
-    const totalSeconds = lessons.reduce((sum: number, lesson: any) => sum + lessonDurationSeconds(lesson?.duration), 0);
-    return lessons.length > 0 ? formatTotalDuration(totalSeconds, "0 min") : fallback;
-  } catch {
-    return fallback;
-  }
+  return "#15803D";
 }
 
 function normalizeCourse(item: any): Course {
@@ -518,7 +502,7 @@ function normalizeCourse(item: any): Course {
     instructorTitle: instructorTitle ?? "",
     category: category ?? "",
     level: item?.level ? normalizeLevel(item?.level) : undefined,
-    duration: item?.duration ?? "",
+    duration: formatCourseDuration(item?.duration),
     students,
     rating,
     reviews,
@@ -620,10 +604,7 @@ export async function getCourses(query?: string | URLSearchParams): Promise<Cour
     const queryString = query ? `?${String(query)}` : "";
     const payload = await apiRequest<ApiEnvelope<any> | any>(`/courses/${queryString}`);
     const list = Array.isArray(payload) ? payload : payload?.results ?? [];
-    return await Promise.all((list as any[]).map(async (item) => {
-      const course = normalizeCourse(item);
-      return { ...course, duration: await getCourseDuration(course.slug, course.duration) };
-    }));
+    return (list as any[]).map(normalizeCourse);
   } catch {
     return [];
   }
@@ -632,8 +613,7 @@ export async function getCourses(query?: string | URLSearchParams): Promise<Cour
 export async function getCourse(slug: string): Promise<Course | null> {
   try {
     const course = await apiRequest<any>(`/courses/${slug}/`);
-    const normalized = normalizeCourse(course);
-    return { ...normalized, duration: await getCourseDuration(slug, normalized.duration) };
+    return normalizeCourse(course);
   } catch {
     return null;
   }

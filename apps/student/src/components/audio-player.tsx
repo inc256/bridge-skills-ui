@@ -71,7 +71,7 @@ export function AudioPlayer({ src, onError }: { src: string; onError?: () => voi
           onChange={seek}
           aria-label="Audio progress"
           className="h-1.5 min-w-0 flex-1 cursor-pointer accent-blue-600"
-          style={{ background: `linear-gradient(to right, #2563eb ${progress}%, #dbeafe ${progress}%)` }}
+          style={{ background: `linear-gradient(to right, #15803d ${progress}%, #dcfce7 ${progress}%)` }}
         />
         <span className="w-10 shrink-0 text-right text-xs tabular-nums text-blue-900/65">{formatTime(duration)}</span>
       </div>

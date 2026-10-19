@@ -28,8 +28,8 @@ export function resolveCourseThumbnail(value?: unknown) {
 }
 
 // Abstract, elegant SVG course thumbnails — no external assets.
-export function CourseThumb({ variant, color = "#3B82F6", thumbnail, title, className }: { variant: string; color?: string; thumbnail?: string | null; title?: string; className?: string }) {
-  const bg = typeof color === "string" && color.trim() ? color.trim() : "#3B82F6";
+export function CourseThumb({ variant, color = "#15803D", thumbnail, title, className }: { variant: string; color?: string; thumbnail?: string | null; title?: string; className?: string }) {
+  const bg = typeof color === "string" && color.trim() ? color.trim() : "#15803D";
   const safeThumbnail = resolveCourseThumbnail(thumbnail);
 
   return (

@@ -15,7 +15,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   setUser: (user: User | null) => void;
-  login: (email: string, password: string) => Promise<any>;
+  login: (email: string, password: string, keepSignedIn?: boolean) => Promise<any>;
   logout: () => Promise<void>;
   isLoading: boolean;
   isAuthenticated: boolean;
@@ -55,8 +55,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadUser();
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const session = await apiLogin(email, password);
+  const login = async (email: string, password: string, keepSignedIn = true) => {
+    const session = await apiLogin(email, password, keepSignedIn);
     try {
       const profile = await getProfile();
       setUser(profile);

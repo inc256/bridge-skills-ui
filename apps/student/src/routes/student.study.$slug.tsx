@@ -7,6 +7,7 @@ import {
 import { useEffect, useState, useMemo, useRef } from "react";
 import { getCourse, getCourseModules, getLessonProgress, getQuizzesForCourse, getQuiz, markLessonComplete, resolveCourseMedia, sortCourseModules, submitQuizAnswers, syncLessonProgress } from "@/lib/api";
 import { setSelectedCourseSlug } from "@/lib/student-onboarding";
+import { getLocalStudyState, saveLocalLessonPosition, saveLocalStudyState } from "@/lib/study-progress";
 import { AudioPlayer } from "@/components/audio-player";
 import { PdfViewer } from "@/components/pdf-viewer";
 import { PptViewer } from "@/components/ppt-viewer";
@@ -20,34 +21,6 @@ export const Route = createFileRoute("/student/study/$slug")({
   },
   component: StudyInterface,
 });
-
-type LocalStudyState = {
-  currentLessonId?: string;
-  progress?: number;
-  positions?: Record<string, number>;
-};
-
-function getLocalStudyState(courseSlug: string): LocalStudyState {
-  if (typeof window === "undefined") return {};
-  try {
-    return JSON.parse(window.localStorage.getItem(`bridge-study-${courseSlug}`) ?? "{}") as LocalStudyState;
-  } catch {
-    return {};
-  }
-}
-
-function saveLocalStudyState(courseSlug: string, update: Partial<LocalStudyState>) {
-  if (typeof window === "undefined") return;
-  const current = getLocalStudyState(courseSlug);
-  window.localStorage.setItem(`bridge-study-${courseSlug}`, JSON.stringify({ ...current, ...update }));
-}
-
-function saveLocalLessonPosition(courseSlug: string, lessonId: string, position: number) {
-  const state = getLocalStudyState(courseSlug);
-  saveLocalStudyState(courseSlug, {
-    positions: { ...(state.positions ?? {}), [lessonId]: Math.max(0, Math.floor(position)) },
-  });
-}
 
 function StudyInterface() {
   const { course, modules: initialModules } = Route.useLoaderData();
@@ -90,6 +63,7 @@ function StudyInterface() {
   const progressHoverRef = useRef<HTMLDivElement>(null);
   const settingsRef = useRef<HTMLDivElement>(null);
   const lastSyncedProgressRef = useRef(0);
+  const lastKnownPositionRef = useRef(0);
 
   useEffect(() => {
     setModules(Array.isArray(initialModules) ? sortCourseModules(initialModules) : []);
@@ -166,6 +140,7 @@ function StudyInterface() {
     const localState = currentLessonId ? getLocalStudyState(course.slug) : {};
     const localPosition = currentLessonId ? Number(localState.positions?.[currentLessonId] ?? 0) : 0;
     setSavedPosition(Number.isFinite(localPosition) ? localPosition : 0);
+    lastKnownPositionRef.current = Number.isFinite(localPosition) ? localPosition : 0;
     lastSyncedProgressRef.current = 0;
     setCompletionError(null);
     setXpRewardMessage(null);
@@ -177,8 +152,10 @@ function StudyInterface() {
       if (cancelled) return;
       const position = Number(lessonProgress?.position ?? lessonProgress?.last_position ?? lessonProgress?.current_time ?? 0);
       if (Number.isFinite(position) && position > 0) {
-        setSavedPosition(position);
-        saveLocalLessonPosition(course.slug, currentLessonId, position);
+        const latestPosition = Math.max(localPosition, position);
+        setSavedPosition(latestPosition);
+        lastKnownPositionRef.current = latestPosition;
+        saveLocalLessonPosition(course.slug, currentLessonId, latestPosition);
       }
     });
 
@@ -191,6 +168,24 @@ function StudyInterface() {
     if (!currentLessonId) return null;
     return lessonList.find((l: any) => l.id === currentLessonId);
   }, [currentLessonId, lessonList]);
+
+  useEffect(() => {
+    if (!currentLessonId) return;
+    const syncLatestPosition = () => {
+      const position = lastKnownPositionRef.current;
+      if (position > 0) void syncLessonProgress(currentLessonId, position, position);
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") syncLatestPosition();
+    };
+    window.addEventListener("pagehide", syncLatestPosition);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      syncLatestPosition();
+      window.removeEventListener("pagehide", syncLatestPosition);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [currentLessonId]);
 
   const currentLessonIndex = useMemo(() => lessonList.findIndex((l: any) => l.id === currentLessonId), [currentLessonId, lessonList]);
   const nextLessonIndex = useMemo(() => {
@@ -368,6 +363,7 @@ function StudyInterface() {
                 if (savedPosition > 0) {
                   event.target.seekTo(savedPosition, true);
                   setCurrentTime(savedPosition);
+                  lastKnownPositionRef.current = savedPosition;
                 }
                 setIsYouTube(true);
               },
@@ -425,6 +421,7 @@ function StudyInterface() {
         const dur = youtubePlayer.getDuration();
         if (dur > 0) {
           setCurrentTime(current);
+          lastKnownPositionRef.current = current;
           setProgress((current / dur) * 100);
           if (currentLesson) {
             saveLocalLessonPosition(course.slug, currentLesson.id, current);
@@ -467,6 +464,7 @@ function StudyInterface() {
     const current = videoRef.current.currentTime;
     const dur = videoRef.current.duration || 0;
     setCurrentTime(current);
+    lastKnownPositionRef.current = current;
     setProgress(dur ? (current / dur) * 100 : 0);
     if (currentLesson) {
       saveLocalLessonPosition(course.slug, currentLesson.id, current);
@@ -1069,7 +1067,7 @@ function StudyInterface() {
 
     // Fallback
     return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-[#071a35] to-[#123b73]">
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-[#052e16] to-[#14532d]">
         <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-white/5 flex items-center justify-center">
           <Play className="h-5 w-5 sm:h-7 sm:w-7 fill-white/30 text-white/30" />
         </div>

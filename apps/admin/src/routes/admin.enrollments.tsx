@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Plus, RefreshCw, Search, Trash2, Edit2, X, TrendingUp, 
   Users, BookOpen, CheckCircle, Clock, AlertCircle, Filter,
@@ -270,7 +271,7 @@ function EnrollmentRow({ enrollment, onEditStatus, onDelete }: EnrollmentRowProp
               className="h-full rounded-full transition-all duration-700 ease-out"
               style={{ 
                 width: `${Math.min(enrollment.progress || 0, 100)}%`,
-                background: enrollment.progress >= 80 ? '#10B981' : enrollment.progress >= 50 ? '#3B82F6' : '#F59E0B'
+                background: enrollment.progress >= 80 ? '#10B981' : enrollment.progress >= 50 ? '#22C55E' : '#F59E0B'
               }}
             />
           </div>
@@ -647,9 +648,7 @@ function AdminEnrollments() {
                 Student <span className="text-red-500">*</span>
               </label>
               {loadingUsersCourses ? (
-                <div className="flex items-center justify-center py-4">
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-200 dark:border-gray-700 border-t-blue-600"></div>
-                </div>
+                <Skeleton className="h-10 w-full" />
               ) : (
                 <select
                   value={form.user_id}
@@ -676,9 +675,7 @@ function AdminEnrollments() {
                 Course <span className="text-red-500">*</span>
               </label>
               {loadingUsersCourses ? (
-                <div className="flex items-center justify-center py-4">
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-200 dark:border-gray-700 border-t-blue-600"></div>
-                </div>
+                <Skeleton className="h-10 w-full" />
               ) : (
                 <select
                   value={form.course_id}

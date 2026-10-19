@@ -10,6 +10,7 @@ export function AdminAuthPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [keepSignedIn, setKeepSignedIn] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -22,7 +23,7 @@ export function AdminAuthPage() {
     setError(null);
     setLoading(true);
     try {
-      const session = await login(email.trim(), password);
+      const session = await login(email.trim(), password, keepSignedIn);
 
       const role = await getCurrentUserRole(session?.access);
 
@@ -111,6 +112,16 @@ export function AdminAuthPage() {
                 </button>
               </div>
             </div>
+
+            <label className="inline-flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={keepSignedIn}
+                onChange={(event) => setKeepSignedIn(event.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              Keep me signed in
+            </label>
 
             <button
               type="submit"

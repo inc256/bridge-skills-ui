@@ -358,7 +358,7 @@ function Reports() {
           data={daily} 
           title="New Users" 
           valueKey="new_users" 
-          color="#3B82F6" 
+          color="#15803D"
           icon={Users}
         />
         <Chart 

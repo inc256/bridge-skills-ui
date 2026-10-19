@@ -27,7 +27,7 @@ function StudyCoursePicker() {
           typeof course.category === "string"
             ? course.category
             : course.category?.name ?? "General",
-        color: typeof course.color === "string" ? course.color : "#3B82F6",
+        color: typeof course.color === "string" ? course.color : "#15803D",
         image: typeof course.image === "string" ? course.image : "code",
         progress: item.progress,
       };

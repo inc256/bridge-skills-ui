@@ -10,6 +10,7 @@ import {
 import { useState, useEffect } from "react";
 import { getCourses, getMeStats, getMyEnrollments, getMyCertificates, getProfile } from "@/lib/api";
 import type { Course } from "@/lib/api";
+import { getLocalStudyProgress } from "@/lib/study-progress";
 import { resolveCourseThumbnail } from "@/components/course-thumb";
 
 export const Route = createFileRoute("/student/dashboard")({
@@ -43,17 +44,6 @@ interface Certificate {
   instructor: string;
 }
 
-function getLocalStudyProgress(courseSlug: string) {
-  if (typeof window === "undefined") return 0;
-  try {
-    const state = JSON.parse(window.localStorage.getItem(`bridge-study-${courseSlug}`) ?? "{}") as { progress?: number };
-    const progress = Number(state.progress ?? 0);
-    return Number.isFinite(progress) ? Math.max(0, Math.min(100, progress)) : 0;
-  } catch {
-    return 0;
-  }
-}
-
 function Dashboard() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
@@ -73,57 +63,44 @@ function Dashboard() {
     async function load() {
       setIsLoading(true);
       try {
-        try {
-          const profile = await getProfile();
-          setUser(profile);
-        } catch (e) {
-          console.error('Profile fetch failed:', e);
+        const [profile, courseData, statsData, enrollmentData, certificateData] = await Promise.all([
+          getProfile().catch((error) => {
+            console.error("Profile fetch failed:", error);
+            return null;
+          }),
+          getCourses().catch((error) => {
+            console.error("Courses fetch failed:", error);
+            return [];
+          }),
+          getMeStats().catch((error) => {
+            console.error("Stats fetch failed:", error);
+            return null;
+          }),
+          getMyEnrollments().catch((error) => {
+            console.error("Enrollments fetch failed:", error);
+            return [];
+          }),
+          getMyCertificates().catch((error) => {
+            console.error("Certificates fetch failed:", error);
+            return [];
+          }),
+        ]);
+        setUser(profile);
+        setCourses(Array.isArray(courseData) ? courseData : []);
+        if (statsData) {
+          setStats({
+            streak: statsData.streak_days || 0,
+            weekly_hours: statsData.weekly_hours || 0,
+            weekly_goal_hours: statsData.weekly_goal_hours || 10,
+            courses_completed: statsData.courses_completed || 0,
+            level: statsData.level || 0,
+            xp: statsData.xp || 0,
+            total_students: statsData.total_students || 0,
+            total_courses: statsData.total_courses || 0,
+          });
         }
-
-        let courseList: Course[] = [];
-        try {
-          const data = await getCourses();
-          courseList = Array.isArray(data) ? data : [];
-          setCourses(courseList);
-        } catch (e) {
-          console.error('Courses fetch failed:', e);
-          setCourses([]);
-        }
-
-        try {
-          const statsData = await getMeStats();
-          if (statsData) {
-            setStats({
-              streak: statsData.streak_days || 0,
-              weekly_hours: statsData.weekly_hours || 0,
-              weekly_goal_hours: statsData.weekly_goal_hours || 10,
-              courses_completed: statsData.courses_completed || 0,
-              level: statsData.level || 0,
-              xp: statsData.xp || 0,
-              total_students: statsData.total_students || 0,
-              total_courses: statsData.total_courses || 0
-            });
-          }
-        } catch (e) {
-          console.error('Stats fetch failed:', e);
-        }
-
-        try {
-          const enrollmentData = await getMyEnrollments();
-          setEnrollments(Array.isArray(enrollmentData) ? enrollmentData : []);
-        } catch (e) {
-          console.error('Enrollments fetch failed:', e);
-          setEnrollments([]);
-        }
-
-        try {
-          const certData = await getMyCertificates();
-          setCertificates(Array.isArray(certData) ? certData : []);
-        } catch (e) {
-          console.error('Certificates fetch failed:', e);
-          setCertificates([]);
-        }
-
+        setEnrollments(Array.isArray(enrollmentData) ? enrollmentData : []);
+        setCertificates(Array.isArray(certificateData) ? certificateData : []);
       } catch (error) {
         console.error('Error loading dashboard:', error);
       } finally {

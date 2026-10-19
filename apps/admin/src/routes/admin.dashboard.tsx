@@ -498,7 +498,7 @@ function AdminDashboard() {
           </div>
           
           <div className="space-y-3">
-            <MiniBar label="Students" value={totalLearners} max={totalUsers || maxBar} color="#3B82F6" />
+            <MiniBar label="Students" value={totalLearners} max={totalUsers || maxBar} color="#15803D" />
             <MiniBar label="Instructors" value={activeTutors} max={totalUsers || maxBar} color="#8B5CF6" />
             <MiniBar label="Admins" value={admins} max={totalUsers || maxBar} color="#10B981" />
           </div>
@@ -549,7 +549,7 @@ function AdminDashboard() {
                           className="w-full rounded-md transition-all duration-300 hover:opacity-100 cursor-pointer"
                           style={{ 
                             height: `${height}px`, 
-                            background: `linear-gradient(180deg, #3B82F6, #60A5FA)`,
+                            background: `linear-gradient(180deg, #15803D, #4ADE80)`,
                             opacity: opacity,
                             boxShadow: '0 2px 8px rgba(59, 130, 246, 0.25)'
                           }}

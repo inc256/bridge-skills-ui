@@ -8,14 +8,17 @@
   --font-sans: "Inter", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Inter", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
 
-  --color-blue-50: #eff6ff;
-  --color-blue-100: #dbeafe;
-  --color-blue-200: #bfdbfe;
-  --color-blue-300: #93c5fd;
-  --color-blue-400: #60a5fa;
-  --color-blue-500: #3b82f6;
-  --color-blue-600: #2563eb;
-  --color-blue-700: #1d4ed8;
+  --color-blue-50: #f0fdf4;
+  --color-blue-100: #dcfce7;
+  --color-blue-200: #bbf7d0;
+  --color-blue-300: #86efac;
+  --color-blue-400: #4ade80;
+  --color-blue-500: #22c55e;
+  --color-blue-600: #16a34a;
+  --color-blue-700: #15803d;
+  --color-blue-800: #166534;
+  --color-blue-900: #14532d;
+  --color-blue-950: #052e16;
 
   --radius-sm: 4px;
   --radius-md: 6px;
@@ -74,17 +77,17 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.22 0.03 165);
 
-  --primary: #123b73;
+  --primary: #15803d;
   --primary-foreground: #ffffff;
-  --primary-dark: #0b2b57;
+  --primary-dark: #166534;
 
-  --secondary: #eaf2fb;
+  --secondary: #ecfdf5;
   --secondary-foreground: #102a43;
 
   --muted: #f2eee4;
   --muted-foreground: #536b82;
 
-  --accent: #dbeafe;
+  --accent: #dcfce7;
   --accent-foreground: #102a43;
 
   --gold: oklch(0.75 0.12 80);                  /* #D4A24E */
@@ -96,9 +99,9 @@
   --warning: oklch(0.78 0.16 75);
   --info: oklch(0.62 0.19 250);
 
-  --border: #d9e4f0;
-  --input: #d9e4f0;
-  --ring: #2563eb;
+  --border: #d6e7dc;
+  --input: #d6e7dc;
+  --ring: #16a34a;
 
   --chart-1: oklch(0.5 0.07 165);
   --chart-2: oklch(0.75 0.12 80);
@@ -108,12 +111,12 @@
 
   --sidebar: oklch(1 0 0);
   --sidebar-foreground: #102a43;
-  --sidebar-primary: #123b73;
+  --sidebar-primary: #15803d;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: oklch(0.965 0.015 155);
   --sidebar-accent-foreground: oklch(0.22 0.03 165);
   --sidebar-border: oklch(0.93 0.02 155);
-  --sidebar-ring: oklch(0.5 0.07 165);
+  --sidebar-ring: #16a34a;
 }
 
 .dark {
@@ -123,8 +126,8 @@
   --card-foreground: oklch(0.97 0.005 155);
   --popover: oklch(0.2 0.025 165);
   --popover-foreground: oklch(0.97 0.005 155);
-  --primary: #1D4ED8;
-  --primary-foreground: #ffffff;
+  --primary: #4ade80;
+  --primary-foreground: oklch(0.16 0.02 165);
   --secondary: oklch(0.26 0.02 165);
   --secondary-foreground: oklch(0.97 0.005 155);
   --muted: oklch(0.26 0.02 165);
@@ -133,15 +136,15 @@
   --accent-foreground: oklch(0.97 0.005 155);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.65 0.1 165);
+  --ring: #4ade80;
   --sidebar: oklch(0.2 0.025 165);
   --sidebar-foreground: oklch(0.97 0.005 155);
-  --sidebar-primary: #1D4ED8;
-  --sidebar-primary-foreground: #ffffff;
+  --sidebar-primary: #4ade80;
+  --sidebar-primary-foreground: oklch(0.16 0.02 165);
   --sidebar-accent: oklch(0.26 0.02 165);
   --sidebar-accent-foreground: oklch(0.97 0.005 155);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.65 0.1 165);
+  --sidebar-ring: #4ade80;
 }
 
 @layer base {
@@ -195,7 +198,7 @@
 .animate-progress { animation: progressGrow 1.2s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
 
 @utility skeleton {
-  background: linear-gradient(90deg, var(--color-blue-50), var(--color-blue-100), var(--color-blue-50));
+  background: linear-gradient(90deg, color-mix(in oklab, var(--color-primary) 5%, var(--color-card)), color-mix(in oklab, var(--color-primary) 11%, var(--color-card)), color-mix(in oklab, var(--color-primary) 5%, var(--color-card)));
   background-size: 200% 100%;
   animation: skeletonShimmer 1.4s ease-in-out infinite;
   border: 0;
@@ -206,3 +209,8 @@
   to { background-position: -200% 0; }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
