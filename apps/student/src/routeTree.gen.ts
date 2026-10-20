@@ -12,13 +12,18 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StudentRouteImport } from './routes/student'
 import { Route as StudentIndexRouteImport } from './routes/student.index'
+import { Route as StudentAchievementsRouteImport } from './routes/student.achievements'
 import { Route as StudentAssignmentsRouteImport } from './routes/student.assignments'
+import { Route as StudentBlogRouteImport } from './routes/student.blog'
 import { Route as StudentBookmarksRouteImport } from './routes/student.bookmarks'
 import { Route as StudentCertificatesRouteImport } from './routes/student.certificates'
 import { Route as StudentDashboardRouteImport } from './routes/student.dashboard'
 import { Route as StudentExploreRouteImport } from './routes/student.explore'
+import { Route as StudentForumRouteImport } from './routes/student.forum'
 import { Route as StudentMyLearningRouteImport } from './routes/student.my-learning'
+import { Route as StudentOpportunitiesRouteImport } from './routes/student.opportunities'
 import { Route as StudentPathsRouteImport } from './routes/student.paths'
+import { Route as StudentPaymentsRouteImport } from './routes/student.payments'
 import { Route as StudentProfileRouteImport } from './routes/student.profile'
 import { Route as StudentSettingsRouteImport } from './routes/student.settings'
 import { Route as StudentCourseSlugRouteImport } from './routes/student.course.$slug'
@@ -40,9 +45,19 @@ const StudentIndexRoute = StudentIndexRouteImport.update({
   path: '/',
   getParentRoute: () => StudentRoute,
 } as any)
+const StudentAchievementsRoute = StudentAchievementsRouteImport.update({
+  id: '/achievements',
+  path: '/achievements',
+  getParentRoute: () => StudentRoute,
+} as any)
 const StudentAssignmentsRoute = StudentAssignmentsRouteImport.update({
   id: '/assignments',
   path: '/assignments',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentBlogRoute = StudentBlogRouteImport.update({
+  id: '/blog',
+  path: '/blog',
   getParentRoute: () => StudentRoute,
 } as any)
 const StudentBookmarksRoute = StudentBookmarksRouteImport.update({
@@ -65,14 +80,29 @@ const StudentExploreRoute = StudentExploreRouteImport.update({
   path: '/explore',
   getParentRoute: () => StudentRoute,
 } as any)
+const StudentForumRoute = StudentForumRouteImport.update({
+  id: '/forum',
+  path: '/forum',
+  getParentRoute: () => StudentRoute,
+} as any)
 const StudentMyLearningRoute = StudentMyLearningRouteImport.update({
   id: '/my-learning',
   path: '/my-learning',
   getParentRoute: () => StudentRoute,
 } as any)
+const StudentOpportunitiesRoute = StudentOpportunitiesRouteImport.update({
+  id: '/opportunities',
+  path: '/opportunities',
+  getParentRoute: () => StudentRoute,
+} as any)
 const StudentPathsRoute = StudentPathsRouteImport.update({
   id: '/paths',
   path: '/paths',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentPaymentsRoute = StudentPaymentsRouteImport.update({
+  id: '/payments',
+  path: '/payments',
   getParentRoute: () => StudentRoute,
 } as any)
 const StudentProfileRoute = StudentProfileRouteImport.update({
@@ -104,13 +134,18 @@ const StudentStudySlugRoute = StudentStudySlugRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/student': typeof StudentRouteWithChildren
+  '/student/achievements': typeof StudentAchievementsRoute
   '/student/assignments': typeof StudentAssignmentsRoute
+  '/student/blog': typeof StudentBlogRoute
   '/student/bookmarks': typeof StudentBookmarksRoute
   '/student/certificates': typeof StudentCertificatesRoute
   '/student/dashboard': typeof StudentDashboardRoute
   '/student/explore': typeof StudentExploreRoute
+  '/student/forum': typeof StudentForumRoute
   '/student/my-learning': typeof StudentMyLearningRoute
+  '/student/opportunities': typeof StudentOpportunitiesRoute
   '/student/paths': typeof StudentPathsRoute
+  '/student/payments': typeof StudentPaymentsRoute
   '/student/profile': typeof StudentProfileRoute
   '/student/settings': typeof StudentSettingsRoute
   '/student/': typeof StudentIndexRoute
@@ -120,13 +155,18 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/student/achievements': typeof StudentAchievementsRoute
   '/student/assignments': typeof StudentAssignmentsRoute
+  '/student/blog': typeof StudentBlogRoute
   '/student/bookmarks': typeof StudentBookmarksRoute
   '/student/certificates': typeof StudentCertificatesRoute
   '/student/dashboard': typeof StudentDashboardRoute
   '/student/explore': typeof StudentExploreRoute
+  '/student/forum': typeof StudentForumRoute
   '/student/my-learning': typeof StudentMyLearningRoute
+  '/student/opportunities': typeof StudentOpportunitiesRoute
   '/student/paths': typeof StudentPathsRoute
+  '/student/payments': typeof StudentPaymentsRoute
   '/student/profile': typeof StudentProfileRoute
   '/student/settings': typeof StudentSettingsRoute
   '/student': typeof StudentIndexRoute
@@ -138,13 +178,18 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/student': typeof StudentRouteWithChildren
+  '/student/achievements': typeof StudentAchievementsRoute
   '/student/assignments': typeof StudentAssignmentsRoute
+  '/student/blog': typeof StudentBlogRoute
   '/student/bookmarks': typeof StudentBookmarksRoute
   '/student/certificates': typeof StudentCertificatesRoute
   '/student/dashboard': typeof StudentDashboardRoute
   '/student/explore': typeof StudentExploreRoute
+  '/student/forum': typeof StudentForumRoute
   '/student/my-learning': typeof StudentMyLearningRoute
+  '/student/opportunities': typeof StudentOpportunitiesRoute
   '/student/paths': typeof StudentPathsRoute
+  '/student/payments': typeof StudentPaymentsRoute
   '/student/profile': typeof StudentProfileRoute
   '/student/settings': typeof StudentSettingsRoute
   '/student/': typeof StudentIndexRoute
@@ -157,13 +202,18 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/student'
+    | '/student/achievements'
     | '/student/assignments'
+    | '/student/blog'
     | '/student/bookmarks'
     | '/student/certificates'
     | '/student/dashboard'
     | '/student/explore'
+    | '/student/forum'
     | '/student/my-learning'
+    | '/student/opportunities'
     | '/student/paths'
+    | '/student/payments'
     | '/student/profile'
     | '/student/settings'
     | '/student/'
@@ -173,13 +223,18 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/student/achievements'
     | '/student/assignments'
+    | '/student/blog'
     | '/student/bookmarks'
     | '/student/certificates'
     | '/student/dashboard'
     | '/student/explore'
+    | '/student/forum'
     | '/student/my-learning'
+    | '/student/opportunities'
     | '/student/paths'
+    | '/student/payments'
     | '/student/profile'
     | '/student/settings'
     | '/student'
@@ -190,13 +245,18 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/student'
+    | '/student/achievements'
     | '/student/assignments'
+    | '/student/blog'
     | '/student/bookmarks'
     | '/student/certificates'
     | '/student/dashboard'
     | '/student/explore'
+    | '/student/forum'
     | '/student/my-learning'
+    | '/student/opportunities'
     | '/student/paths'
+    | '/student/payments'
     | '/student/profile'
     | '/student/settings'
     | '/student/'
@@ -233,11 +293,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudentIndexRouteImport
       parentRoute: typeof StudentRoute
     }
+    '/student/achievements': {
+      id: '/student/achievements'
+      path: '/achievements'
+      fullPath: '/student/achievements'
+      preLoaderRoute: typeof StudentAchievementsRouteImport
+      parentRoute: typeof StudentRoute
+    }
     '/student/assignments': {
       id: '/student/assignments'
       path: '/assignments'
       fullPath: '/student/assignments'
       preLoaderRoute: typeof StudentAssignmentsRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/student/blog': {
+      id: '/student/blog'
+      path: '/blog'
+      fullPath: '/student/blog'
+      preLoaderRoute: typeof StudentBlogRouteImport
       parentRoute: typeof StudentRoute
     }
     '/student/bookmarks': {
@@ -268,6 +342,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudentExploreRouteImport
       parentRoute: typeof StudentRoute
     }
+    '/student/forum': {
+      id: '/student/forum'
+      path: '/forum'
+      fullPath: '/student/forum'
+      preLoaderRoute: typeof StudentForumRouteImport
+      parentRoute: typeof StudentRoute
+    }
     '/student/my-learning': {
       id: '/student/my-learning'
       path: '/my-learning'
@@ -275,11 +356,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudentMyLearningRouteImport
       parentRoute: typeof StudentRoute
     }
+    '/student/opportunities': {
+      id: '/student/opportunities'
+      path: '/opportunities'
+      fullPath: '/student/opportunities'
+      preLoaderRoute: typeof StudentOpportunitiesRouteImport
+      parentRoute: typeof StudentRoute
+    }
     '/student/paths': {
       id: '/student/paths'
       path: '/paths'
       fullPath: '/student/paths'
       preLoaderRoute: typeof StudentPathsRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/student/payments': {
+      id: '/student/payments'
+      path: '/payments'
+      fullPath: '/student/payments'
+      preLoaderRoute: typeof StudentPaymentsRouteImport
       parentRoute: typeof StudentRoute
     }
     '/student/profile': {
@@ -321,13 +416,18 @@ declare module '@tanstack/react-router' {
 }
 
 interface StudentRouteChildren {
+  StudentAchievementsRoute: typeof StudentAchievementsRoute
   StudentAssignmentsRoute: typeof StudentAssignmentsRoute
+  StudentBlogRoute: typeof StudentBlogRoute
   StudentBookmarksRoute: typeof StudentBookmarksRoute
   StudentCertificatesRoute: typeof StudentCertificatesRoute
   StudentDashboardRoute: typeof StudentDashboardRoute
   StudentExploreRoute: typeof StudentExploreRoute
+  StudentForumRoute: typeof StudentForumRoute
   StudentMyLearningRoute: typeof StudentMyLearningRoute
+  StudentOpportunitiesRoute: typeof StudentOpportunitiesRoute
   StudentPathsRoute: typeof StudentPathsRoute
+  StudentPaymentsRoute: typeof StudentPaymentsRoute
   StudentProfileRoute: typeof StudentProfileRoute
   StudentSettingsRoute: typeof StudentSettingsRoute
   StudentIndexRoute: typeof StudentIndexRoute
@@ -337,13 +437,18 @@ interface StudentRouteChildren {
 }
 
 const StudentRouteChildren: StudentRouteChildren = {
+  StudentAchievementsRoute: StudentAchievementsRoute,
   StudentAssignmentsRoute: StudentAssignmentsRoute,
+  StudentBlogRoute: StudentBlogRoute,
   StudentBookmarksRoute: StudentBookmarksRoute,
   StudentCertificatesRoute: StudentCertificatesRoute,
   StudentDashboardRoute: StudentDashboardRoute,
   StudentExploreRoute: StudentExploreRoute,
+  StudentForumRoute: StudentForumRoute,
   StudentMyLearningRoute: StudentMyLearningRoute,
+  StudentOpportunitiesRoute: StudentOpportunitiesRoute,
   StudentPathsRoute: StudentPathsRoute,
+  StudentPaymentsRoute: StudentPaymentsRoute,
   StudentProfileRoute: StudentProfileRoute,
   StudentSettingsRoute: StudentSettingsRoute,
   StudentIndexRoute: StudentIndexRoute,

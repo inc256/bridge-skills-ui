@@ -26,6 +26,7 @@ import {
   Compass,
   Library,
   BookMarked,
+  CreditCard,
   FolderOpen,
   Globe,
   Server,
@@ -33,6 +34,8 @@ import {
   Cloud,
   Lock,
   UserCog,
+  BriefcaseBusiness,
+  Trophy,
 } from "lucide-react";
 import { PortalShell } from "@/components/portal-shell";
 import { StudentAuthPage } from "@/components/student-auth-page";
@@ -73,8 +76,10 @@ const NAV_SECTIONS = [
     items: [
       { label: "Browse Courses", to: "/student/explore", icon: <Library className="h-4 w-4" /> },
       { label: "My Courses", to: "/student/my-learning", icon: <BookMarked className="h-4 w-4" /> },
-      // { label: "My Assignments", to: "/student/assignments", icon: <FileText className="h-4 w-4" /> },
-      // { label: "Learning Paths", to: "/student/paths", icon: <HelpCircle className="h-4 w-4" /> },
+      { label: "Course Forums", to: "/student/forum", icon: <MessageCircle className="h-4 w-4" /> },
+      { label: "Assignments", to: "/student/assignments", icon: <FileText className="h-4 w-4" /> },
+      { label: "Learning Paths", to: "/student/paths", icon: <Compass className="h-4 w-4" /> },
+      { label: "Articles", to: "/student/blog", icon: <BookOpen className="h-4 w-4" /> },
     ]
   },
   {
@@ -83,7 +88,16 @@ const NAV_SECTIONS = [
     items: [
       { label: "Certificates", to: "/student/certificates", icon: <Award className="h-4 w-4" /> },
       { label: "Bookmarks", to: "/student/bookmarks", icon: <Star className="h-4 w-4" /> },
+      { label: "Payments", to: "/student/payments", icon: <CreditCard className="h-4 w-4" /> },
+      { label: "Achievements", to: "/student/achievements", icon: <Trophy className="h-4 w-4" /> },
     ]
+  },
+  {
+    label: "Career",
+    icon: <Compass className="w-3.5 h-3.5" />,
+    items: [
+      { label: "Opportunities", to: "/student/opportunities", icon: <BriefcaseBusiness className="h-4 w-4" /> },
+    ],
   },
   {
     label: "Settings",

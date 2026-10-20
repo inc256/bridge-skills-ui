@@ -24,7 +24,10 @@ function StudentDashboard() {
       const [courseList, statsData, certificateList, notificationList, blogList, enrollmentList, userData] = await Promise.all([
         getCourses(),
         getMeStats(),
-        getMyCertificates(),
+        getMyCertificates().catch((error) => {
+          console.error("Failed to load dashboard certificates:", error);
+          return [];
+        }),
         getNotifications(),
         getBlogPosts(),
         getMyEnrollments(),

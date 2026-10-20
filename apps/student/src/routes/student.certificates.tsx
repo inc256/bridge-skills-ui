@@ -1,5 +1,5 @@
 // apps/student/src/routes/student.certificates.tsx
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Award, Download, Share2, ExternalLink, Check, Search, Shield, RefreshCw, Sparkles, Users, Clock, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -11,19 +11,9 @@ export const Route = createFileRoute("/student/certificates")({
 });
 
 // Certificate with additional fields
-interface ExtendedCertificate extends Omit<Certificate, "issued" | "credentialId"> {
-  number?: string;
-  credentialId?: string;
-  course_title?: string;
-  user_name?: string;
+interface ExtendedCertificate extends Certificate {
   student_name?: string;
   recipient_name?: string;
-  issued_at?: string;
-  issued?: string;
-  is_valid?: boolean;
-  verify_count?: number;
-  last_verified_at?: string;
-  pdf_url?: string;
 }
 
 const BGCSS = [
@@ -107,16 +97,16 @@ function Certificates() {
   };
 
   const handleDownload = (cert: ExtendedCertificate) => {
-    if (cert.pdf_url) {
-      window.open(cert.pdf_url, '_blank');
+    if (cert.pdfUrl) {
+      window.open(cert.pdfUrl, '_blank');
       return;
     }
     // Fallback print view
     const w = window.open('', '_blank');
     if (w) {
-      const name = cert.user_name || cert.student_name || cert.recipient_name || user?.full_name || 'Learner';
-      const title = cert.title || cert.course_title || 'Certificate';
-      const issued = formatDate(cert.issued_at || cert.issued || new Date().toISOString());
+      const name = cert.userName || cert.student_name || cert.recipient_name || user?.full_name || 'Learner';
+      const title = cert.title || 'Certificate';
+      const issued = formatDate(cert.issuedAt || cert.issued || new Date().toISOString());
       const id = cert.credentialId || cert.number || 'TBS-2024';
       
       w.document.write(`
@@ -151,7 +141,7 @@ function Certificates() {
   };
 
   const handleShare = async (cert: ExtendedCertificate) => {
-    const title = cert.title || cert.course_title || 'Certificate';
+    const title = cert.title || 'Certificate';
     const id = cert.credentialId || cert.number || 'TBS-2024';
     const text = `I earned a TechBridge certificate in "${title}"! ID: ${id}`;
     
@@ -250,7 +240,7 @@ function Certificates() {
                 <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </div>
               <div>
-                <p className="text-lg sm:text-xl font-bold text-gray-900">{certificates.filter(c => c.is_valid !== false).length}</p>
+                <p className="text-lg sm:text-xl font-bold text-gray-900">{certificates.filter(c => c.isValid !== false).length}</p>
                 <p className="text-[10px] sm:text-xs text-gray-500">Verified</p>
               </div>
             </div>
@@ -261,7 +251,7 @@ function Certificates() {
                 <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </div>
               <div>
-                <p className="text-lg sm:text-xl font-bold text-gray-900">{certificates.reduce((sum, c) => sum + (c.verify_count || 0), 0)}</p>
+                <p className="text-lg sm:text-xl font-bold text-gray-900">{certificates.reduce((sum, c) => sum + (c.verifyCount || 0), 0)}</p>
                 <p className="text-[10px] sm:text-xs text-gray-500">Verifications</p>
               </div>
             </div>
@@ -274,7 +264,7 @@ function Certificates() {
               <div>
                 <p className="text-lg sm:text-xl font-bold text-gray-900">
                   {certificates.filter(c => {
-                    const date = new Date(c.issued_at || c.issued || Date.now());
+                    const date = new Date(c.issuedAt || c.issued || Date.now());
                     const thirtyDaysAgo = new Date();
                     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
                     return date >= thirtyDaysAgo;
@@ -354,24 +344,25 @@ function Certificates() {
             <p className="text-xs sm:text-sm text-gray-500 mt-1">
               Complete a course to earn your first certificate
             </p>
-            <a 
-              href="/student/explore" 
+            <Link
+              to="/student/explore"
               className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-white hover:bg-blue-700 transition-colors"
             >
               Explore courses
               <ExternalLink className="h-3.5 w-3.5" />
-            </a>
+            </Link>
           </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {certificates.map((cert, index) => {
             const bgClass = BGCSS[index % BGCSS.length];
-            const title = cert.title || cert.course_title || 'Certificate';
-            const issued = formatDate(cert.issued_at || cert.issued || new Date().toISOString());
+            const title = cert.title || 'Certificate';
+            const issued = formatDate(cert.issuedAt || cert.issued || new Date().toISOString());
             const id = cert.credentialId || cert.number || 'TBS-2024';
-            const name = cert.user_name || cert.student_name || cert.recipient_name || userName;
+            const name = cert.userName || cert.student_name || cert.recipient_name || userName;
             const instructor = cert.instructor || 'TechBridge Instructor';
+            const isValid = cert.isValid !== false;
             
             return (
               <div 
@@ -411,12 +402,12 @@ function Certificates() {
 
                 {/* Actions */}
                 <div className="flex flex-wrap items-center justify-between gap-2 p-3 sm:p-4 bg-gray-50/50">
-                  <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-emerald-600">
+                <div className={`flex items-center gap-1.5 text-[10px] sm:text-xs ${isValid ? "text-emerald-600" : "text-red-600"}`}>
                     <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    <span>Verified credential</span>
-                    {cert.verify_count !== undefined && cert.verify_count > 0 && (
+                  <span>{isValid ? "Verified credential" : "Revoked credential"}</span>
+                    {cert.verifyCount !== undefined && cert.verifyCount > 0 && (
                       <span className="text-gray-400 text-[10px]">
-                        · {cert.verify_count} verifications
+                        · {cert.verifyCount} verifications
                       </span>
                     )}
                   </div>

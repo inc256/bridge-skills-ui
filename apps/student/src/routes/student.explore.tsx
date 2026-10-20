@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Search, SlidersHorizontal, ChevronDown, X, Filter, Sparkles, TrendingUp, Clock, Users, Star } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
-import { getCourses, enrollInCourse, getMyEnrollments } from "@/lib/api";
+import { getCourses, getMyEnrollments } from "@/lib/api";
 import type { Course } from "@/lib/api";
 import { resolveCourseThumbnail } from "@/components/course-thumb";
 
@@ -25,7 +25,6 @@ function Explore() {
   const [sortBy, setSortBy] = useState("Most popular");
   const [isLoading, setIsLoading] = useState(true);
   const [enrolled, setEnrolled] = useState<Set<string>>(new Set());
-  const [enrolling, setEnrolling] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -115,24 +114,6 @@ function Explore() {
 
     setFilteredCourses(filtered);
   }, [courses, q, cat, level, sortBy]);
-
-  const handleEnroll = async (course: Course) => {
-    if (enrolled.has(course.slug)) {
-      // Already enrolled
-      return;
-    }
-    setEnrolling(course.slug);
-    try {
-      await enrollInCourse(course.slug);
-      setEnrolled(prev => new Set([...prev, course.slug]));
-      // Show success feedback
-    } catch (err) {
-      console.error('Enrollment failed:', err);
-      // Show error feedback
-    } finally {
-      setEnrolling(null);
-    }
-  };
 
   const clearFilters = () => {
     setQ("");
@@ -310,8 +291,6 @@ function Explore() {
               key={course.id} 
               course={course} 
               isEnrolled={enrolled.has(course.slug)}
-              isEnrolling={enrolling === course.slug}
-              onEnroll={() => handleEnroll(course)}
             />
           ))}
         </div>
@@ -372,15 +351,11 @@ function FilterMenu({
 // Course Card Component
 function CourseCard({ 
   course, 
-  isEnrolled, 
-  isEnrolling, 
-  onEnroll 
+  isEnrolled,
 }: { 
   course: Course; 
   thumbnail?: string | null;
   isEnrolled: boolean;
-  isEnrolling: boolean;
-  onEnroll: () => void;
 }) {
   const getLevelColor = (level?: string) => {
     const colors: Record<string, string> = {
@@ -450,25 +425,13 @@ function CourseCard({
 
     <div className="flex items-center justify-between mt-3 pt-2 sm:pt-3 border-t border-gray-100">
       <span className="text-xs sm:text-sm font-semibold text-gray-900">
-        {course.price || 'Free'}
+        {course.price || "Price unavailable"}
       </span>
-      <button
-        onClick={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          onEnroll();
-        }}
-        disabled={isEnrolled || isEnrolling}
-        className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all active:scale-95 touch-manipulation ${
-          isEnrolled
-            ? 'bg-emerald-50 text-emerald-600 cursor-default'
-            : isEnrolling
-            ? 'bg-gray-100 text-gray-400 cursor-wait'
-            : 'bg-blue-600 text-white hover:bg-blue-700'
-        }`}
-      >
-        {isEnrolled ? '✓ Enrolled' : isEnrolling ? 'Enrolling…' : 'Enroll'}
-      </button>
+      <span className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium ${
+        isEnrolled ? "bg-emerald-50 text-emerald-600" : "bg-blue-600 text-white"
+      }`}>
+        {isEnrolled ? "✓ Enrolled" : course.price.toLowerCase() === "free" ? "View course" : "Buy course"}
+      </span>
     </div>
   </div>
 </Link>

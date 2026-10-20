@@ -92,6 +92,14 @@ export type Certificate = {
   issued: string;
   credentialId: string;
   instructor: string;
+  number?: string;
+  courseSlug?: string;
+  userName?: string;
+  issuedAt?: string;
+  isValid?: boolean;
+  verifyCount?: number;
+  lastVerifiedAt?: string | null;
+  pdfUrl?: string | null;
 };
 
 export type QuizChoice = {
@@ -500,10 +508,15 @@ function normalizeCourse(item: any): Course {
   const rating = Number(item?.avg_rating ?? item?.rating ?? 0) || 0;
   const reviews = Number(item?.total_reviews ?? item?.reviews ?? 0) || 0;
   const currency = String(item?.currency ?? item?.price_currency ?? "UGX").toUpperCase();
-  const rawPrice = Number(item?.price ?? item?.amount ?? 0);
-  const price = item?.pricing === "free" || rawPrice <= 0
+  const rawPriceValue = item?.price ?? item?.amount;
+  const rawPriceText = String(rawPriceValue ?? "").trim();
+  const rawPrice = rawPriceValue == null || rawPriceText === "" ? Number.NaN : Number(rawPriceValue);
+  const explicitlyFree = String(item?.pricing ?? "").toLowerCase() === "free"
+    || item?.is_free === true
+    || rawPriceText.toLowerCase() === "free";
+  const price = explicitlyFree || (Number.isFinite(rawPrice) && rawPrice === 0)
     ? "Free"
-    : rawPrice > 0
+    : Number.isFinite(rawPrice) && rawPrice > 0
       ? `${currency} ${rawPrice.toLocaleString()}`
       : "";
 
@@ -666,19 +679,23 @@ export async function checkCourseEnrollment(courseSlug: string) {
 // ===================== CERTIFICATE FUNCTIONS =====================
 
 export async function getMyCertificates(): Promise<Certificate[]> {
-  try {
-    const payload = await apiRequest<ApiEnvelope<any> | any>("/certificates/mine/");
-    const list = Array.isArray(payload) ? payload : payload?.results ?? [];
-    return (list as any[]).map((item, index) => ({
-      id: item?.id ?? `${index}`,
-      title: item?.course?.title ?? item?.title ?? "Certificate",
-      issued: item?.issued_at ? new Date(item.issued_at).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "Recent",
-      credentialId: item?.credential_id ?? item?.credentialId ?? `TBS-${index + 1}`,
-      instructor: item?.instructor?.full_name ?? item?.instructor ?? "TechBridge",
-    }));
-  } catch {
-    return [];
-  }
+  const payload = await apiRequest<ApiEnvelope<any> | any>("/certificates/mine/");
+  const list = Array.isArray(payload) ? payload : payload?.results ?? [];
+  return (list as any[]).map((item, index) => ({
+    id: String(item?.id ?? `${index}`),
+    title: item?.course_title ?? item?.course?.title ?? item?.title ?? "Certificate",
+    issued: item?.issued_at ? new Date(item.issued_at).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "Recent",
+    credentialId: item?.number ?? item?.credential_id ?? item?.credentialId ?? `TBS-${index + 1}`,
+    instructor: item?.instructor?.full_name ?? item?.instructor ?? "TechBridge",
+    number: item?.number ?? undefined,
+    courseSlug: item?.course_slug ?? item?.course?.slug ?? undefined,
+    userName: item?.user_name ?? undefined,
+    issuedAt: item?.issued_at ?? undefined,
+    isValid: item?.is_valid ?? undefined,
+    verifyCount: Number(item?.verify_count ?? 0),
+    lastVerifiedAt: item?.last_verified_at ?? null,
+    pdfUrl: item?.pdf_url ?? null,
+  }));
 }
 
 // ===================== WISHLIST FUNCTIONS =====================
@@ -704,22 +721,15 @@ export async function getLearningPaths() {
   }
 }
 
-export async function getJobs() {
-  try {
-    const payload = await apiRequest<ApiEnvelope<any> | any>("/features/jobs/");
-    return (Array.isArray(payload) ? payload : payload?.results ?? []) as any[];
-  } catch {
-    return [];
-  }
+export async function getJobs(type?: string) {
+  const query = type ? `?type=${encodeURIComponent(type)}` : "";
+  const payload = await apiRequest<ApiEnvelope<any> | any>(`/features/jobs/${query}`);
+  return (Array.isArray(payload) ? payload : payload?.results ?? []) as any[];
 }
 
 export async function getScholarships() {
-  try {
-    const payload = await apiRequest<ApiEnvelope<any> | any>("/features/scholarships/");
-    return (Array.isArray(payload) ? payload : payload?.results ?? []) as any[];
-  } catch {
-    return [];
-  }
+  const payload = await apiRequest<ApiEnvelope<any> | any>("/features/scholarships/");
+  return (Array.isArray(payload) ? payload : payload?.results ?? []) as any[];
 }
 
 // ===================== BLOG FUNCTIONS =====================
@@ -733,6 +743,11 @@ export async function getBlogPosts(query?: string | URLSearchParams): Promise<Bl
   } catch {
     return [];
   }
+}
+
+export async function getBlogPost(slug: string): Promise<BlogPost> {
+  const payload = await apiRequest<any>(`/blog/${encodeURIComponent(slug)}/`);
+  return normalizeBlogPost(payload);
 }
 
 // ===================== ASSIGNMENT FUNCTIONS =====================
@@ -769,21 +784,15 @@ export async function markNotificationsRead() {
 // ===================== GAMIFICATION FUNCTIONS =====================
 
 export async function getGamificationSummary() {
-  try {
-    const payload = await apiRequest<any>("/gamification/badges/mine/");
-    return payload;
-  } catch {
-    return null;
-  }
+  return apiRequest<any>("/gamification/badges/mine/");
 }
 
 export async function getLeaderboard() {
-  try {
-    const payload = await apiRequest<any>("/gamification/leaderboard/");
-    return (Array.isArray(payload) ? payload : payload?.results ?? []) as any[];
-  } catch {
-    return [];
-  }
+  const payload = await apiRequest<any>("/gamification/leaderboard/");
+  const leaderboard = Array.isArray(payload)
+    ? payload
+    : payload?.results ?? payload?.leaderboard ?? payload?.users ?? [];
+  return Array.isArray(leaderboard) ? leaderboard : [];
 }
 
 // ===================== QUIZ FUNCTIONS =====================
@@ -821,33 +830,80 @@ export async function submitQuizAnswers(quizId: string, answers: Record<string, 
 // ===================== PAYMENT FUNCTIONS =====================
 
 export async function getPaymentHistory() {
-  try {
-    const payload = await apiRequest<any>("/payments/history/");
-    return (Array.isArray(payload) ? payload : payload?.results ?? []) as any[];
-  } catch {
-    return [];
-  }
+  const payload = await apiRequest<any>("/payments/history/");
+  return (Array.isArray(payload) ? payload : payload?.results ?? []) as any[];
 }
 
-export async function initiatePayment(provider: "mtn" | "stripe", payload: Record<string, unknown>) {
-  try {
-    return await apiRequest<any>(`/payments/${provider}/`, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
-  } catch {
-    return null;
-  }
+export async function initiatePayment(provider: "makypay" | "mtn" | "stripe", payload: Record<string, unknown>) {
+  return apiRequest<any>(`/payments/${provider}/`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getPaymentStatus(reference: string) {
+  return apiRequest<any>(`/payments/${encodeURIComponent(reference)}/status/`);
+}
+
+export type ForumThread = {
+  id: string;
+  title: string;
+  content: string;
+  author: string;
+  views: number;
+  pinned: boolean;
+  is_locked: boolean;
+  replies_count: number;
+  created_at: string;
+  updated_at: string;
+  last_reply_at: string | null;
+};
+
+export type ForumReply = {
+  id: string;
+  thread: string;
+  content: string;
+  author: {
+    id: string;
+    username: string;
+    full_name?: string;
+    avatar_url?: string | null;
+    role?: string;
+    headline?: string;
+  };
+  is_solution: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export async function getCourseForumThreads(courseSlug: string): Promise<ForumThread[]> {
+  const payload = await apiRequest<{ threads?: ForumThread[] }>(`/forums/${encodeURIComponent(courseSlug)}/threads/`);
+  return Array.isArray(payload?.threads) ? payload.threads : [];
+}
+
+export async function createCourseForumThread(courseSlug: string, data: { title: string; content: string }) {
+  return apiRequest<ForumThread>(`/forums/${encodeURIComponent(courseSlug)}/threads/`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getForumReplies(threadId: string): Promise<ForumReply[]> {
+  const payload = await apiRequest<{ replies?: ForumReply[] }>(`/forums/threads/${encodeURIComponent(threadId)}/replies/`);
+  return Array.isArray(payload?.replies) ? payload.replies : [];
+}
+
+export async function createForumReply(threadId: string, content: string) {
+  return apiRequest<ForumReply>(`/forums/threads/${encodeURIComponent(threadId)}/replies/`, {
+    method: "POST",
+    body: JSON.stringify({ content }),
+  });
 }
 
 // ===================== CERTIFICATE VERIFICATION =====================
 
 export async function verifyCertificate(number: string) {
-  try {
-    return await apiRequest<any>(`/certificates/verify/${number}/`);
-  } catch {
-    return null;
-  }
+  return apiRequest<any>(`/certificates/verify/${encodeURIComponent(number)}/`);
 }
 
 // ===================== LESSON FUNCTIONS =====================
