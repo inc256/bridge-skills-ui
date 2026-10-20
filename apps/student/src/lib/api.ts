@@ -296,7 +296,9 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}, retrie
       let detail = "Request failed";
       try {
         const payload = await response.clone().json();
-        detail = typeof payload === "string" ? payload : payload?.detail ?? payload?.message ?? JSON.stringify(payload);
+        detail = typeof payload === "string"
+          ? payload
+          : payload?.detail ?? payload?.message ?? payload?.error ?? JSON.stringify(payload);
       } catch {
         try {
           detail = await response.clone().text();
