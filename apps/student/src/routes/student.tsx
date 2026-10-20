@@ -81,7 +81,7 @@ const NAV_SECTIONS = [
     label: "Progress",
     icon: <TrendingUp className="w-3.5 h-3.5" />,
     items: [
-      // { label: "Certificates", to: "/student/certificates", icon: <Award className="h-4 w-4" /> },
+      { label: "Certificates", to: "/student/certificates", icon: <Award className="h-4 w-4" /> },
       { label: "Bookmarks", to: "/student/bookmarks", icon: <Star className="h-4 w-4" /> },
     ]
   },

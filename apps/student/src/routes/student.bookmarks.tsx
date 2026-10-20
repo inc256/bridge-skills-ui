@@ -276,7 +276,7 @@ function Bookmarks() {
                       {course.price || 'Free'}
                     </span>
                     <Link
-                      to="/student/courses/$slug"
+                      to="/student/course/$slug"
                       params={{ slug: course.slug }}
                       className="text-[10px] sm:text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline transition-colors"
                     >
