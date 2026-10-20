@@ -155,7 +155,7 @@ function Chart({ data, title, valueKey, color, icon: Icon }: ChartProps) {
                   className="w-full rounded-sm transition-all duration-300 group-hover:scale-y-105 origin-bottom"
                   style={{ 
                     height: `${height}%`, 
-                    background: `linear-gradient(180deg, ${color} 0%, ${color}cc 100%)`,
+                    backgroundColor: color,
                     opacity: opacity,
                     minHeight: '4px'
                   }} 

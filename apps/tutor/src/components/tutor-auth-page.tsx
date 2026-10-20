@@ -1,10 +1,12 @@
 import { useRouter } from "@tanstack/react-router";
 import { ArrowRight, Mail, Lock, Eye, EyeOff, BriefcaseBusiness, AlertCircle } from "lucide-react";
 import { useState } from "react";
-import { login, register } from "@/lib/api";
+import { register } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 
 export function TutorAuthPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -60,10 +62,15 @@ export function TutorAuthPage() {
     } catch (err: unknown) {
       // Handle specific error messages
       const errorMessage = formatAuthError(err);
+      const status = typeof err === "object" && err !== null && "status" in err && typeof err.status === "number"
+        ? err.status
+        : undefined;
       console.error(isRegistering ? "Registration error:" : "Login error:", errorMessage);
       
       if (isRegistering) {
         setError(`Account creation failed: ${errorMessage}`);
+      } else if (status) {
+        setError(`Sign-in failed (${status}): ${errorMessage}`);
       } else if (errorMessage.includes("401") || errorMessage.includes("Unauthorized")) {
         setError("Invalid email or password. Please try again.");
       } else if (errorMessage.includes("NetworkError") || errorMessage.includes("fetch")) {
@@ -100,20 +107,13 @@ export function TutorAuthPage() {
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
   return (
-    <div className="auth-page relative flex h-dvh items-center justify-center overflow-hidden bg-gradient-to-br from-gray-50 via-white to-gray-50 px-2 py-2 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 sm:px-4 sm:py-4">
-      {/* Background Decorations */}
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(34,197,94,0.08),transparent_60%),radial-gradient(circle_at_bottom_right,rgba(34,197,94,0.05),transparent_50%)]" />
-      <div className="absolute left-[-10rem] top-[-10rem] -z-10 h-[40rem] w-[40rem] rounded-full bg-blue-500/5 blur-3xl" />
-      <div className="absolute bottom-[-10rem] right-[-10rem] -z-10 h-[40rem] w-[40rem] rounded-full bg-blue-500/5 blur-3xl" />
-      <div className="absolute top-20 left-10 w-72 h-72 rounded-full bg-blue-400/10 blur-3xl -z-10" />
-      <div className="absolute bottom-20 right-10 w-80 h-80 rounded-full bg-blue-400/10 blur-3xl -z-10" />
-
+    <div className="auth-page flex h-dvh items-center justify-center overflow-hidden bg-background px-2 py-2 sm:px-4 sm:py-4">
       {/* Centered Auth Card */}
       <div className="auth-shell w-full max-w-md max-h-full">
-        <div className="auth-card rounded-[32px] border border-gray-200 bg-gradient-to-br from-blue-50/50 via-white to-purple-50/50 p-4 shadow-lg dark:border-gray-700 dark:from-gray-800/50 dark:via-gray-800 dark:to-gray-800/50 sm:p-6">
+        <div className="auth-card rounded-[32px] border border-gray-200 bg-white p-4 shadow-lg dark:border-gray-700 dark:bg-gray-800 sm:p-6">
           <div className="auth-panel rounded-[28px] border border-gray-200 bg-white/95 p-4 backdrop-blur-sm dark:border-gray-700 dark:bg-gray-800/95 sm:p-6">
             <div className="mb-1 flex items-center justify-center">
-              <BriefcaseBusiness className="h-7 w-7 text-blue-600 dark:text-blue-400" />
+              <BriefcaseBusiness className="h-7 w-7 text-primary" />
             </div>
             <h2 className="text-[28px] font-bold tracking-tight text-gray-900 dark:text-white text-center">
               {isRegistering ? "Create tutor account" : "Sign in"}
@@ -140,7 +140,7 @@ export function TutorAuthPage() {
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     placeholder="instructor@example.com"
-                    className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 pl-10 pr-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                    className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 pl-10 pr-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                     required
                     autoComplete="email"
                   />
@@ -158,7 +158,7 @@ export function TutorAuthPage() {
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
                     placeholder="Enter your password"
-                    className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 pl-10 pr-12 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                    className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 pl-10 pr-12 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                     required
                     autoComplete="current-password"
                   />
@@ -182,13 +182,13 @@ export function TutorAuthPage() {
                     type="checkbox" 
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2" 
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary focus:ring-2"
                   />
                   Keep me signed in
                 </label>
                 <button 
                   type="button" 
-                  className="font-medium text-blue-600 dark:text-blue-400 transition-colors hover:text-blue-700 dark:hover:text-blue-300"
+                  className="font-medium text-primary transition-colors hover:text-primary-dark"
                   onClick={() => {
                     setError("Password reset functionality coming soon.");
                   }}
@@ -207,7 +207,7 @@ export function TutorAuthPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-semibold text-white transition-all hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-70 shadow-sm hover:shadow-md"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3.5 text-sm font-semibold text-white transition-all hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-70 shadow-sm hover:shadow-md"
               >
                 {loading ? (
                   <span className="flex items-center gap-2">
@@ -223,7 +223,7 @@ export function TutorAuthPage() {
               </button>
             </form>
 
-            <button type="button" onClick={() => { setIsRegistering((current) => !current); setError(null); }} className="mt-4 w-full text-sm font-medium text-blue-600 hover:text-blue-700 sm:mt-5">
+            <button type="button" onClick={() => { setIsRegistering((current) => !current); setError(null); }} className="mt-4 w-full text-sm font-medium text-primary hover:text-primary-dark sm:mt-5">
               {isRegistering ? "Already have an account? Sign in" : "Create tutor account"}
             </button>
           </div>

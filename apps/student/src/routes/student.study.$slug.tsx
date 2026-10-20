@@ -991,13 +991,11 @@ function StudyInterface() {
                       step="0.01"
                       value={isMuted ? 0 : volume}
                       onChange={handleVolumeChange}
-                      className="hidden sm:block w-12 sm:w-16 accent-[#60A5FA]"
+                      className="hidden sm:block w-12 sm:w-16 accent-primary"
                       style={{
-                        background: `linear-gradient(to right, #60A5FA ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.2) ${(isMuted ? 0 : volume) * 100}%)`,
                         height: '3px',
                         borderRadius: '2px',
                         cursor: 'pointer',
-                        WebkitAppearance: 'none'
                       }}
                     />
                     

@@ -35,7 +35,7 @@ export function CourseThumb({ variant, color = "#15803D", thumbnail, title, clas
   return (
     <div
       className={`relative w-full overflow-hidden ${className ?? "aspect-[16/10]"}`}
-      style={{ background: `linear-gradient(135deg, ${bg} 0%, ${shade(bg, -15)} 100%)` }}
+      style={{ backgroundColor: bg }}
     >
       {safeThumbnail ? <img src={safeThumbnail} alt={title ?? "Course thumbnail"} className="absolute inset-0 h-full w-full object-cover" /> : null}
       {!safeThumbnail && <svg viewBox="0 0 400 250" className="absolute inset-0 h-full w-full opacity-90">
@@ -117,13 +117,4 @@ export function CourseThumb({ variant, color = "#15803D", thumbnail, title, clas
       )}
     </div>
   );
-}
-
-function shade(hex: string, percent: number) {
-  const raw = typeof hex === "string" ? hex.replace("#", "").trim() : "";
-  const num = Number.isFinite(Number.parseInt(raw, 16)) ? parseInt(raw, 16) : 0x3b82f6;
-  const r = Math.max(0, Math.min(255, (num >> 16) + percent));
-  const g = Math.max(0, Math.min(255, ((num >> 8) & 0x00ff) + percent));
-  const b = Math.max(0, Math.min(255, (num & 0x0000ff) + percent));
-  return `rgb(${r}, ${g}, ${b})`;
 }

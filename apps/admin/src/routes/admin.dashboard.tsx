@@ -549,9 +549,9 @@ function AdminDashboard() {
                           className="w-full rounded-md transition-all duration-300 hover:opacity-100 cursor-pointer"
                           style={{ 
                             height: `${height}px`, 
-                            background: `linear-gradient(180deg, #15803D, #4ADE80)`,
+                            backgroundColor: "#15803D",
                             opacity: opacity,
-                            boxShadow: '0 2px 8px rgba(59, 130, 246, 0.25)'
+                            boxShadow: '0 2px 8px rgba(21, 128, 61, 0.25)'
                           }}
                         >
                           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">

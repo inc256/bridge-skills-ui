@@ -115,12 +115,6 @@ export type DailyActivity = {
 
 const API_BASE = (import.meta.env?.VITE_API_BASE_URL as string | undefined) ?? "https://techbridge-backend-rust.vercel.app/api/v1";
 
-// If your backend's TokenObtainPairSerializer expects "username" instead of
-// "email", change this. Confirm once with curl rather than guessing:
-//   curl -i -X POST $API_BASE/auth/login/ -H "Content-Type: application/json" \
-//     -d '{"email":"admin@example.com","password":"..."}'
-const LOGIN_IDENTIFIER_FIELD: "email" | "username" = "email";
-
 function formatTotalDuration(totalSeconds: number, fallback: string) {
   if (!totalSeconds) return fallback;
   const totalMinutes = Math.round(totalSeconds / 60);
@@ -325,7 +319,8 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}, retrie
         detail = `Request failed with ${response.status}`;
       }
     }
-    throw new Error(detail || `Request failed with ${response.status}`);
+    const httpError = Object.assign(new Error(detail || `Request failed with ${response.status}`), { status: response.status });
+    throw httpError;
   }
   if (response.status === 204) return null as T;
   return (await response.json()) as T;
@@ -347,11 +342,6 @@ export function decodeJwt(token: string): any | null {
   }
 }
 
-/**
- * Single-attempt login using LOGIN_IDENTIFIER_FIELD. Throws with the real
- * server-provided error message on failure — callers should surface
- * err.message directly rather than a generic fallback.
- */
 export async function login(identifier: string, password: string, keepSignedIn = true) {
   const cleanIdentifier = identifier.trim();
   const cleanPassword = password.trim();
@@ -360,14 +350,20 @@ export async function login(identifier: string, password: string, keepSignedIn =
     throw new Error("Email and password are required");
   }
 
-  const body =
-    LOGIN_IDENTIFIER_FIELD === "email"
-      ? { email: cleanIdentifier, password: cleanPassword }
-      : { username: cleanIdentifier, password: cleanPassword };
-
-  const session = await apiRequest<any>("/auth/login/", {
+  const primaryField = cleanIdentifier.includes("@") ? "email" : "username";
+  const fallbackField = primaryField === "email" ? "username" : "email";
+  const attempt = (field: "email" | "username") => apiRequest<any>("/auth/login/", {
     method: "POST",
-    body: JSON.stringify(body),
+    body: JSON.stringify({ [field]: cleanIdentifier, password: cleanPassword }),
+  });
+
+  const session = await attempt(primaryField).catch((error: unknown) => {
+    if (typeof error !== "object" || error === null || !("status" in error) || error.status !== 400) {
+      throw error;
+    }
+    return attempt(fallbackField).catch(() => {
+      throw error;
+    });
   });
 
   if (!session?.access) {
@@ -412,12 +408,8 @@ export async function getCurrentUserRole(accessToken?: string): Promise<string |
     const claims = decodeJwt(accessToken);
     if (claims?.role) return claims.role;
   }
-  try {
-    const me = await getCurrentUser();
-    return me?.role ?? null;
-  } catch {
-    return null;
-  }
+  const me = await getCurrentUser();
+  return me?.role ?? null;
 }
 
 export async function logout() {

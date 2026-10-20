@@ -1,5 +1,5 @@
 import { useRouter } from "@tanstack/react-router";
-import { ArrowRight, Shield, Eye, EyeOff } from "lucide-react";
+import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { Logo } from "@/components/logo";
 import { login, getCurrentUserRole } from "@/lib/api";
@@ -44,11 +44,15 @@ export function AdminAuthPage() {
 
       await router.navigate({ to: "/admin/dashboard" });
     } catch (err: unknown) {
-      setError(err instanceof Error
+      const message = err instanceof Error
         ? err.message
         : typeof err === "string"
           ? err
-          : JSON.stringify(err) || "Unable to create your account. Please try again.");
+          : JSON.stringify(err) || "Unable to sign in. Please try again.";
+      const status = typeof err === "object" && err !== null && "status" in err && typeof err.status === "number"
+        ? err.status
+        : undefined;
+      setError(status ? `Sign-in failed (${status}): ${message}` : message);
     } finally {
       setLoading(false);
     }

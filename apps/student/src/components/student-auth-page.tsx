@@ -98,13 +98,10 @@ export function StudentAuthPage() {
   }
 
   return (
-    <div className="auth-page relative flex h-dvh items-center justify-center overflow-hidden bg-gradient-to-br from-gray-50 via-white to-gray-50 px-2 py-2 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 sm:px-4 sm:py-4">
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(34,197,94,0.08),transparent_60%),radial-gradient(circle_at_bottom_right,rgba(74,222,128,0.05),transparent_50%)]" />
-      <div className="absolute left-[-10rem] top-[-10rem] -z-10 h-[40rem] w-[40rem] rounded-full bg-blue-500/5 blur-3xl" />
-      <div className="absolute bottom-[-10rem] right-[-10rem] -z-10 h-[40rem] w-[40rem] rounded-full bg-sky-400/5 blur-3xl" />
+    <div className="auth-page flex h-dvh items-center justify-center overflow-hidden bg-background px-2 py-2 sm:px-4 sm:py-4">
 
       <div className="auth-shell w-full max-w-md max-h-full">
-        <div className="auth-card rounded-[32px] border border-gray-200 bg-gradient-to-br from-blue-50/50 via-white to-blue-50/50 p-4 shadow-lg dark:border-gray-700 dark:from-gray-800/50 dark:via-gray-800 dark:to-gray-800/50 sm:p-6">
+        <div className="auth-card rounded-[32px] border border-gray-200 bg-white p-4 shadow-lg dark:border-gray-700 dark:bg-gray-800 sm:p-6">
           <div className="auth-panel rounded-[28px] border border-gray-200 bg-white/95 p-4 backdrop-blur-sm dark:border-gray-700 dark:bg-gray-800/95 sm:p-6">
             <div className="text-center">
               <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30 sm:mb-3 sm:h-14 sm:w-14">

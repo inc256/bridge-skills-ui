@@ -167,6 +167,22 @@
   }
 }
 
+[class*="bg-gradient-"],
+[class*="bg-linear-"],
+[class*="bg-radial-"],
+[class*="bg-conic-"],
+[class*="bg-[linear-gradient"],
+[class*="bg-[radial-gradient"],
+[class*="bg-[conic-gradient"] {
+  background-image: none !important;
+  background-color: color-mix(in oklab, var(--color-primary) 6%, var(--color-card)) !important;
+}
+
+[class*="bg-gradient-"][class*="text-white"],
+[class*="bg-linear-"][class*="text-white"] {
+  background-color: var(--color-primary) !important;
+}
+
 @media (max-height: 760px) {
   .auth-page {
     align-items: flex-start;
@@ -225,19 +241,6 @@
 .animate-progress { animation: progressGrow 1.2s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
 
 @utility skeleton {
-  background: linear-gradient(90deg, color-mix(in oklab, var(--color-primary) 5%, var(--color-card)), color-mix(in oklab, var(--color-primary) 11%, var(--color-card)), color-mix(in oklab, var(--color-primary) 5%, var(--color-card)));
-  background-size: 200% 100%;
-  animation: skeletonShimmer 1.4s ease-in-out infinite;
+  background: color-mix(in oklab, var(--color-primary) 7%, var(--color-card));
   border: 0;
-}
-
-@keyframes skeletonShimmer {
-  from { background-position: 200% 0; }
-  to { background-position: -200% 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .skeleton {
-    animation: none;
-  }
 }

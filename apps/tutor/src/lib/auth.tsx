@@ -34,7 +34,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   setUser: (user: User | null) => void;
-  login: (email: string, password: string) => Promise<any>;
+  login: (email: string, password: string, keepSignedIn?: boolean) => Promise<any>;
   logout: () => Promise<void>;
   isLoading: boolean;
   isAuthenticated: boolean;
@@ -69,13 +69,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadUser();
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const session = await apiLogin(email, password);
+  const login = async (email: string, password: string, keepSignedIn = true) => {
+    const session = await apiLogin(email, password, keepSignedIn);
     try {
       const profile = await getProfile();
+      if (!profile) {
+        throw new Error("Sign-in succeeded, but your tutor profile could not be loaded.");
+      }
       setUser(profile);
     } catch (error) {
-      console.error('Failed to load profile after login:', error);
+      clearStoredSession();
+      setUser(null);
+      throw error;
     }
     return session;
   };

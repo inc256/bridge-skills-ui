@@ -47,8 +47,6 @@ export function AudioPlayer({ src, onError }: { src: string; onError?: () => voi
     return `${Math.floor(value / 60)}:${Math.floor(value % 60).toString().padStart(2, "0")}`;
   };
 
-  const progress = duration > 0 ? Math.min((currentTime / duration) * 100, 100) : 0;
-
   return (
     <div className="w-full rounded-2xl border border-blue-100 bg-white p-4 shadow-[0_12px_30px_-18px_rgba(37,99,235,0.45)]">
       <audio ref={audioRef} src={src} preload="metadata" onError={onError} />
@@ -70,8 +68,7 @@ export function AudioPlayer({ src, onError }: { src: string; onError?: () => voi
           value={currentTime}
           onChange={seek}
           aria-label="Audio progress"
-          className="h-1.5 min-w-0 flex-1 cursor-pointer accent-blue-600"
-          style={{ background: `linear-gradient(to right, #15803d ${progress}%, #dcfce7 ${progress}%)` }}
+          className="h-1.5 min-w-0 flex-1 cursor-pointer accent-primary"
         />
         <span className="w-10 shrink-0 text-right text-xs tabular-nums text-blue-900/65">{formatTime(duration)}</span>
       </div>
