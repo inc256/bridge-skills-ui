@@ -80,8 +80,12 @@ function CourseDetails() {
     write(course.description || "Course syllabus", 11, 10);
     courseDetails.forEach(({ l, v }) => write(`${l}: ${v}`, 10, 4));
     if (course.learningOutcomes?.length) {
-      write("What you will learn", 14, 6);
+      write("Outcomes", 14, 6);
       course.learningOutcomes.forEach((outcome: string) => write(`• ${outcome}`, 10, 3));
+    }
+    if (course.requirements?.length) {
+      write("Requirements", 14, 6);
+      course.requirements.forEach((requirement: string) => write(`• ${requirement}`, 10, 3));
     }
     if (modules.length) {
       write("Course curriculum", 14, 6);
@@ -141,7 +145,8 @@ function CourseDetails() {
   const instructorBioText = course.instructorBio || raw?.instructor?.bio || raw?.instructor_bio || raw?.instructor_description;
   const accessLabel = raw?.access_label ?? raw?.access_type ?? raw?.access;
   const hasCourseStats = Boolean(course.rating > 0 || course.students > 0 || course.duration || course.language || course.subtitles);
-  const hasLearningOutcomes = Boolean(course.learningOutcomes?.length || Array.isArray(raw?.learning_outcomes) || Array.isArray(raw?.outcomes));
+  const courseOutcomes = course.learningOutcomes ?? [];
+  const courseRequirements = course.requirements ?? [];
   const hasCurriculum = modules.length > 0;
   const curriculumLessonCount = modules.reduce((total, module) => total + (Array.isArray(module.lessons) ? module.lessons.length : 0), 0);
   const curriculumDurationMinutes = modules.reduce((total, module) => total + (module.lessons ?? []).reduce((sum: number, lesson: any) => {
@@ -199,24 +204,41 @@ function CourseDetails() {
             </div>
           )}
 
-          {hasLearningOutcomes && (
-            <section className="mt-10 card-surface p-6">
-              <h3 className="text-[18px] font-semibold">What you'll learn</h3>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                {(
-                  course.learningOutcomes?.length
-                    ? course.learningOutcomes
-                    : Array.isArray(raw?.learning_outcomes)
-                      ? raw.learning_outcomes
-                      : Array.isArray(raw?.outcomes)
-                        ? raw.outcomes
-                        : []
-                ).map((t: any, index: number) => (
-                  <div key={`${String(t)}-${index}`} className="flex gap-2.5 text-sm"><Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />{typeof t === "string" ? t : t.label ?? t.title ?? JSON.stringify(t)}</div>
-                ))}
+          <section className="mt-10 card-surface p-6">
+            <h3 className="text-[18px] font-semibold">Outcomes &amp; Requirements</h3>
+            <div className="mt-5 grid gap-6 md:grid-cols-2">
+              <div>
+                <h4 className="text-sm font-semibold text-foreground">What you will learn</h4>
+                {courseOutcomes.length > 0 ? (
+                  <ul className="mt-3 space-y-3">
+                    {courseOutcomes.map((outcome, index) => (
+                      <li key={`${outcome}-${index}`} className="flex gap-2.5 text-sm text-muted-foreground">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                        <span>{outcome}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-3 text-sm text-muted-foreground">No outcomes have been added yet.</p>
+                )}
               </div>
-            </section>
-          )}
+              <div>
+                <h4 className="text-sm font-semibold text-foreground">Requirements</h4>
+                {courseRequirements.length > 0 ? (
+                  <ul className="mt-3 space-y-3">
+                    {courseRequirements.map((requirement, index) => (
+                      <li key={`${requirement}-${index}`} className="flex gap-2.5 text-sm text-muted-foreground">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                        <span>{requirement}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-3 text-sm text-muted-foreground">No prerequisites are required.</p>
+                )}
+              </div>
+            </div>
+          </section>
 
           {hasCurriculum && (
             <section className="mt-8">

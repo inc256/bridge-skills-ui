@@ -195,13 +195,7 @@ function StudyInterface() {
 
   const completed = lessonList.filter((lesson: any) => lesson.completed === true).length;
   const total = lessonList.length;
-  const pct = total === 0
-    ? 0
-    : completed === total
-      ? 100
-      : currentLessonIndex >= 0
-        ? Math.round((currentLessonIndex / total) * 100)
-        : 0;
+  const pct = total === 0 ? 0 : Math.round((completed / total) * 100);
 
   useEffect(() => {
     if (currentLessonIndex >= 0) {

@@ -9,7 +9,6 @@ import {
   ChevronLeft,
   ChevronDown,
   ChevronUp,
-  Sparkles,
   FileText,
   BookOpen,
   Star,
@@ -30,7 +29,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
-import { createCourse, patchCourse, getCourse, getCourseModules, getCourseCategories, createTutorModule, updateTutorModule, deleteTutorModule, createTutorLesson, updateTutorLesson, deleteTutorLesson, generateCourseDescription, generateCourseTitle, resolveTutorMedia } from "@/lib/api";
+import { createCourse, patchCourse, getCourse, getCourseModules, getCourseCategories, createTutorModule, updateTutorModule, deleteTutorModule, createTutorLesson, updateTutorLesson, deleteTutorLesson, resolveTutorMedia } from "@/lib/api";
 
 export const Route = createFileRoute("/tutor/builder")({
   component: Builder,
@@ -139,10 +138,6 @@ function readSavedCourse(slug: string) {
 function Builder() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
-  const [prompt, setPrompt] = useState("");
-  const [titleSuggestion, setTitleSuggestion] = useState<string | null>(null);
-  const [descriptionSuggestion, setDescriptionSuggestion] = useState<string | null>(null);
-  const [aiBusy, setAiBusy] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
@@ -249,7 +244,14 @@ function Builder() {
           if (course.thumbnail || course.thumbnail_url || course.cover_image || course.image) {
             setThumbnailUrl(resolveTutorMedia(course.thumbnail ?? course.thumbnail_url ?? course.cover_image ?? course.image, "thumbnails"));
           }
-          if (course.duration) setCourseTimeline(String(course.duration));
+          const timeline = [
+            course.duration,
+            course.course_timeline,
+            course.total_course_timeline,
+            course.total_duration,
+            course.timeline,
+          ].find((value) => value !== null && value !== undefined && String(value).trim() !== "");
+          if (timeline !== undefined) setCourseTimeline(String(timeline));
           if (course.category && typeof course.category === "object") {
             setCategoryId(course.category.id ?? course.category);
           } else if (course.category_id) {
@@ -397,25 +399,6 @@ function Builder() {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "")
       .slice(0, 64);
-  }
-
-  async function handleGenerate() {
-    setAiBusy(true);
-    setError(null);
-    try {
-      const [titleResponse, descriptionResponse] = await Promise.all([
-        generateCourseTitle(prompt),
-        generateCourseDescription(prompt),
-      ]);
-      setTitleSuggestion(titleResponse?.title ?? titleResponse?.suggestion ?? null);
-      setDescriptionSuggestion(descriptionResponse?.description ?? descriptionResponse?.result ?? null);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Unable to generate course suggestions.";
-      setError(message);
-      toast.error(message);
-    } finally {
-      setAiBusy(false);
-    }
   }
 
   function getNewId() {
@@ -618,60 +601,6 @@ function Builder() {
 
   function handleRemoveResource(index: number) {
     setResources((prev) => prev.filter((_, idx) => idx !== index));
-  }
-
-  function handleGenerateOutline() {
-    if (!title.trim()) {
-      setError("Set a course title first to generate an outline.");
-      return;
-    }
-
-    setError(null);
-    const base = title.trim();
-    setModules([
-      {
-        id: `module-${getNewId()}`,
-        title: `Introduction to ${base}`,
-        description: `Set the stage with objectives and what learners will accomplish in this course.`,
-        _persisted: false,
-        lessons: [
-          { id: `lesson-${getNewId()}`, title: `Why ${base} matters`, duration: "12 min", type: "video", description: "", content: "", _persisted: false },
-          { id: `lesson-${getNewId()}`, title: `Course overview and outcomes`, duration: "15 min", type: "text", description: "", content: "", _persisted: false },
-        ],
-      },
-      {
-        id: `module-${getNewId()}`,
-        title: `Core ${base} concepts`,
-        description: `Bring together the main knowledge areas with clear examples and exercises.`,
-        _persisted: false,
-        lessons: [
-          { id: `lesson-${getNewId()}`, title: `Core idea #1`, duration: "18 min", type: "video", description: "", content: "", _persisted: false },
-          { id: `lesson-${getNewId()}`, title: `Core idea #2`, duration: "18 min", type: "video", description: "", content: "", _persisted: false },
-        ],
-      },
-      {
-        id: `module-${getNewId()}`,
-        title: `Practice and assessment`,
-        description: `Help learners apply skills through guided practice and review.`,
-        _persisted: false,
-        lessons: [
-          { id: `lesson-${getNewId()}`, title: `Hands-on exercise`, duration: "25 min", type: "assignment", description: "", content: "", _persisted: false },
-          { id: `lesson-${getNewId()}`, title: `Final review`, duration: "10 min", type: "quiz", description: "", content: "", _persisted: false },
-        ],
-      },
-    ]);
-
-    if (outcomes.length === 0) {
-      setOutcomes([
-        `Explain the fundamentals of ${base}`,
-        `Apply core skills in realistic scenarios`,
-      ]);
-    }
-    if (requirements.length === 0) {
-      setRequirements([`Basic familiarity with the course topic`, `A browser and a willingness to practice`]);
-    }
-    setStep(2);
-    toast.success("Outline generated");
   }
 
   async function handleSave(event: FormEvent<HTMLFormElement>) {
@@ -1195,79 +1124,6 @@ function Builder() {
                         placeholder="0"
                       />
                     </label>
-                  )}
-                </div>
-
-                {/* AI Section */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Sparkles className="w-4 h-4 text-blue-600" />
-                    <span className="text-sm font-semibold text-gray-900">AI Assistant</span>
-                  </div>
-                  <label className="space-y-1.5">
-                    <span className="text-sm text-gray-600">Describe your course topic</span>
-                    <input
-                      value={prompt}
-                      onChange={(event) => setPrompt(event.target.value)}
-                      className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
-                      placeholder="e.g. A beginner course on cybersecurity fundamentals"
-                    />
-                  </label>
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    <button
-                      type="button"
-                      onClick={() => void handleGenerate()}
-                      disabled={aiBusy}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50"
-                    >
-                      {aiBusy ? "Generating..." : "Generate Suggestions"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleGenerateOutline}
-                      className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
-                    >
-                      Generate Outline
-                    </button>
-                  </div>
-
-                  {(titleSuggestion || descriptionSuggestion) && (
-                    <div className="mt-3 space-y-2">
-                      {titleSuggestion && (
-                        <div className="bg-white rounded-lg p-3 border border-gray-200">
-                          <div className="flex items-center justify-between gap-3">
-                            <div>
-                              <p className="text-xs text-gray-500">Suggested Title</p>
-                              <p className="text-sm font-medium text-gray-900">{titleSuggestion}</p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => setTitle(titleSuggestion)}
-                              className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            >
-                              Use
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                      {descriptionSuggestion && (
-                        <div className="bg-white rounded-lg p-3 border border-gray-200">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1">
-                              <p className="text-xs text-gray-500">Suggested Description</p>
-                              <p className="text-sm text-gray-600">{descriptionSuggestion}</p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => setDescription(descriptionSuggestion)}
-                              className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex-shrink-0"
-                            >
-                              Use
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
                   )}
                 </div>
 

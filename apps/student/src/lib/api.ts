@@ -80,6 +80,7 @@ export type Course = {
   language?: string;
   instructorBio?: string;
   learningOutcomes?: string[];
+  requirements?: string[];
   subtitles?: number;
   introVideoUrl?: string;
   raw?: Record<string, unknown>;
@@ -474,6 +475,20 @@ function deriveColor(category: string) {
   return "#15803D";
 }
 
+function normalizeCourseList(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  return value
+    .map((entry) => {
+      if (typeof entry === "string") return entry.trim();
+      if (typeof entry === "object" && entry !== null) {
+        const item = entry as { label?: unknown; title?: unknown; description?: unknown };
+        return String(item.label ?? item.title ?? item.description ?? "").trim();
+      }
+      return String(entry ?? "").trim();
+    })
+    .filter(Boolean);
+}
+
 function normalizeCourse(item: any): Course {
   const category = item?.category?.name ?? item?.category;
   const instructor = item?.instructor?.full_name ?? item?.instructor?.username ?? item?.instructor;
@@ -517,11 +532,8 @@ function normalizeCourse(item: any): Course {
     language: item?.language ?? item?.course_language ?? undefined,
     subtitles: Number(item?.subtitle_count ?? item?.subtitles ?? 0) || undefined,
     instructorBio: item?.instructor?.bio ?? item?.instructor_bio ?? item?.instructor_description ?? undefined,
-    learningOutcomes: Array.isArray(item?.learning_outcomes)
-      ? item.learning_outcomes
-      : Array.isArray(item?.outcomes)
-        ? item.outcomes
-        : undefined,
+    learningOutcomes: normalizeCourseList(item?.learning_outcomes ?? item?.outcomes),
+    requirements: normalizeCourseList(item?.requirements),
     introVideoUrl: introVideoUrl ? String(introVideoUrl) : undefined,
     progress: item?.progress,
     raw: item,

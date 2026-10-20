@@ -2,10 +2,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { useEffect, useState } from "react";
-import { BookOpen, ChevronRight, Clock, Star, Users, Play, CheckCircle, Heart, Sparkles, TrendingUp } from "lucide-react";
+import { AlertCircle, BookOpen, ChevronRight, Clock, Star, Users, Play, CheckCircle, Heart } from "lucide-react";
 import { getLocalWishlistCourses, getMyEnrollments } from "@/lib/api";
 import type { Course } from "@/lib/api";
-import { resolveCourseThumbnail } from "@/components/course-thumb";
+import { CourseThumb } from "@/components/course-thumb";
+import { getLocalStudyProgress } from "@/lib/study-progress";
 
 export const Route = createFileRoute("/student/my-learning")({
   component: MyLearning,
@@ -62,12 +63,22 @@ function MyLearning() {
   // Process enrollments to get courses with progress
   const courses = enrollments
     .filter((e) => e.course)
-    .map((e) => ({
-      ...(e.course as Course),
-      progress: e.progress ?? (e.course as Course)?.progress ?? 0,
-      enrollmentStatus: e.status,
-      enrolledAt: e.enrolledAt,
-    }));
+    .map((e) => {
+      const course = e.course as Course;
+      const progress = e.status === "completed"
+        ? 100
+        : Math.min(100, Math.max(
+          Number(e.progress) || 0,
+          Number(course.progress) || 0,
+          getLocalStudyProgress(course.slug),
+        ));
+      return {
+        ...course,
+        progress,
+        enrollmentStatus: e.status,
+        enrolledAt: e.enrolledAt,
+      };
+    });
 
   const inProgress = courses.filter((c) => (c.progress ?? 0) < 100);
   const completed = courses.filter((c) => (c.progress ?? 0) >= 100);
@@ -103,7 +114,7 @@ function MyLearning() {
     return (
       <div className="flex items-center justify-center min-h-[60vh] px-4">
         <div className="text-center max-w-md p-6 bg-red-50 rounded-xl">
-          <div className="text-red-500 text-4xl mb-4">⚠️</div>
+          <AlertCircle className="mx-auto mb-4 h-10 w-10 text-red-500" />
           <p className="text-gray-700 mb-2">{error}</p>
           <button 
             onClick={() => window.location.reload()}
@@ -170,8 +181,12 @@ function MyLearning() {
       {displayItems.length === 0 ? (
         <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-8 sm:p-12 md:p-16 text-center shadow-sm">
           <div className="flex flex-col items-center">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gray-100 flex items-center justify-center text-3xl sm:text-4xl mb-3 sm:mb-4">
-              {tab === "in-progress" ? "📚" : tab === "completed" ? "🎓" : "❤️"}
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 mb-3 sm:mb-4">
+              {tab === "in-progress"
+                ? <BookOpen className="h-7 w-7 sm:h-8 sm:w-8" />
+                : tab === "completed"
+                  ? <CheckCircle className="h-7 w-7 sm:h-8 sm:w-8" />
+                  : <Heart className="h-7 w-7 sm:h-8 sm:w-8" />}
             </div>
             <h3 className="text-base sm:text-lg font-semibold text-gray-900">{emptyMessage}</h3>
             <p className="text-xs sm:text-sm text-gray-500 mt-1">{emptySub}</p>
@@ -233,16 +248,14 @@ function CourseCard({ course, tab }: { course: Course; tab: string }) {
       className="group bg-white rounded-xl sm:rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all hover:-translate-y-0.5 active:scale-[0.98] touch-manipulation"
     >
       {/* Course Image */}
-      <div className={`h-32 sm:h-36 md:h-40 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-3xl sm:text-4xl font-bold relative overflow-hidden`}>
-        {resolveCourseThumbnail(course.thumbnail) ? (
-          <img
-            src={resolveCourseThumbnail(course.thumbnail) ?? undefined}
-            alt={course.title}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          course.title?.[0]?.toUpperCase() || 'C'
-        )}
+      <div className="relative h-32 sm:h-36 md:h-40 overflow-hidden">
+        <CourseThumb
+          variant={course.image}
+          color={course.color}
+          thumbnail={course.thumbnail}
+          title={course.title}
+          className="h-full"
+        />
         {tab !== "wishlist" && (
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/20">
             <div 

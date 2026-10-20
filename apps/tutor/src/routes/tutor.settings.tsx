@@ -32,13 +32,6 @@ export const Route = createFileRoute("/tutor/settings")({
   component: TutorSettings,
 });
 
-const TABS = [
-  { id: 'profile', label: 'Profile', icon: User },
-  { id: 'payout', label: 'Payout Info', icon: CreditCard },
-  { id: 'security', label: 'Security', icon: Lock },
-  { id: 'notifs', label: 'Notifications', icon: Bell },
-];
-
 function TutorSettings() {
   const [profile, setProfile] = useState<any>(null);
   const [analytics, setAnalytics] = useState<any>(null);
@@ -46,7 +39,7 @@ function TutorSettings() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('profile');
+  const activeTab = 'profile';
   const [passwordData, setPasswordData] = useState({
     old_password: '',
     new_password: '',
@@ -158,31 +151,7 @@ function TutorSettings() {
       {/* Header */}
       <div>
         <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Settings</h2>
-        <p className="text-sm text-gray-500 mt-1">Manage your instructor profile, payout details, and account security</p>
-      </div>
-
-      {/* Tabs */}
-      <div className="bg-white rounded-xl border border-gray-200 p-2 overflow-x-auto">
-        <div className="flex gap-1 min-w-max">
-          {TABS.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
-                  isActive
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-gray-400'}`} />
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
+        <p className="text-sm text-gray-500 mt-1">Manage your instructor profile and public information</p>
       </div>
 
       {/* Content */}

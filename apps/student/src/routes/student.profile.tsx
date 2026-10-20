@@ -151,48 +151,42 @@ function Account() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50/50">
+    <div className="min-h-screen bg-gray-50">
       <div className="space-y-6 p-4 sm:p-6 md:p-8 max-w-5xl mx-auto">
-        {/* Header with Gradient */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-8">
-          <div className="absolute inset-0 opacity-20">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full blur-3xl" />
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-400 rounded-full blur-3xl" />
-          </div>
-          <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-white">My Account</h1>
-              <p className="text-blue-100 mt-1 text-sm">Manage your personal information and public profile</p>
+                <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">My Account</h1>
+                <p className="mt-1 text-sm text-gray-500">Manage your personal information and public profile</p>
             </div>
             <div className="flex items-center gap-3">
               {!isEditing ? (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-white/20 backdrop-blur-sm text-white rounded-xl hover:bg-white/30 transition-all hover:scale-105 active:scale-95 border border-white/30"
+                  className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
                 >
                   <Edit className="h-4 w-4" />
-                  <span className="font-medium">Edit Profile</span>
+                  <span>Edit Profile</span>
                 </button>
               ) : (
                 <div className="flex gap-2">
                   <button
                     onClick={() => setIsEditing(false)}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-white/20 backdrop-blur-sm text-white rounded-xl hover:bg-white/30 transition-all"
-                  >
+                      className="flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                    >
                     <X className="h-4 w-4" />
                     Cancel
                   </button>
                   <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-white text-blue-600 rounded-xl hover:bg-blue-50 transition-all font-medium disabled:opacity-50"
+                    className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
                   >
+                    <Save className="h-4 w-4" />
                     {isSaving ? 'Saving...' : 'Save'}
                   </button>
                 </div>
               )}
             </div>
-          </div>
         </div>
 
         {success && (
@@ -203,16 +197,15 @@ function Account() {
         )}
 
         {/* Profile Card */}
-        <div className="relative bg-white rounded-2xl shadow-xl border border-gray-100/50 overflow-hidden">
+        <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
           {/* Cover */}
-          <div className="h-32 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 relative">
-            <div className="absolute inset-0 bg-black/10" />
+          <div className="relative h-24 bg-[#1f6e5c] sm:h-28">
             <div className="absolute top-4 right-4 flex gap-2">
-              <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs text-white font-medium">
+              <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white">
                 {profile?.role || 'Student'}
               </span>
               {profile?.is_email_verified && (
-                <span className="px-3 py-1 bg-emerald-500/30 backdrop-blur-sm rounded-full text-xs text-white font-medium flex items-center gap-1">
+                <span className="flex items-center gap-1 rounded-full bg-emerald-500/30 px-3 py-1 text-xs font-medium text-white">
                   <CheckCircle className="h-3 w-3" /> Verified
                 </span>
               )}
@@ -220,10 +213,10 @@ function Account() {
           </div>
 
           {/* Avatar & Info */}
-          <div className="relative px-6 pb-6">
+          <div className="relative px-5 pb-5 sm:px-6 sm:pb-6">
             <div className="-mt-16 flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-6">
               <div className="relative group">
-                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl border-4 border-white bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-3xl sm:text-4xl font-bold shadow-xl">
+                <div className="flex h-24 w-24 items-center justify-center rounded-2xl border-4 border-white bg-blue-600 text-3xl font-bold text-white shadow-md sm:h-28 sm:w-28 sm:text-4xl">
                   {getInitials()}
                   {isEditing && (
                     <div className="absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
@@ -258,10 +251,10 @@ function Account() {
               {stats.map((stat, index) => (
                 <div 
                   key={index}
-                  className={`${stat.bg} rounded-xl p-3 border border-gray-100/50 hover:shadow-md transition-all hover:-translate-y-0.5`}
+                  className={`${stat.bg} rounded-lg border border-gray-200 p-3`}
                 >
                   <div className="flex items-center gap-2">
-                    <div className={`p-1.5 rounded-lg bg-gradient-to-br ${stat.color} text-white`}>
+                    <div className={`rounded-lg ${stat.bg} p-1.5 text-gray-700`}>
                       <stat.icon className="h-3.5 w-3.5" />
                     </div>
                     <div>
@@ -276,9 +269,9 @@ function Account() {
         </div>
 
         {/* Bio Section */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100/50 p-6">
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
           <div className="flex items-center gap-2 mb-4">
-            <div className="p-2 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl">
+            <div className="rounded-lg bg-blue-50 p-2">
               <User className="h-5 w-5 text-blue-600" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900">About Me</h3>
@@ -464,26 +457,26 @@ function Account() {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="bg-white rounded-xl shadow-md border border-gray-100/50 p-4 text-center hover:shadow-lg transition-all hover:-translate-y-1 cursor-pointer">
-            <div className="p-2 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl inline-block mb-2">
+          <div className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
+            <div className="mb-2 inline-block rounded-lg bg-blue-50 p-2">
               <BookOpen className="h-5 w-5 text-blue-600" />
             </div>
             <p className="text-xs font-medium text-gray-700">My Courses</p>
           </div>
-          <div className="bg-white rounded-xl shadow-md border border-gray-100/50 p-4 text-center hover:shadow-lg transition-all hover:-translate-y-1 cursor-pointer">
-            <div className="p-2 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl inline-block mb-2">
+          <div className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
+            <div className="mb-2 inline-block rounded-lg bg-emerald-50 p-2">
               <Star className="h-5 w-5 text-emerald-600" />
             </div>
             <p className="text-xs font-medium text-gray-700">Certificates</p>
           </div>
-          <div className="bg-white rounded-xl shadow-md border border-gray-100/50 p-4 text-center hover:shadow-lg transition-all hover:-translate-y-1 cursor-pointer">
-            <div className="p-2 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl inline-block mb-2">
+          <div className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
+            <div className="mb-2 inline-block rounded-lg bg-purple-50 p-2">
               <Target className="h-5 w-5 text-purple-600" />
             </div>
             <p className="text-xs font-medium text-gray-700">Progress</p>
           </div>
-          <div className="bg-white rounded-xl shadow-md border border-gray-100/50 p-4 text-center hover:shadow-lg transition-all hover:-translate-y-1 cursor-pointer">
-            <div className="p-2 bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl inline-block mb-2">
+          <div className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
+            <div className="mb-2 inline-block rounded-lg bg-amber-50 p-2">
               <Rocket className="h-5 w-5 text-amber-600" />
             </div>
             <p className="text-xs font-medium text-gray-700">Goals</p>

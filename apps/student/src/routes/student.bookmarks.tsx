@@ -1,10 +1,11 @@
 // apps/student/src/routes/student.bookmarks.tsx
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
-import { BookMarked, Trash2, Heart, BookOpen, Sparkles, TrendingUp, Clock, Users, Star, X } from "lucide-react";
+import { AlertCircle, BookMarked, Trash2, Heart, BookOpen, TrendingUp, Clock, Users, Star } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getLocalWishlistCourses, removeLocalWishlist } from "@/lib/api";
 import type { Course } from "@/lib/api";
+import { CourseThumb } from "@/components/course-thumb";
 
 export const Route = createFileRoute("/student/bookmarks")({
   component: Bookmarks,
@@ -86,7 +87,7 @@ function Bookmarks() {
     return (
       <div className="flex items-center justify-center min-h-[60vh] px-4">
         <div className="text-center max-w-md p-6 bg-red-50 rounded-xl">
-          <div className="text-red-500 text-4xl mb-4">⚠️</div>
+          <AlertCircle className="mx-auto mb-4 h-10 w-10 text-red-500" />
           <p className="text-gray-700 mb-2">{error}</p>
           <button 
             onClick={() => window.location.reload()}
@@ -179,8 +180,8 @@ function Bookmarks() {
       {items.length === 0 ? (
         <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-8 sm:p-12 md:p-16 text-center shadow-sm">
           <div className="flex flex-col items-center">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gray-100 flex items-center justify-center text-3xl sm:text-4xl mb-3 sm:mb-4">
-              📚
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 mb-3 sm:mb-4">
+              <BookOpen className="h-7 w-7 sm:h-8 sm:w-8" />
             </div>
             <h3 className="text-base sm:text-lg font-semibold text-gray-900">No bookmarks yet</h3>
             <p className="text-xs sm:text-sm text-gray-500 mt-1">
@@ -207,8 +208,14 @@ function Bookmarks() {
                 className="group bg-white rounded-xl sm:rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all hover:-translate-y-0.5 active:scale-[0.98] touch-manipulation relative"
               >
                 {/* Course Image */}
-                <div className="h-32 sm:h-36 md:h-40 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-3xl sm:text-4xl font-bold relative">
-                  {course.title?.[0]?.toUpperCase() || 'C'}
+                <div className="relative h-32 sm:h-36 md:h-40 overflow-hidden">
+                  <CourseThumb
+                    variant={course.image}
+                    color={course.color}
+                    thumbnail={course.thumbnail}
+                    title={course.title}
+                    className="h-full"
+                  />
                   
                   {/* Remove Button */}
                   <button
@@ -243,10 +250,6 @@ function Bookmarks() {
                   
                   <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 truncate">
                     {course.instructor || 'Instructor'} · {course.category || 'Course'}
-                  </p>
-
-                  <p className="text-xs text-gray-600 mt-1.5 sm:mt-2 line-clamp-2 min-h-[2.5rem]">
-                    {course.description || 'Learn the fundamentals of this subject'}
                   </p>
 
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 sm:mt-3 text-[10px] sm:text-xs text-gray-500">
