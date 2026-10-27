@@ -120,30 +120,33 @@
 }
 
 .dark {
-  --background: oklch(0.16 0.02 165);
-  --foreground: oklch(0.97 0.005 155);
-  --card: oklch(0.2 0.025 165);
-  --card-foreground: oklch(0.97 0.005 155);
-  --popover: oklch(0.2 0.025 165);
-  --popover-foreground: oklch(0.97 0.005 155);
+  color-scheme: dark;
+  --background: #0b1120;
+  --foreground: #e5eaf2;
+  --card: #111a2b;
+  --card-foreground: #e5eaf2;
+  --popover: #111a2b;
+  --popover-foreground: #e5eaf2;
   --primary: #4ade80;
-  --primary-foreground: oklch(0.16 0.02 165);
-  --secondary: oklch(0.26 0.02 165);
-  --secondary-foreground: oklch(0.97 0.005 155);
-  --muted: oklch(0.26 0.02 165);
-  --muted-foreground: oklch(0.7 0.02 155);
-  --accent: oklch(0.26 0.02 165);
-  --accent-foreground: oklch(0.97 0.005 155);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 12%);
+  --primary-foreground: #052e16;
+  --primary-dark: #22c55e;
+  --secondary: #1b2638;
+  --secondary-foreground: #e5eaf2;
+  --muted: #1b2638;
+  --muted-foreground: #9aa8bb;
+  --accent: #173629;
+  --accent-foreground: #dcfce7;
+  --gold: #f0c66e;
+  --border: #29364a;
+  --input: #344258;
   --ring: #4ade80;
-  --sidebar: oklch(0.2 0.025 165);
-  --sidebar-foreground: oklch(0.97 0.005 155);
+  --sidebar: #0e1726;
+  --sidebar-foreground: #e5eaf2;
   --sidebar-primary: #4ade80;
-  --sidebar-primary-foreground: oklch(0.16 0.02 165);
-  --sidebar-accent: oklch(0.26 0.02 165);
-  --sidebar-accent-foreground: oklch(0.97 0.005 155);
-  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-primary-foreground: #052e16;
+  --sidebar-accent: #1b2638;
+  --sidebar-accent-foreground: #e5eaf2;
+  --sidebar-border: #29364a;
   --sidebar-ring: #4ade80;
 }
 
@@ -243,4 +246,80 @@
 @utility skeleton {
   background: color-mix(in oklab, var(--color-primary) 7%, var(--color-card));
   border: 0;
+}
+
+.dark [class~="bg-white"],
+.dark [class~="bg-white/60"],
+.dark [class~="bg-white/80"],
+.dark [class~="bg-white/90"],
+.dark [class~="bg-white/95"],
+.dark [class~="bg-gray-50"],
+.dark [class~="bg-gray-50/50"],
+.dark [class~="bg-gray-50/80"],
+.dark [class~="bg-gray-100"],
+.dark [class~="bg-gray-100/50"],
+.dark [class~="bg-slate-50"],
+.dark [class~="bg-slate-100"],
+.dark [class~="bg-neutral-50"],
+.dark [class~="bg-neutral-100"],
+.dark [class~="bg-zinc-50"],
+.dark [class~="bg-zinc-100"],
+.dark [class~="bg-stone-50"],
+.dark [class~="bg-stone-100"],
+.dark [class~="bg-[#fbf8f0]"],
+.dark [class~="bg-[#F5F7F2]"],
+.dark [class~="bg-[#dcebe4]"],
+.dark [class*="bg-[#fff"] {
+  background-color: var(--color-card) !important;
+}
+
+.dark [class~="text-gray-900"],
+.dark [class~="text-gray-800"],
+.dark [class~="text-gray-700"] {
+  color: var(--color-foreground) !important;
+}
+
+.dark [class~="text-gray-600"],
+.dark [class~="text-gray-500"] {
+  color: var(--color-muted-foreground) !important;
+}
+
+.dark [class~="border-gray-100"],
+.dark [class~="border-gray-200"],
+.dark [class~="border-gray-300"],
+.dark [class~="divide-gray-100"] > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--color-border) !important;
+}
+
+.dark [class~="bg-blue-50"],
+.dark [class~="bg-blue-50/30"],
+.dark [class~="bg-blue-50/40"],
+.dark [class~="bg-blue-50/50"],
+.dark [class~="bg-blue-50/60"],
+.dark [class~="bg-blue-100"],
+.dark [class~="bg-cyan-50"],
+.dark [class~="bg-cyan-100"],
+.dark [class~="bg-emerald-50"],
+.dark [class~="bg-emerald-100"],
+.dark [class~="bg-green-50"],
+.dark [class~="bg-green-100"],
+.dark [class~="bg-purple-50"],
+.dark [class~="bg-purple-100"],
+.dark [class~="bg-indigo-50"],
+.dark [class~="bg-indigo-100"],
+.dark [class~="bg-sky-50"],
+.dark [class~="bg-teal-50"],
+.dark [class~="bg-violet-50"],
+.dark [class~="bg-pink-50"],
+.dark [class~="bg-pink-100"],
+.dark [class~="bg-orange-50"],
+.dark [class~="bg-orange-100"],
+.dark [class~="bg-amber-50"],
+.dark [class~="bg-amber-100"],
+.dark [class~="bg-red-50"],
+.dark [class~="bg-red-100"],
+.dark [class~="bg-yellow-50"],
+.dark [class~="bg-yellow-100"],
+.dark [class~="bg-lime-50"] {
+  background-color: color-mix(in srgb, currentColor 12%, var(--color-card)) !important;
 }

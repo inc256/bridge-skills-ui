@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useState, type ReactNode, useRef, useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeSelect } from "@/components/theme-provider";
 import { useAuth } from "@/lib/auth";
 
 export type NavItem = { 
@@ -51,7 +52,9 @@ export function PortalShell({
   const accentLabel = accent === "student" ? "Student" : accent === "tutor" ? "Tutor" : "Admin";
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const headerMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -65,9 +68,22 @@ export function PortalShell({
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setUserMenuOpen(false);
       }
+      if (headerMenuRef.current && !headerMenuRef.current.contains(event.target as Node)) {
+        setHeaderMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setUserMenuOpen(false);
+        setHeaderMenuOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, []);
 
   const normalizePath = (path: string) => {
@@ -141,6 +157,7 @@ export function PortalShell({
   const handleLogout = async () => {
     await logout();
     setUserMenuOpen(false);
+    setHeaderMenuOpen(false);
   };
 
   // Define navigation sections
@@ -401,12 +418,48 @@ export function PortalShell({
             <h1 className="truncate text-base sm:text-lg font-semibold text-foreground">{title}</h1>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
+            <ThemeSelect />
             <span className="hidden xs:inline-block text-xs sm:text-sm text-muted-foreground">
               {getUserDisplayName()}
             </span>
-            <div className="h-5 w-px bg-border hidden xs:block" />
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[10px] sm:text-xs font-semibold ring-2 ring-primary/5">
-              {getUserInitials()}
+            <div className="relative" ref={headerMenuRef}>
+              <button
+                type="button"
+                onClick={() => setHeaderMenuOpen((open) => !open)}
+                aria-label="Open profile menu"
+                aria-haspopup="true"
+                aria-expanded={headerMenuOpen}
+                className="grid h-9 w-9 place-items-center rounded-full bg-primary/10 text-xs font-semibold text-primary ring-2 ring-primary/10 transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                {getUserInitials()}
+              </button>
+              {headerMenuOpen && (
+                <div className="absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-2xl border border-border bg-card shadow-xl animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="border-b border-border bg-secondary/40 p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                        {getUserInitials()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-foreground">{getUserName()}</p>
+                        <p className="truncate text-xs text-muted-foreground">{getUserEmail() || getUserRole()}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-1.5">
+                    <Link to="/tutor/settings" onClick={() => setHeaderMenuOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-foreground transition hover:bg-secondary">
+                      <User className="h-4 w-4 text-muted-foreground" /> Profile & settings
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => void handleLogout()}
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-destructive transition hover:bg-destructive/5"
+                    >
+                      <LogOut className="h-4 w-4" /> Sign out
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </header>

@@ -550,9 +550,34 @@ function normalizeCourse(item: any): Course {
     learningOutcomes: normalizeCourseList(item?.learning_outcomes ?? item?.outcomes),
     requirements: normalizeCourseList(item?.requirements),
     introVideoUrl: introVideoUrl ? String(introVideoUrl) : undefined,
-    progress: item?.progress,
+    progress: normalizeProgress(item?.progress ?? item?.progress_percentage ?? item?.completion_percentage ?? item?.completion),
     raw: item,
   };
+}
+
+function normalizeProgress(value: unknown): number {
+  if (typeof value === "number" || typeof value === "string") {
+    const progress = Number(value);
+    return Number.isFinite(progress) ? Math.min(100, Math.max(0, progress)) : 0;
+  }
+  if (!value || typeof value !== "object") return 0;
+
+  const progress = value as Record<string, unknown>;
+  const percentage = progress.percentage
+    ?? progress.progress_percentage
+    ?? progress.completion_percentage
+    ?? progress.completed_percentage
+    ?? progress.percent
+    ?? progress.progress
+    ?? progress.completion;
+  if (percentage !== undefined && percentage !== null) return normalizeProgress(percentage);
+
+  const completed = Number(progress.completed_lessons ?? progress.lessons_completed ?? progress.completed);
+  const total = Number(progress.total_lessons ?? progress.lessons_total ?? progress.total);
+  if (Number.isFinite(completed) && Number.isFinite(total) && total > 0) {
+    return Math.min(100, Math.max(0, (completed / total) * 100));
+  }
+  return 0;
 }
 
 function normalizeQuizChoice(choice: any): QuizChoice {
@@ -654,14 +679,15 @@ export async function getMyEnrollments() {
     const list = Array.isArray(payload) ? payload : payload?.results ?? [];
     return (list as any[]).map((item) => {
       const courseData = item?.course ?? item?.course_detail ?? item?.course_data ?? item?.enrolled_course;
-      const progress = typeof item?.progress === "object"
-        ? item.progress?.percentage ?? item.progress?.progress ?? item.progress?.completion_percentage
-        : item?.progress ?? item?.completion_percentage ?? item?.completion;
+      const progress = normalizeProgress(
+        item?.progress ?? item?.progress_percentage ?? item?.completion_percentage ?? item?.completion
+          ?? courseData?.progress ?? courseData?.progress_percentage ?? courseData?.completion_percentage,
+      );
       return {
         id: item?.id,
         course: courseData ? normalizeCourse(courseData) : null,
         status: item?.status,
-        progress: Number(progress ?? courseData?.progress ?? 0),
+        progress,
         enrolledAt: item?.enrolled_at ?? item?.created_at,
       };
     });

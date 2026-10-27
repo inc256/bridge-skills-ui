@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useState, type ReactNode, useRef, useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeSelect } from "@/components/theme-provider";
 
 export type NavItem = { 
   label: string; 
@@ -50,7 +51,7 @@ export function PortalShell({
   nav?: NavItem[];
   navSections?: NavSection[];
   title: string;
-  user?: { name: string; role: string; initials: string } | null;
+  user?: { name: string; role: string; initials: string; email?: string } | null;
   accent?: "student" | "tutor" | "admin";
   onLogout?: () => void;
 }) {
@@ -61,7 +62,9 @@ export function PortalShell({
   const accentLabel = accent === "student" ? "Student" : accent === "tutor" ? "Tutor" : "Admin";
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const headerMenuRef = useRef<HTMLDivElement>(null);
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -69,9 +72,22 @@ export function PortalShell({
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setUserMenuOpen(false);
       }
+      if (headerMenuRef.current && !headerMenuRef.current.contains(event.target as Node)) {
+        setHeaderMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setUserMenuOpen(false);
+        setHeaderMenuOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, []);
 
   const normalizePath = (path: string) => {
@@ -110,6 +126,7 @@ export function PortalShell({
       onLogout();
     }
     setUserMenuOpen(false);
+    setHeaderMenuOpen(false);
   };
 
   // Get accent color classes
@@ -378,7 +395,7 @@ export function PortalShell({
               </div>
               <div className="p-1">
                 <Link
-                  to="/tutor/settings"
+                  to="/admin/settings"
                   className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   onClick={() => setUserMenuOpen(false)}
                 >
@@ -412,12 +429,48 @@ export function PortalShell({
             <h1 className="truncate text-base sm:text-lg font-semibold text-gray-900 dark:text-white">{title}</h1>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
+            <ThemeSelect />
             <span className="hidden xs:inline-block text-xs sm:text-sm text-gray-500 dark:text-gray-400">
               {getUserDisplayName()}
             </span>
-            <div className="h-5 w-px bg-gray-300 dark:bg-gray-600 hidden xs:block" />
-            <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full ${accentStyle.primaryBg} flex items-center justify-center ${accentStyle.primaryText} text-[10px] sm:text-xs font-semibold ring-2 ${accentStyle.ring}`}>
-              {getUserInitials()}
+            <div className="relative" ref={headerMenuRef}>
+              <button
+                type="button"
+                onClick={() => setHeaderMenuOpen((open) => !open)}
+                aria-label="Open profile menu"
+                aria-haspopup="true"
+                aria-expanded={headerMenuOpen}
+                className={`grid h-9 w-9 place-items-center rounded-full ${accentStyle.primaryBg} ${accentStyle.primaryText} text-xs font-semibold ring-2 ${accentStyle.ring} transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2`}
+              >
+                {getUserInitials()}
+              </button>
+              {headerMenuOpen && (
+                <div className="absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl animate-in fade-in slide-in-from-top-2 duration-150 dark:border-gray-700 dark:bg-gray-800">
+                  <div className="border-b border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/50">
+                    <div className="flex items-center gap-3">
+                      <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-full ${accentStyle.primary} text-sm font-semibold text-white`}>
+                        {getUserInitials()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">{getUserName()}</p>
+                        <p className="truncate text-xs text-gray-500 dark:text-gray-400">{user?.email || getUserRole()}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-1.5">
+                    <Link to="/admin/settings" onClick={() => setHeaderMenuOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-gray-700 transition hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700">
+                      <User className="h-4 w-4 text-gray-500 dark:text-gray-400" /> Profile & settings
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => void handleLogout()}
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                    >
+                      <LogOut className="h-4 w-4" /> Sign out
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </header>

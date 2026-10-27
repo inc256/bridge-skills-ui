@@ -9,6 +9,7 @@ import {
 import { useState, useEffect, useCallback } from "react";
 // Import the authenticated apiRequest from lib/api
 import { apiRequest } from "@/lib/api";
+import { ThemeSettings } from "@/components/theme-provider";
 
 export const Route = createFileRoute("/admin/settings")({
   component: AdminSettings,
@@ -408,6 +409,8 @@ function AdminSettings() {
           </p>
         </div>
       </div>
+
+      <ThemeSettings />
 
       {/* Main Layout - Sidebar + Content */}
       <div className="flex flex-col lg:flex-row gap-6">

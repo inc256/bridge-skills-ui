@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Award, ArrowRight, Clock, Flame, Calendar, ChevronRight, Target, BookOpen } from "lucide-react";
+import { Award, ArrowRight, Bookmark, Trophy, Calendar, ChevronRight, Target, BookOpen } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CourseCard } from "@/components/course-card";
 import { CourseThumb } from "@/components/course-thumb";
-import { getBlogPosts, getCourses, getMe, getMeStats, getMyCertificates, getMyEnrollments, getNotifications } from "@/lib/api";
+import { getBlogPosts, getCourses, getMe, getMeStats, getMyCertificates, getMyEnrollments, getNotifications, getLocalWishlistCourses } from "@/lib/api";
 import type { BlogPost, Course } from "@/lib/api";
+import { getLocalStudyProgress } from "@/lib/study-progress";
 
 export const Route = createFileRoute("/student/")({
   component: StudentDashboard,
@@ -43,10 +44,55 @@ function StudentDashboard() {
     })();
   }, []);
 
-  const inProgress = courses.filter((c) => (c.progress ?? 0) > 0 && (c.progress ?? 0) < 100);
-  const recommended = courses.filter((c) => (c.progress ?? 0) <= 0);
+  const enrollmentProgress = new Map<string, number>();
+  for (const enrollment of enrollments) {
+    const slug = enrollment.course?.slug;
+    if (!slug) continue;
+    const progress = enrollment.status === "completed"
+      ? 100
+      : Math.min(100, Math.max(0, Number(enrollment.progress) || 0));
+    enrollmentProgress.set(slug, Math.max(enrollmentProgress.get(slug) ?? 0, progress));
+  }
+  const coursesWithProgress = courses.map((course) => ({
+    ...course,
+    progress: Math.max(
+      Number(course.progress) || 0,
+      enrollmentProgress.get(course.slug) ?? 0,
+      getLocalStudyProgress(course.slug),
+    ),
+  }));
+  const inProgress = coursesWithProgress.filter((c) => (c.progress ?? 0) > 0 && (c.progress ?? 0) < 100);
+  const inProgressCount = enrollments.filter((enrollment) => {
+    const progress = Math.max(
+      enrollment.status === "completed" ? 100 : enrollment.progress ?? 0,
+      getLocalStudyProgress(enrollment.course?.slug ?? ""),
+    );
+    return enrollment.status === "active" || (progress > 0 && progress < 100);
+  }).length;
+  const completedCount = enrollments.filter((enrollment) =>
+    enrollment.status === "completed"
+    || Math.max(enrollment.progress ?? 0, getLocalStudyProgress(enrollment.course?.slug ?? "")) >= 100
+  ).length;
+  const savedCoursesCount = getLocalWishlistCourses().length;
+  const recommended = coursesWithProgress.filter((c) => (c.progress ?? 0) <= 0);
+  const showRecommendedFirst = enrollments.length === 0;
   const weeklyGoal = stats.weekly_goal_hours ?? 10;
   const weeklyProgress = Number(stats.weekly_hours ?? 0) > 0 ? Math.min(100, Math.round(((stats.weekly_hours ?? 0) / weeklyGoal) * 100)) : 0;
+
+  const recommendedSection = (
+    <section>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h3 className="text-[20px] font-semibold tracking-tight">Recommended for you</h3>
+          <p className="mt-1 text-sm text-muted-foreground">Based on your current learning progress.</p>
+        </div>
+        <Link to="/student/explore" className="text-sm font-medium text-primary hover:underline">Explore all →</Link>
+      </div>
+      <div className="mt-5 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {recommended.slice(0, 2).map((c) => <CourseCard key={c.id} course={c} />)}
+      </div>
+    </section>
+  );
 
   return (
     <div className="space-y-7">
@@ -61,23 +107,26 @@ function StudentDashboard() {
         </Link>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <section aria-label="Learning overview" className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
         {[
-          { icon: Flame, label: "Learning streak", value: String(stats.streak_days), unit: "days", accent: "text-[var(--gold)]", bg: "bg-[var(--gold)]/10" },
-          { icon: Clock, label: "XP level", value: String(stats.level), unit: "lvl", accent: "text-primary", bg: "bg-primary/10" },
-          { icon: BookOpen, label: "Completed courses", value: String(stats.courses_completed), unit: "courses", accent: "text-info", bg: "bg-info/10" },
+          { icon: Trophy, label: "Courses completed", value: completedCount, unit: "courses", to: "/student/my-learning", accent: "text-amber-600", bg: "bg-amber-500/10" },
+          { icon: BookOpen, label: "In progress", value: inProgressCount, unit: "courses", to: "/student/my-learning", accent: "text-primary", bg: "bg-primary/10" },
+          { icon: Award, label: "Claimed certificates", value: certificates.length, unit: "certificates", to: "/student/certificates", accent: "text-emerald-600", bg: "bg-emerald-500/10" },
+          { icon: Bookmark, label: "Saved", value: savedCoursesCount, unit: "courses", to: "/student/bookmarks", accent: "text-sky-600", bg: "bg-sky-500/10" },
         ].map((s) => (
-          <div key={s.label} className="card-surface p-5">
+          <Link key={s.label} to={s.to} className="card-surface group p-4 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-soft sm:p-5">
             <div className={`grid h-10 w-10 place-items-center rounded-xl ${s.bg} ${s.accent}`}>
               <s.icon className="h-5 w-5" />
             </div>
             <div className="mt-4 text-[28px] font-semibold tracking-tight">
               {s.value}<span className="ml-1 text-sm font-normal text-muted-foreground">{s.unit}</span>
             </div>
-            <div className="text-xs text-muted-foreground">{s.label}</div>
-          </div>
+            <div className="text-xs font-medium text-muted-foreground">{s.label}</div>
+          </Link>
         ))}
-      </div>
+      </section>
+
+      {showRecommendedFirst && recommendedSection}
 
       <div className="grid gap-6 lg:grid-cols-[1.55fr_1fr]">
         <section className="card-surface p-5 sm:p-6">
@@ -182,18 +231,7 @@ function StudentDashboard() {
         </section>
       </div>
 
-      <section>
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h3 className="text-[20px] font-semibold tracking-tight">Recommended for you</h3>
-            <p className="mt-1 text-sm text-muted-foreground">Based on your current learning progress.</p>
-          </div>
-          <Link to="/student/explore" className="text-sm font-medium text-primary hover:underline">Explore all →</Link>
-        </div>
-        <div className="mt-5 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {recommended.slice(0, 2).map((c) => <CourseCard key={c.id} course={c} />)}
-        </div>
-      </section>
+      {!showRecommendedFirst && recommendedSection}
     </div>
   );
 }

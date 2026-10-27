@@ -2,13 +2,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { 
-  Award, ArrowRight, Flame, Calendar, ChevronRight, Target, 
+  Award, ArrowRight, Bookmark, Calendar, ChevronRight, Target,
   BookOpen, Sparkles, TrendingUp, Clock, Eye, Play, 
   GraduationCap, Trophy, Zap, BarChart3, Users, Star,
   Bell, MessageSquare, Settings, HelpCircle, Search
 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { getCourses, getMeStats, getMyEnrollments, getMyCertificates, getProfile } from "@/lib/api";
+import { getCourses, getMeStats, getMyEnrollments, getMyCertificates, getProfile, getLocalWishlistCourses } from "@/lib/api";
 import type { Course } from "@/lib/api";
 import { getLocalStudyProgress } from "@/lib/study-progress";
 import { resolveCourseThumbnail } from "@/components/course-thumb";
@@ -120,17 +120,75 @@ function Dashboard() {
   const inProgress = enrollments
     .map((enrollment: Enrollment) => ({
       ...enrollment,
-      progress: Math.max(enrollment.progress || 0, getLocalStudyProgress(enrollment.course?.slug ?? "")),
+      progress: Math.max(
+        enrollment.status === "completed" ? 100 : enrollment.progress || 0,
+        getLocalStudyProgress(enrollment.course?.slug ?? ""),
+      ),
     }))
     .filter((e: Enrollment) =>
       e.status === 'active' || ((e.progress || 0) > 0 && (e.progress || 0) < 100)
     );
 
   const recommended = courses.filter((c: Course) => (c.progress ?? 0) <= 0);
-  const completedCourses = enrollments.filter((e: Enrollment) => (e.progress || 0) >= 100);
+  const completedCourses = enrollments.filter((e: Enrollment) =>
+    e.status === "completed" || Math.max(e.progress || 0, getLocalStudyProgress(e.course?.slug ?? "")) >= 100
+  );
+  const savedCoursesCount = getLocalWishlistCourses().length;
 
   const weeklyGoal = stats.weekly_goal_hours || 10;
   const weeklyProgress = Math.min(100, Math.round(((stats.weekly_hours || 0) / weeklyGoal) * 100));
+
+  const recommendedSection = (
+    <section className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 shadow-sm">
+      <div className="flex flex-wrap items-end justify-between gap-2 mb-4">
+        <div>
+          <h3 className="text-base font-semibold text-gray-900">Recommended for You</h3>
+          <p className="text-xs text-gray-500 mt-0.5">Based on your learning preferences</p>
+        </div>
+        <Link to="/student/explore" className="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1">
+          Explore all
+          <ArrowRight className="h-3 w-3" />
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {recommended.length === 0 ? (
+          <div className="col-span-full text-center py-8">
+            <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-sm text-gray-500">No recommendations available</p>
+          </div>
+        ) : (
+          recommended.slice(0, 3).map((c: Course) => (
+            <Link
+              key={c.id}
+              to="/student/course/$slug"
+              params={{ slug: c.slug }}
+              className="group bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all hover:-translate-y-1 active:scale-[0.98]"
+            >
+              <div className="h-36 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-3xl font-bold overflow-hidden">
+                {resolveCourseThumbnail(c.thumbnail) ? (
+                  <img src={resolveCourseThumbnail(c.thumbnail) ?? undefined} alt={c.title} className="h-full w-full object-cover" />
+                ) : (
+                  c.title?.[0]?.toUpperCase() || 'C'
+                )}
+              </div>
+              <div className="p-4">
+                <h4 className="font-semibold text-gray-900 truncate text-sm">{c.title}</h4>
+                <p className="text-xs text-gray-500 mt-0.5 truncate">{c.category || 'Course'} · {c.level || 'All levels'}</p>
+                <div className="flex items-center justify-between mt-3">
+                  <span className="text-xs font-medium text-gray-500">{c.students || 0} students</span>
+                  <span className="text-xs font-medium text-blue-600 group-hover:text-blue-700 transition-colors flex items-center gap-1">
+                    View course
+                    <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
+                  </span>
+                </div>
+              </div>
+            </Link>
+          ))
+        )}
+      </div>
+    </section>
+  );
 
   const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
@@ -189,69 +247,35 @@ function Dashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <section aria-label="Learning overview" className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
           {[
-            { 
-              icon: Flame, 
-              label: "Learning Streak", 
-              value: stats.streak || 0, 
-              unit: "days", 
-              color: "orange",
-              bgColor: "bg-orange-50",
-              textColor: "text-orange-600",
-              iconColor: "text-orange-500"
-            },
-            { 
-              icon: Trophy, 
-              label: "Courses Completed", 
-              value: stats.courses_completed || 0, 
-              unit: "courses", 
-              color: "amber",
-              bgColor: "bg-amber-50",
-              textColor: "text-amber-600",
-              iconColor: "text-amber-500"
-            },
-            { 
-              icon: BookOpen, 
-              label: "In Progress", 
-              value: inProgress.length, 
-              unit: "courses", 
-              color: "blue",
-              bgColor: "bg-blue-50",
-              textColor: "text-blue-600",
-              iconColor: "text-blue-500"
-            },
-            { 
-              icon: Award, 
-              label: "Certificates", 
-              value: certificates.length, 
-              unit: "earned", 
-              color: "emerald",
-              bgColor: "bg-emerald-50",
-              textColor: "text-emerald-600",
-              iconColor: "text-emerald-500"
-            },
+            { icon: Trophy, label: "Courses completed", value: completedCourses.length, unit: "courses", to: "/student/my-learning", iconColor: "text-amber-600", bgColor: "bg-amber-500/10" },
+            { icon: BookOpen, label: "In progress", value: inProgress.length, unit: "courses", to: "/student/my-learning", iconColor: "text-primary", bgColor: "bg-primary/10" },
+            { icon: Award, label: "Claimed certificates", value: certificates.length, unit: "certificates", to: "/student/certificates", iconColor: "text-emerald-600", bgColor: "bg-emerald-500/10" },
+            { icon: Bookmark, label: "Saved", value: savedCoursesCount, unit: "courses", to: "/student/bookmarks", iconColor: "text-sky-600", bgColor: "bg-sky-500/10" },
           ].map((stat) => (
-            <div key={stat.label} className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-all">
+            <Link key={stat.label} to={stat.to} className="card-surface group rounded-2xl p-4 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-soft sm:p-5">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{stat.label}</p>
-                  <p className="text-[10px] text-gray-400 mt-0.5">{stat.unit}</p>
+                  <p className="text-2xl font-semibold tracking-tight text-foreground">{stat.value}</p>
+                  <p className="mt-1 text-xs font-medium text-muted-foreground">{stat.label}</p>
+                  <p className="mt-0.5 text-[10px] text-muted-foreground/75">{stat.unit}</p>
                 </div>
-                <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                  <stat.icon className={`h-4 w-4 ${stat.iconColor}`} />
+                <div className={`rounded-xl p-2.5 ${stat.bgColor}`}>
+                  <stat.icon className={`h-4 w-4 ${stat.iconColor} transition-transform group-hover:scale-110`} />
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
-        </div>
+        </section>
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           
           {/* Left Column - Continue Learning (spans 2 cols) */}
           <div className="xl:col-span-2 space-y-6">
+            {enrollments.length === 0 && recommendedSection}
+
             <section className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -321,56 +345,7 @@ function Dashboard() {
               </div>
             </section>
 
-            {/* Recommended Courses */}
-            <section className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 shadow-sm">
-              <div className="flex flex-wrap items-end justify-between gap-2 mb-4">
-                <div>
-                  <h3 className="text-base font-semibold text-gray-900">Recommended for You</h3>
-                  <p className="text-xs text-gray-500 mt-0.5">Based on your learning preferences</p>
-                </div>
-                <Link to="/student/explore" className="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1">
-                  Explore all
-                  <ArrowRight className="h-3 w-3" />
-                </Link>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {recommended.length === 0 ? (
-                  <div className="col-span-full text-center py-8">
-                    <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-sm text-gray-500">No recommendations available</p>
-                  </div>
-                ) : (
-                  recommended.slice(0, 3).map((c: Course) => (
-                    <Link
-                      key={c.id}
-                      to="/student/course/$slug"
-                      params={{ slug: c.slug }}
-                      className="group bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all hover:-translate-y-1 active:scale-[0.98]"
-                    >
-                      <div className="h-36 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-3xl font-bold overflow-hidden">
-                        {resolveCourseThumbnail(c.thumbnail) ? (
-                          <img src={resolveCourseThumbnail(c.thumbnail) ?? undefined} alt={c.title} className="h-full w-full object-cover" />
-                        ) : (
-                          c.title?.[0]?.toUpperCase() || 'C'
-                        )}
-                      </div>
-                      <div className="p-4">
-                        <h4 className="font-semibold text-gray-900 truncate text-sm">{c.title}</h4>
-                        <p className="text-xs text-gray-500 mt-0.5 truncate">{c.category || 'Course'} · {c.level || 'All levels'}</p>
-                        <div className="flex items-center justify-between mt-3">
-                          <span className="text-xs font-medium text-gray-500">{c.students || 0} students</span>
-                          <span className="text-xs font-medium text-blue-600 group-hover:text-blue-700 transition-colors flex items-center gap-1">
-                            View course
-                            <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
-                          </span>
-                        </div>
-                      </div>
-                    </Link>
-                  ))
-                )}
-              </div>
-            </section>
+            {enrollments.length > 0 && recommendedSection}
           </div>
 
           {/* Right Column - Sidebar */}

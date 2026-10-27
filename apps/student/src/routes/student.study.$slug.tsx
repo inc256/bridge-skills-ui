@@ -1,13 +1,13 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import {
-  Check, ChevronLeft, ChevronRight, Play, Pause, Volume2, Maximize, Settings, MessageSquare,
+  Check, ChevronLeft, ChevronRight, Play, Pause, Volume2, Maximize, Settings,
   FileText, Download, Bookmark, ChevronDown, Minimize, VolumeX, FileSpreadsheet, ExternalLink,
-  Lock, ChevronUp,
+  Lock, ChevronUp, List, FolderOpen, Menu, X,
 } from "lucide-react";
 import { useEffect, useState, useMemo, useRef } from "react";
-import { getCourse, getCourseModules, getLessonProgress, getQuizzesForCourse, getQuiz, markLessonComplete, resolveCourseMedia, sortCourseModules, submitQuizAnswers, syncLessonProgress } from "@/lib/api";
+import { getCourse, getCourseModules, getLessonProgress, getMyEnrollments, getQuizzesForCourse, getQuiz, markLessonComplete, resolveCourseMedia, sortCourseModules, submitQuizAnswers, syncLessonProgress } from "@/lib/api";
 import { setSelectedCourseSlug } from "@/lib/student-onboarding";
-import { getLocalStudyState, saveLocalLessonPosition, saveLocalStudyState } from "@/lib/study-progress";
+import { getLocalStudyProgress, getLocalStudyState, saveLocalLessonPosition, saveLocalStudyState } from "@/lib/study-progress";
 import { AudioPlayer } from "@/components/audio-player";
 import { PdfViewer } from "@/components/pdf-viewer";
 import { PptViewer } from "@/components/ppt-viewer";
@@ -15,18 +15,27 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 export const Route = createFileRoute("/student/study/$slug")({
   loader: async ({ params }) => {
-    const [course, modules] = await Promise.all([getCourse(params.slug), getCourseModules(params.slug)]);
+    const [course, modules, enrollments] = await Promise.all([
+      getCourse(params.slug),
+      getCourseModules(params.slug),
+      getMyEnrollments(),
+    ]);
     if (!course) throw notFound();
-    return { course, modules };
+    const enrollment = enrollments.find((item) => item.course?.slug === params.slug);
+    return {
+      course,
+      modules,
+      enrollmentProgress: enrollment?.status === "completed" ? 100 : enrollment?.progress ?? 0,
+    };
   },
   component: StudyInterface,
 });
 
 function StudyInterface() {
-  const { course, modules: initialModules } = Route.useLoaderData();
+  const { course, modules: initialModules, enrollmentProgress } = Route.useLoaderData();
   const isMobile = useIsMobile();
-  const [tab, setTab] = useState<"resources" | "discussion">("resources");
   const [showOutline, setShowOutline] = useState(true);
+  const [mobileOutlineOpen, setMobileOutlineOpen] = useState(false);
   const [modules, setModules] = useState<any[]>(initialModules ?? []);
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [activeQuiz, setActiveQuiz] = useState<any | null>(null);
@@ -55,15 +64,25 @@ function StudyInterface() {
   const [selectedResource, setSelectedResource] = useState<{ label: string; url: string; type: "pdf" | "ppt" | "audio" } | null>(null);
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
   const [savedPosition, setSavedPosition] = useState(0);
-  const navigationExpanded = isMobile || showOutline;
+  const navigationExpanded = isMobile ? mobileOutlineOpen : showOutline;
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
+  const resourcesRef = useRef<HTMLElement>(null);
   const youtubeContainerRef = useRef<HTMLDivElement>(null);
   const progressHoverRef = useRef<HTMLDivElement>(null);
   const settingsRef = useRef<HTMLDivElement>(null);
   const lastSyncedProgressRef = useRef(0);
   const lastKnownPositionRef = useRef(0);
+
+  useEffect(() => {
+    if (!mobileOutlineOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileOutlineOpen(false);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [mobileOutlineOpen]);
 
   useEffect(() => {
     setModules(Array.isArray(initialModules) ? sortCourseModules(initialModules) : []);
@@ -195,7 +214,14 @@ function StudyInterface() {
 
   const completed = lessonList.filter((lesson: any) => lesson.completed === true).length;
   const total = lessonList.length;
-  const pct = total === 0 ? 0 : Math.round((completed / total) * 100);
+  const lessonPct = total === 0 ? 0 : Math.round((completed / total) * 100);
+  const coursePct = Number(course.progress);
+  const pct = Math.max(
+    lessonPct,
+    enrollmentProgress,
+    Number.isFinite(coursePct) ? Math.min(100, Math.max(0, coursePct)) : 0,
+    getLocalStudyProgress(course.slug),
+  );
 
   useEffect(() => {
     if (currentLessonIndex >= 0) {
@@ -1071,33 +1097,97 @@ function StudyInterface() {
   };
 
   return (
-    <div className="-mx-4 -my-6 sm:-mx-6 lg:-mx-8 lg:-my-8">
-      <div className={`grid min-h-[calc(100vh-4rem)] grid-cols-1 ${navigationExpanded ? "lg:grid-cols-[340px_1fr]" : "lg:grid-cols-[56px_1fr]"}`}>
-        <aside className="order-2 border-r border-border bg-card shadow-[1px_0_0_rgba(15,23,42,0.02)] lg:order-1 lg:sticky lg:top-0 lg:h-[calc(100vh-4rem)]">
+    <div className="-mx-3 -my-6 bg-background sm:-mx-6 lg:-mx-8 lg:-my-8">
+      {isMobile && (
+        <div className="sticky top-14 z-20 flex items-center gap-3 border-b border-border bg-card/95 px-3 py-2.5 shadow-sm backdrop-blur">
+          <button
+            type="button"
+            onClick={() => setMobileOutlineOpen(true)}
+            aria-label="Open course lessons"
+            aria-expanded={mobileOutlineOpen}
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border bg-background text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          >
+            <Menu className="h-4 w-4" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Now studying</div>
+            <div className="truncate text-sm font-semibold">{course.title}</div>
+          </div>
+          <div
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full p-[3px]"
+            style={{ background: `conic-gradient(var(--primary) ${pct * 3.6}deg, var(--secondary) 0deg)` }}
+            aria-label={`Course progress ${pct}%`}
+            role="img"
+          >
+            <span className="grid h-full w-full place-items-center rounded-full bg-card text-[9px] font-semibold tabular-nums">{pct}%</span>
+          </div>
+        </div>
+      )}
+      {isMobile && mobileOutlineOpen && (
+        <button
+          type="button"
+          onClick={() => setMobileOutlineOpen(false)}
+          aria-label="Close course lessons"
+          className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-[1px]"
+        />
+      )}
+      <div className={`grid min-h-[calc(100vh-4rem)] grid-cols-1 bg-background ${navigationExpanded ? "md:grid-cols-[300px_1fr] lg:grid-cols-[340px_1fr]" : "md:grid-cols-[56px_1fr]"}`}>
+        <aside
+          aria-label="Course lessons"
+          aria-hidden={isMobile && !mobileOutlineOpen}
+          aria-modal={isMobile && mobileOutlineOpen ? true : undefined}
+          role={isMobile ? "dialog" : undefined}
+          className={`flex flex-col overflow-hidden border-r border-border bg-card ${
+            isMobile
+              ? `fixed bottom-0 left-0 top-14 z-50 w-[min(88vw,340px)] shadow-xl transition-transform duration-300 ${
+                  mobileOutlineOpen ? "translate-x-0" : "-translate-x-full"
+                }`
+              : "order-2 md:order-1 md:sticky md:top-16 md:h-[calc(100vh-4rem)]"
+          }`}
+        >
           {navigationExpanded ? <>
-          <div className="border-b border-border bg-card px-4 py-4 sm:px-5 sm:py-5">
-            <Link to="/student/course/$slug" params={{ slug: course.slug }} className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition-colors hover:text-foreground">
-              <ChevronLeft className="h-3.5 w-3.5" /> Course overview
-            </Link>
-            <h2 className="mt-3 text-base font-semibold leading-snug tracking-tight line-clamp-2">{course.title}</h2>
-            <div className="mt-4 rounded-xl border border-border/80 bg-background/60 p-3">
-              <div className="flex items-center justify-between text-[11px] font-medium text-muted-foreground">
+          <div className="shrink-0 border-b border-border bg-card px-4 py-4 sm:px-5 sm:py-5">
+            <div className="flex items-center justify-between gap-3">
+              <Link
+                to="/student/course/$slug"
+                params={{ slug: course.slug }}
+                onClick={() => setMobileOutlineOpen(false)}
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-primary"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" /> Course overview
+              </Link>
+              {isMobile ? (
+                <button
+                  type="button"
+                  onClick={() => setMobileOutlineOpen(false)}
+                  aria-label="Close course lessons"
+                  className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowOutline(false)}
+                  aria-label="Collapse course lessons"
+                  className="hidden h-8 w-8 place-items-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground md:grid"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <h2 className="mt-4 line-clamp-2 text-base font-semibold leading-snug tracking-tight">{course.title}</h2>
+            <div className="mt-4 rounded-xl border border-border bg-background p-3.5">
+              <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
                 <span>Course progress</span>
                 <span className="font-semibold text-foreground">{pct}%</span>
               </div>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-secondary">
+              <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-secondary">
                 <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${pct}%` }} />
               </div>
             </div>
-            <button
-              onClick={() => setShowOutline((s) => !s)}
-              aria-expanded={showOutline}
-              className="mt-4 hidden w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-secondary lg:inline-flex"
-            >
-              Collapse navigation <ChevronLeft className="h-3.5 w-3.5" />
-            </button>
           </div>
-          <div className="p-2 sm:p-3 lg:h-[calc(100vh-18rem)] lg:overflow-y-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto p-3">
             {orderedModules.map((m, mi) => (
                 <details
                   key={m.id ?? `${m.title}-${mi}`}
@@ -1112,19 +1202,19 @@ function StudyInterface() {
                       return next;
                     });
                   }}
-                  className="group mb-1 rounded-xl"
+                  className="group mb-2 overflow-hidden rounded-xl border border-border/70 bg-background"
                 >
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-xl border border-transparent px-2.5 py-3 transition-colors hover:border-border hover:bg-secondary [&::-webkit-details-marker]:hidden">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-3 transition-colors hover:bg-secondary/70 [&::-webkit-details-marker]:hidden">
                   <div className="min-w-0">
-                    <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Module {mi + 1}</div>
-                    <div className="mt-1 truncate text-xs sm:text-sm font-semibold">{m.title}</div>
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Module {mi + 1}</div>
+                    <div className="mt-1 truncate text-sm font-semibold">{m.title}</div>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
-                    <span className="text-[10px] font-medium text-muted-foreground">{m.lessons?.filter((lesson: any) => lesson.completed).length ?? 0}/{m.lessons?.length ?? 0}</span>
+                    <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">{m.lessons?.filter((lesson: any) => lesson.completed).length ?? 0}/{m.lessons?.length ?? 0}</span>
                     <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
                   </div>
                 </summary>
-                <ul className="mt-1 space-y-0.5 border-l border-border/80 pb-2 pl-2">
+                <ul className="space-y-1 border-t border-border/70 p-2">
                   {(Array.isArray(m.lessons) ? m.lessons : []).map((l: any) => {
                     const lessonIndex = lessonList.findIndex((lesson: any) => lesson.id === l.id);
                     const isCurrent = l.id === currentLessonId;
@@ -1139,9 +1229,10 @@ function StudyInterface() {
                             if (isLocked) return;
                             setCurrentLessonId(l.id);
                             resetPlayer();
+                            setMobileOutlineOpen(false);
                           }}
-                          className={`flex w-full items-center gap-2 sm:gap-3 rounded-lg px-2 sm:px-3 py-2 text-left text-xs sm:text-sm transition-colors ${
-                            isCurrent ? "bg-primary/10 font-medium text-primary ring-1 ring-inset ring-primary/10" : isLocked ? "cursor-not-allowed opacity-45" : "hover:bg-secondary"
+                          className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-left text-xs transition-colors ${
+                            isCurrent ? "bg-primary/10 font-semibold text-primary ring-1 ring-inset ring-primary/15" : isLocked ? "cursor-not-allowed opacity-45" : "text-foreground/80 hover:bg-secondary"
                           }`}
                         >
                           <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full ${
@@ -1157,10 +1248,10 @@ function StudyInterface() {
                             }
                           </span>
                           <span className="min-w-0 flex-1 truncate">{l.title}</span>
-                          <span className="rounded bg-secondary/80 px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-muted-foreground">
+                          <span className="rounded-md bg-secondary px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
                             {lessonTypeDisplay}
                           </span>
-                          <span className="text-[10px] sm:text-[11px] text-muted-foreground whitespace-nowrap">
+                          <span className="whitespace-nowrap text-[10px] tabular-nums text-muted-foreground">
                             {lessonDuration > 0 ? formatTime(lessonDuration) : ""}
                           </span>
                         </button>
@@ -1172,49 +1263,50 @@ function StudyInterface() {
             ))}
           </div>
           </> : (
-            <button
-              type="button"
-              onClick={() => setShowOutline(true)}
-              title="Expand course navigation"
-              aria-label="Expand course navigation"
-              className="flex h-12 w-full items-center justify-center border-b border-border bg-card text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground lg:h-16"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
+            <div className="flex h-full flex-col items-center gap-2 border-r border-border bg-card py-3">
+              <button
+                type="button"
+                onClick={() => setShowOutline(true)}
+                title="Expand course lessons"
+                aria-label="Expand course lessons"
+                className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary transition-colors hover:bg-primary/15"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowOutline(true)}
+                title="Lessons"
+                aria-label="Open lessons"
+                className="grid h-10 w-10 place-items-center rounded-xl text-primary transition-colors hover:bg-secondary"
+              >
+                <List className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => resourcesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                title="Lesson resources"
+                aria-label="Go to lesson resources"
+                className="grid h-10 w-10 place-items-center rounded-xl text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              >
+                <FolderOpen className="h-4 w-4" />
+              </button>
+            </div>
           )}
         </aside>
 
-        <div className="order-1 flex flex-col lg:order-2">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-card px-3 sm:px-6 py-3 sm:py-4">
-            <button
-              onClick={handlePreviousLesson}
-              disabled={currentLessonIndex <= 0}
-              className="inline-flex items-center gap-1 sm:gap-2 rounded-[14px] border border-border px-3 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-sm font-medium hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="hidden xs:inline">Previous</span>
-              <span className="xs:hidden">Prev</span>
-            </button>
-            <div className="text-[10px] sm:text-xs text-muted-foreground text-center px-2">
-              {total > 0 && currentLesson ? `Lesson ${currentLessonIndex + 1} of ${total}` : "Lesson overview"}
-              {dbDuration > 0 && ` · ${formatTime(dbDuration)}`}
-            </div>
-            <button
-              onClick={handleNextLesson}
-              disabled={isCompleting || currentLessonIndex < 0 || currentLessonIndex >= lessonList.length - 1}
-              className="inline-flex items-center gap-1 sm:gap-2 rounded-[14px] bg-primary px-3 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <span className="hidden xs:inline">Next lesson</span>
-              <span className="xs:hidden">Next</span>
-              <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            </button>
-          </div>
-
+        <div
+          className="order-1 flex flex-col pb-20 md:order-2"
+          style={{
+            "--study-outline-width-md": navigationExpanded ? "300px" : "56px",
+            "--study-footer-left": `calc(var(--portal-sidebar-width, 270px) + ${navigationExpanded ? "340px" : "56px"} + max(0px, (100vw - var(--portal-sidebar-width, 270px) - 1400px) / 2))`,
+          } as React.CSSProperties}
+        >
           {/* Video Player Section */}
-          <div className="bg-[#071a35] px-0 pt-0">
+          <div className="bg-[#071a35] px-3 py-3 sm:px-5 sm:py-5 lg:px-8">
             <div
               ref={playerContainerRef}
-              className={`relative w-full overflow-hidden bg-[#071a35] text-white ${
+              className={`relative mx-auto w-full max-w-[1200px] overflow-hidden rounded-xl bg-[#071a35] text-white shadow-xl shadow-black/15 fullscreen:rounded-none ${
                 lessonType === "document"
                   ? "aspect-[16/9] min-h-0"
                   : ["text", "quiz", "assignment", "audio"].includes(lessonType)
@@ -1227,42 +1319,41 @@ function StudyInterface() {
           </div>
 
           {/* Lesson Info Bar */}
-          <div className="border-b border-border bg-card px-3 sm:px-6 py-2.5 sm:py-4">
-            <div className="flex flex-wrap items-start justify-between gap-2 sm:gap-3">
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[10px] sm:text-xs text-muted-foreground">
-                  <span className="font-medium">
-                    {currentLesson ? `Lesson ${currentLessonIndex + 1} of ${total}` : "Course Overview"}
-                  </span>
-                  <span className="text-border hidden xs:inline">•</span>
-                  <span className="flex items-center gap-1">
-                    <span className="hidden xs:inline">⏱</span> {dbDuration > 0 ? formatTime(dbDuration) : "N/A"}
-                  </span>
-                  <span className="text-[9px] uppercase tracking-wider text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
-                    {lessonType}
-                  </span>
-                  {currentLesson?.completed && (
-                    <>
-                      <span className="text-border hidden sm:inline">•</span>
-                      <span className="text-green-600 text-[10px] sm:text-xs flex items-center gap-1">
-                        <Check className="h-3 w-3" /> Completed
-                      </span>
-                    </>
-                  )}
-                </div>
-                <h1 className="mt-0.5 sm:mt-1 text-base sm:text-xl lg:text-2xl font-semibold leading-snug truncate">
-                  {currentLesson?.title ?? "No active lesson"}
-                </h1>
+          <div className="border-b border-border bg-card px-4 py-4 shadow-sm sm:px-6 sm:py-5">
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+              <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <span className="font-medium">
+                  {currentLesson ? `Lesson ${currentLessonIndex + 1} of ${total}` : "Course Overview"}
+                </span>
+                <span className="text-border hidden xs:inline">•</span>
+                <span className="flex items-center gap-1">
+                  <span className="hidden xs:inline">⏱</span> {dbDuration > 0 ? formatTime(dbDuration) : "N/A"}
+                </span>
+                <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  {lessonType}
+                </span>
+                {currentLesson?.completed && (
+                  <>
+                    <span className="text-border hidden sm:inline">•</span>
+                    <span className="text-green-600 text-[10px] sm:text-xs flex items-center gap-1">
+                      <Check className="h-3 w-3" /> Completed
+                    </span>
+                  </>
+                )}
               </div>
-              <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-                <button 
-                  title="Bookmark" 
-                  className="grid h-7 w-7 sm:h-8 sm:w-8 lg:h-9 lg:w-9 place-items-center rounded-full border border-border bg-card hover:bg-secondary transition-colors"
+              <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
+                <button
+                  title="Bookmark"
+                  aria-label="Bookmark lesson"
+                  className="grid h-8 w-8 place-items-center rounded-xl border border-border bg-background transition-colors hover:bg-secondary sm:h-9 sm:w-9"
                 >
-                  <Bookmark className="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4" />
+                  <Bookmark className="h-4 w-4" />
                 </button>
               </div>
             </div>
+            <h1 className="mt-2 break-words text-lg font-semibold leading-snug tracking-tight sm:text-xl lg:text-2xl">
+              {currentLesson?.title ?? "No active lesson"}
+            </h1>
             {completionError && (
               <div className="border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 sm:px-6">
                 {completionError}
@@ -1275,138 +1366,95 @@ function StudyInterface() {
             )}
           </div>
 
-          <div className="flex-1 bg-background px-3 sm:px-4 lg:px-6 py-4 sm:py-5 lg:py-6">
+          <div className="flex-1 bg-background px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
+            <div className="mx-auto max-w-5xl space-y-5">
             {lessonContent && lessonType !== 'video' && lessonType !== 'text' && (
-              <article className="mb-4 sm:mb-5 card-surface p-4 sm:p-5 lg:p-6">
-                <div className="text-[10px] sm:text-xs font-medium uppercase tracking-widest text-muted-foreground">Lesson content</div>
-                <div className="prose prose-sm mt-2 sm:mt-3 max-w-none text-xs sm:text-sm leading-6 sm:leading-7 text-foreground/80" dangerouslySetInnerHTML={{ __html: lessonContent }} />
+              <article className="card-surface p-5 shadow-soft sm:p-6">
+                <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Lesson content</div>
+                <div className="prose prose-sm mt-3 max-w-none text-sm leading-7 text-foreground/80" dangerouslySetInnerHTML={{ __html: lessonContent }} />
               </article>
             )}
 
             {(lessonType === "assignment") && (
-              <div className="mb-4 sm:mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
+              <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-primary/20 bg-primary/5 p-5">
                 <div>
                   <div className="text-sm font-semibold">Ready to submit your work?</div>
-                  <div className="mt-1 text-xs text-muted-foreground">Review the instructions, then submit your completed work.</div>
+                  <div className="mt-1 text-sm text-muted-foreground">Review the instructions, then submit your completed work.</div>
                 </div>
-                <Link to="/student/assignments" className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                <Link to="/student/assignments" className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90">
                   Submit assignment <ChevronRight className="h-4 w-4" />
                 </Link>
               </div>
             )}
             
-            <div className="flex gap-1 overflow-x-auto rounded-[14px] border border-border bg-card p-1">
-              {[
-                { k: "resources", l: "Resources", i: FileText },
-                { k: "discussion", l: "Discussion", i: MessageSquare },
-              ].map(({ k, l, i: Icon }) => (
-                <button
-                  key={k}
-                  onClick={() => setTab(k as typeof tab)}
-                  className={`inline-flex shrink-0 items-center gap-1.5 sm:gap-2 rounded-[10px] px-3 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-sm font-medium transition-colors ${
-                    tab === k ? "bg-primary text-primary-foreground" : "text-foreground/70 hover:text-foreground"
-                  }`}
-                >
-                  <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> 
-                  <span>{l}</span>
-                </button>
-              ))}
-            </div>
-
-            <div className="mt-4 sm:mt-5 space-y-4 sm:space-y-5">
-              {tab === "resources" && (
-                <div className="card-surface p-4 sm:p-5 lg:p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-[10px] sm:text-xs font-medium uppercase tracking-widest text-muted-foreground">Resources</div>
-                      <div className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                        {resources.length} resource{resources.length !== 1 ? 's' : ''} available
-                      </div>
+              <section ref={resourcesRef} id="lesson-resources" className="scroll-mt-24 card-surface p-5 shadow-soft sm:p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-base font-semibold">Lesson resources</h2>
+                    <div className="mt-1 text-sm text-muted-foreground">
+                      {resources.length} resource{resources.length !== 1 ? 's' : ''} available
                     </div>
-                    <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
-                  </div>
-
-                  <div className="mt-3 space-y-2">
-                    {resources.length ? resources.map((r, index) => (
-                      <a
-                        key={`${r.url}-${index}`}
-                        href={r.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="resource-item flex items-center gap-3 rounded-xl border border-border px-3 py-2.5 hover:border-primary/40 transition-colors hover:bg-secondary/30"
-                      >
-                        <span className="w-5 text-center">
-                          {r.type === 'pdf' && <FileText className="h-4 w-4 text-red-500" />}
-                          {r.type === 'ppt' && <FileText className="h-4 w-4 text-orange-500" />}
-                          {r.type === 'audio' && <Volume2 className="h-4 w-4 text-emerald-500" />}
-                          {r.type === 'video' && <Play className="h-4 w-4 text-purple-400" />}
-                          {r.type === 'link' && <ExternalLink className="h-4 w-4 text-muted-foreground" />}
-                          {r.type === 'doc' && <FileText className="h-4 w-4 text-blue-400" />}
-                          {!['pdf', 'ppt', 'video', 'link', 'doc'].includes(r.type) && <ExternalLink className="h-4 w-4 text-muted-foreground" />}
-                        </span>
-                        <span className="text-sm flex-1 truncate">{r.label}</span>
-                        <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                          {r.type === 'pdf' ? 'PDF' : r.type === 'ppt' ? 'PPT' : r.type === 'audio' ? 'Audio' : r.type === 'video' ? 'Video' : 'Link'}
-                          <ExternalLink className="h-3 w-3" />
-                        </span>
-                      </a>
-                    )) : (
-                      <div className="rounded-2xl border border-border bg-background p-4 sm:p-5 text-xs sm:text-sm text-muted-foreground text-center">
-                        No resources are available for this lesson right now.
-                      </div>
-                    )}
                   </div>
                 </div>
-              )}
-              
-              {tab === "discussion" && (
-                <div className="card-surface p-4 sm:p-5 lg:p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-[10px] sm:text-xs font-medium uppercase tracking-widest text-muted-foreground">Discussion</div>
-                      <div className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                        Join the conversation
-                      </div>
+
+                <div className="mt-5 space-y-2">
+                  {resources.length ? resources.map((r, index) => (
+                    <a
+                      key={`${r.url}-${index}`}
+                      href={r.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="resource-item flex items-center gap-3 rounded-xl border border-border bg-background px-3.5 py-3 transition-colors hover:border-primary/40 hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <span className="w-5 text-center">
+                        {r.type === 'pdf' && <FileText className="h-4 w-4 text-red-500" />}
+                        {r.type === 'ppt' && <FileText className="h-4 w-4 text-orange-500" />}
+                        {r.type === 'audio' && <Volume2 className="h-4 w-4 text-emerald-500" />}
+                        {r.type === 'video' && <Play className="h-4 w-4 text-purple-400" />}
+                        {r.type === 'link' && <ExternalLink className="h-4 w-4 text-muted-foreground" />}
+                        {r.type === 'doc' && <FileText className="h-4 w-4 text-blue-400" />}
+                        {!['pdf', 'ppt', 'video', 'link', 'doc'].includes(r.type) && <ExternalLink className="h-4 w-4 text-muted-foreground" />}
+                      </span>
+                      <span className="text-sm flex-1 truncate">{r.label}</span>
+                      <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                        {r.type === 'pdf' ? 'PDF' : r.type === 'ppt' ? 'PPT' : r.type === 'audio' ? 'Audio' : r.type === 'video' ? 'Video' : 'Link'}
+                        <ExternalLink className="h-3 w-3" />
+                      </span>
+                    </a>
+                  )) : (
+                    <div className="rounded-xl border border-dashed border-border bg-background px-4 py-8 text-center text-sm text-muted-foreground">
+                      No resources are available for this lesson right now.
                     </div>
-                    <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
-                  </div>
-                  <div className="mt-3 space-y-4 sm:space-y-5">
-                    {Array.isArray(course.raw?.discussion) && course.raw.discussion.length ? course.raw.discussion.map((item: any, index: number) => {
-                      const author = item.author ?? item.user ?? item.posted_by ?? "Learner";
-                      const time = item.updated_at ? new Date(item.updated_at).toLocaleDateString() : item.time ?? "Recently";
-                      const message = item.message ?? item.body ?? item.text ?? "No message provided.";
-                      const initials = String(author).split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
-                      return (
-                        <div key={`${author}-${index}`} className="flex gap-2 sm:gap-3">
-                          <div className="grid h-8 w-8 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary text-[10px] sm:text-xs font-semibold">
-                            {initials}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="text-xs sm:text-sm flex flex-wrap items-center gap-1 sm:gap-2">
-                              <span className="font-semibold">{author}</span>
-                              <span className="text-[10px] sm:text-xs text-muted-foreground">{time}</span>
-                            </div>
-                            <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm text-muted-foreground break-words">{message}</p>
-                          </div>
-                        </div>
-                      );
-                    }) : (
-                      <div className="text-xs sm:text-sm text-muted-foreground text-center py-4">
-                        No discussion posts are available for this lesson yet.
-                      </div>
-                    )}
-                  </div>
-                  <div className="mt-4 sm:mt-6 flex flex-col gap-2 border-t border-border pt-4 sm:pt-5 sm:flex-row">
-                    <input 
-                      placeholder="Add to the discussion…" 
-                      className="flex-1 rounded-[14px] border border-border bg-background px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-primary" 
-                    />
-                    <button className="rounded-[14px] bg-primary px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-primary-foreground hover:bg-primary/90 whitespace-nowrap">
-                      Post
-                    </button>
-                  </div>
+                  )}
                 </div>
-              )}
+                </section>
+              </div>
+          </div>
+
+          <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-card/95 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur md:left-[calc(var(--study-outline-width-md,300px)-1px)] lg:left-[calc(var(--study-footer-left,610px)-1px)]">
+            <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-3.5">
+              <button
+                onClick={handlePreviousLesson}
+                disabled={currentLessonIndex <= 0}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-background px-3.5 py-2.5 text-xs font-semibold transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:text-sm"
+              >
+                <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden xs:inline">Previous lesson</span>
+                <span className="xs:hidden">Previous</span>
+              </button>
+              <div className="rounded-full bg-secondary/70 px-3 py-1.5 text-center text-[10px] font-medium text-muted-foreground sm:text-xs">
+                {total > 0 && currentLesson ? `Lesson ${currentLessonIndex + 1} of ${total}` : "Lesson overview"}
+                {dbDuration > 0 && ` · ${formatTime(dbDuration)}`}
+              </div>
+              <button
+                onClick={handleNextLesson}
+                disabled={isCompleting || currentLessonIndex < 0 || currentLessonIndex >= lessonList.length - 1}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:text-sm"
+              >
+                <span className="hidden xs:inline">Next lesson</span>
+                <span className="xs:hidden">Next</span>
+                <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              </button>
             </div>
           </div>
 

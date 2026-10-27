@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { getProfile, patchProfile, getTutorAnalytics } from "@/lib/api";
+import { ThemeSettings } from "@/components/theme-provider";
 
 export const Route = createFileRoute("/tutor/settings")({
   component: TutorSettings,
@@ -153,6 +154,8 @@ function TutorSettings() {
         <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Settings</h2>
         <p className="text-sm text-gray-500 mt-1">Manage your instructor profile and public information</p>
       </div>
+
+      <ThemeSettings />
 
       {/* Content */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">

@@ -2,6 +2,8 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { 
   ChevronDown, 
+  ChevronLeft,
+  ChevronRight,
   Menu, 
   X, 
   LogOut, 
@@ -32,8 +34,9 @@ import {
   Calendar,
   Clock
 } from "lucide-react";
-import { useState, type ReactNode, useRef, useEffect } from "react";
+import { useState, type CSSProperties, type ReactNode, useRef, useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeSelect } from "@/components/theme-provider";
 
 export type NavItem = { 
   label: string; 
@@ -60,7 +63,7 @@ export function PortalShell({
   nav: NavItem[];
   navSections?: NavSection[];
   title: string;
-  user?: { name: string; role: string; initials: string } | null;
+  user?: { name: string; role: string; initials: string; email?: string } | null;
   accent?: "student" | "tutor" | "admin";
   onLogout?: () => void;
 }) {
@@ -69,7 +72,15 @@ export function PortalShell({
   const accentLabel = accent === "student" ? "Student" : accent === "tutor" ? "Tutor" : "Admin";
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const isStudyPage = pathname.startsWith("/student/study/");
+  const [desktopNavCollapsed, setDesktopNavCollapsed] = useState(isStudyPage);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const headerMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setDesktopNavCollapsed(isStudyPage);
+  }, [isStudyPage]);
 
   // Defensive fallback
   const safeUser = user ?? { name: "Loading…", role: accentLabel, initials: "…" };
@@ -80,9 +91,22 @@ export function PortalShell({
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setUserMenuOpen(false);
       }
+      if (headerMenuRef.current && !headerMenuRef.current.contains(event.target as Node)) {
+        setHeaderMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setUserMenuOpen(false);
+        setHeaderMenuOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, []);
 
   const normalizePath = (path: string) => {
@@ -143,7 +167,7 @@ export function PortalShell({
   const sections = navSections || [{ label: "Navigation", items: nav }];
 
   // Render navigation items
-  const renderNavItems = (items: NavItem[]) => {
+  const renderNavItems = (items: NavItem[], collapsed = false) => {
     return items.map((item) => {
       const active = isActiveItem(item.to);
       return (
@@ -151,21 +175,25 @@ export function PortalShell({
           <Link
             to={item.to}
             onClick={() => setMobileNavOpen(false)}
-            className={`flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+            title={collapsed ? item.label : undefined}
+            aria-label={collapsed ? item.label : undefined}
+            className={`flex items-center rounded-xl py-2.5 text-sm font-medium transition-all duration-200 ${
+              collapsed ? "justify-center px-2.5" : "justify-between px-3"
+            } ${
               active
                 ? `${accentStyle.primary} shadow-sm`
                 : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:translate-x-0.5"
             }`}
           >
-            <span className="flex items-center gap-3">
+            <span className={`flex items-center ${collapsed ? "justify-center" : "gap-3"}`}>
               <span className={`grid h-5 w-5 place-items-center transition-transform duration-200 ${
                 active ? "text-white" : "text-gray-400 dark:text-gray-500 group-hover:scale-110"
               }`}>
                 {item.icon}
               </span>
-              {item.label}
+              {!collapsed && item.label}
             </span>
-            {item.badge != null && (
+            {!collapsed && item.badge != null && (
               <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                 active ? "bg-white/20 text-white" : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
               }`}>
@@ -252,58 +280,76 @@ export function PortalShell({
       )}
 
       {/* Desktop Sidebar */}
-      <aside className="fixed inset-y-0 left-0 hidden w-[270px] border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 lg:flex lg:flex-col overflow-y-auto">
-        <div className="px-4 pt-4 pb-3">
-          <div className="flex items-center gap-2">
+      <aside className={`fixed inset-y-0 left-0 z-30 hidden border-r border-gray-200 bg-white transition-[width] duration-200 dark:border-gray-700 dark:bg-gray-800 lg:flex lg:flex-col overflow-y-auto ${
+        desktopNavCollapsed ? "w-[72px]" : "w-[270px]"
+      }`}>
+        <div className={`flex items-center pt-4 pb-3 ${desktopNavCollapsed ? "flex-col gap-3 px-2" : "justify-between gap-2 px-4"}`}>
+          <div className={`flex items-center ${desktopNavCollapsed ? "justify-center" : "gap-2"}`}>
             <div className={`rounded-xl ${accentStyle.iconBg} p-2`}>
               <GraduationCap className="h-6 w-6" />
             </div>
-            <div>
+            {!desktopNavCollapsed && <div>
               <span className="text-sm font-bold text-gray-900 dark:text-white">TechBridge</span>
               <span className={`block text-[10px] font-medium ${accentStyle.text}`}>
                 {accentLabel} Portal
               </span>
-            </div>
+            </div>}
           </div>
+          <button
+            type="button"
+            onClick={() => setDesktopNavCollapsed((collapsed) => !collapsed)}
+            aria-label={desktopNavCollapsed ? "Expand navigation" : "Collapse navigation"}
+            title={desktopNavCollapsed ? "Expand navigation" : "Collapse navigation"}
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
+          >
+            {desktopNavCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 pb-4">
+        <nav className={`flex-1 overflow-y-auto pb-4 ${desktopNavCollapsed ? "px-2" : "px-3"}`}>
           {sections.map((section) => (
             <div key={section.label} className="mt-4 first:mt-0">
-              <div className="flex items-center gap-1.5 px-3 py-1.5">
-                {section.icon && (
+              <div
+                title={desktopNavCollapsed ? section.label : undefined}
+                className={`flex items-center gap-1.5 py-1.5 ${desktopNavCollapsed ? "justify-center px-0" : "px-3"}`}
+              >
+                {!desktopNavCollapsed && section.icon && (
                   <span className="text-gray-400 dark:text-gray-500">{section.icon}</span>
                 )}
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                {!desktopNavCollapsed && <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                   {section.label}
-                </span>
+                </span>}
               </div>
               <ul className="space-y-0.5">
-                {renderNavItems(section.items)}
+                {renderNavItems(section.items, desktopNavCollapsed)}
               </ul>
             </div>
           ))}
         </nav>
 
         {/* Desktop User Section with Dropup Menu */}
-        <div className="border-t border-gray-200 dark:border-gray-700 p-3 relative" ref={userMenuRef}>
+        <div className={`relative border-t border-gray-200 dark:border-gray-700 ${desktopNavCollapsed ? "p-2" : "p-3"}`} ref={userMenuRef}>
           <button
             onClick={() => setUserMenuOpen(!userMenuOpen)}
-            className="w-full flex items-center gap-3 rounded-xl p-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 group"
+            className={`flex w-full items-center rounded-xl p-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 group ${
+              desktopNavCollapsed ? "justify-center" : "gap-3"
+            }`}
           >
             <div className={`grid h-9 w-9 place-items-center rounded-full ${accentStyle.primaryBg} text-white text-sm font-semibold ring-2 ring-offset-2 ring-offset-white dark:ring-offset-gray-800 ${accentStyle.ring} transition-all`}>
               {safeUser.initials}
             </div>
-            <div className="min-w-0 flex-1 text-left">
+            {!desktopNavCollapsed && <div className="min-w-0 flex-1 text-left">
               <div className="truncate text-sm font-medium text-gray-900 dark:text-white">{safeUser.name}</div>
               <div className="truncate text-xs text-gray-500 dark:text-gray-400">{safeUser.role}</div>
-            </div>
-            <ChevronUp className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${userMenuOpen ? 'rotate-180' : ''}`} />
+            </div>}
+            {!desktopNavCollapsed && <ChevronUp className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${userMenuOpen ? 'rotate-180' : ''}`} />}
           </button>
 
           {/* User Dropup Menu */}
           {userMenuOpen && (
-            <div className="absolute bottom-full left-3 right-3 mb-1 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden z-50 animate-in slide-in-from-bottom-2 duration-200">
+            <div className={`absolute bottom-full mb-1 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden z-50 animate-in slide-in-from-bottom-2 duration-200 ${
+              desktopNavCollapsed ? "left-1 right-1" : "left-3 right-3"
+            }`}>
               <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-3">
                   <div className={`grid h-12 w-12 place-items-center rounded-full ${accentStyle.primaryBg} text-white text-lg font-semibold`}>
@@ -317,12 +363,12 @@ export function PortalShell({
               </div>
               <div className="p-1">
                 <Link
-                  to="/student/settings"
+                  to="/student/profile"
                   className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   onClick={() => setUserMenuOpen(false)}
                 >
                   <User className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                  Profile Settings
+                  My Account
                 </Link>
                 <button
                   onClick={() => {
@@ -341,7 +387,7 @@ export function PortalShell({
       </aside>
 
       {/* Main Content */}
-      <div className="lg:pl-[270px]">
+      <div className={desktopNavCollapsed ? "lg:pl-[72px]" : "lg:pl-[270px]"}>
         <header className="sticky top-0 z-30 flex h-14 sm:h-16 items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/80 px-3 sm:px-6 backdrop-blur-md">
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
             <button
@@ -354,12 +400,54 @@ export function PortalShell({
             <h1 className="truncate text-base sm:text-lg font-semibold text-gray-900 dark:text-white">{title}</h1>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
+            <ThemeSelect />
             <span className="hidden xs:inline-block text-xs sm:text-sm text-gray-500 dark:text-gray-400">
               {safeUser.name.split(' ')[0]}
             </span>
-            <div className="h-5 w-px bg-gray-300 dark:bg-gray-600 hidden xs:block" />
-            <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full ${accentStyle.iconBg} flex items-center justify-center text-[10px] sm:text-xs font-semibold ring-2 ring-offset-2 ring-offset-white dark:ring-offset-gray-800 ${accentStyle.ring}`}>
-              {safeUser.initials}
+            <div className="relative" ref={headerMenuRef}>
+              <button
+                type="button"
+                onClick={() => setHeaderMenuOpen((open) => !open)}
+                aria-label="Open profile menu"
+                aria-haspopup="true"
+                aria-expanded={headerMenuOpen}
+                className={`grid h-9 w-9 place-items-center rounded-full ${accentStyle.iconBg} text-xs font-semibold ring-2 ring-offset-2 ring-offset-white transition hover:scale-105 focus-visible:outline-none focus-visible:ring-primary dark:ring-offset-gray-900 ${accentStyle.ring}`}
+              >
+                {safeUser.initials}
+              </button>
+              {headerMenuOpen && (
+                <div className="absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-2xl border border-border bg-card shadow-xl animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="border-b border-border bg-secondary/40 p-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-full ${accentStyle.iconBg} text-sm font-semibold`}>
+                        {safeUser.initials}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-foreground">{safeUser.name}</p>
+                        <p className="truncate text-xs text-muted-foreground">{safeUser.email || safeUser.role}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-1.5">
+                    <Link to="/student/profile" onClick={() => setHeaderMenuOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-foreground transition hover:bg-secondary">
+                      <User className="h-4 w-4 text-muted-foreground" /> My account
+                    </Link>
+                    <Link to="/student/settings" onClick={() => setHeaderMenuOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-foreground transition hover:bg-secondary">
+                      <Settings className="h-4 w-4 text-muted-foreground" /> Settings
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setHeaderMenuOpen(false);
+                        onLogout?.();
+                      }}
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-destructive transition hover:bg-destructive/5"
+                    >
+                      <LogOut className="h-4 w-4" /> Sign out
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </header>
@@ -372,7 +460,10 @@ export function PortalShell({
               </div>
             </div>
           )}
-          <main className="mx-auto min-h-[calc(100vh-4rem)] max-w-[1400px] px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+          <main
+            className="mx-auto min-h-[calc(100vh-4rem)] max-w-[1400px] px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8"
+            style={{ "--portal-sidebar-width": desktopNavCollapsed ? "72px" : "270px" } as CSSProperties}
+          >
             <Outlet />
           </main>
         </div>

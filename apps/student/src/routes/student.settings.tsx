@@ -4,19 +4,20 @@ import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { 
   Lock, Bell, Shield, LogOut, 
   CheckCircle, AlertCircle,
-  CreditCard, Calendar, Clock, Settings as SettingsIcon,
-  ChevronDown, Moon, Sun, Globe, Mail, 
+  Settings as SettingsIcon,
+  ChevronDown, Globe, Mail,
   Smartphone, Sparkles, Award, TrendingUp
 } from "lucide-react";
 import React, { useEffect, useState, type FormEvent } from "react";
-import { getMe, getNotifications, getPaymentHistory, markNotificationsRead, apiRequest } from "@/lib/api";
+import { getMe, getNotifications, markNotificationsRead, apiRequest } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { ThemeSelect } from "@/components/theme-provider";
 
 export const Route = createFileRoute("/student/settings")({
   component: Settings,
 });
 
-type TabType = "security" | "notifications" | "payments" | "preferences";
+type TabType = "security" | "notifications" | "preferences";
 
 async function patchProfile(data: Record<string, any>) {
   return await apiRequest<any>("/auth/me/", {
@@ -30,7 +31,6 @@ function Settings() {
   const [activeTab, setActiveTab] = useState<TabType>("security");
   const [profile, setProfile] = useState<any>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
-  const [payments, setPayments] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,17 +59,15 @@ function Settings() {
       setIsLoading(true);
       setError(null);
       try {
-        const [profileData, notificationList, paymentList] = await Promise.all([
+        const [profileData, notificationList] = await Promise.all([
           getMe().catch(() => null),
           getNotifications().catch(() => []),
-          getPaymentHistory().catch(() => [])
         ]);
         
         if (profileData) {
           setProfile(profileData);
         }
         setNotifications(Array.isArray(notificationList) ? notificationList : []);
-        setPayments(Array.isArray(paymentList) ? paymentList : []);
       } catch (err) {
         console.error('Failed to load settings:', err);
         setError('Could not load settings. Please try again.');
@@ -127,7 +125,6 @@ function Settings() {
   const tabs = [
     { id: "security", label: "Security", icon: Lock },
     { id: "notifications", label: "Notifications", icon: Bell },
-    { id: "payments", label: "Payments", icon: CreditCard },
     { id: "preferences", label: "Preferences", icon: SettingsIcon },
   ];
 
@@ -413,39 +410,6 @@ function Settings() {
           </div>
         )}
 
-        {/* Payments Tab */}
-        {activeTab === "payments" && (
-          <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4 md:p-6 shadow-sm">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-blue-500 flex-shrink-0" />
-              <span>Payment History</span>
-            </h3>
-            
-            {payments.length === 0 ? (
-              <div className="text-center py-6 sm:py-8">
-                <CreditCard className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-2 sm:mb-3" />
-                <p className="text-sm sm:text-base text-gray-500 font-medium">No payment history</p>
-                <p className="text-[10px] sm:text-xs text-gray-400 mt-1">Your payment history will appear here</p>
-              </div>
-            ) : (
-              <div className="space-y-2 sm:space-y-3">
-                {payments.slice(0, 5).map((payment, index) => (
-                  <div key={payment.id || index} className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 p-2.5 sm:p-3 bg-gray-50 rounded-xl">
-                    <div className="min-w-0">
-                      <p className="text-xs sm:text-sm font-semibold text-gray-900 break-words">{payment.provider || payment.method || 'Payment'}</p>
-                      <p className="text-[10px] sm:text-xs text-gray-500">{payment.status || 'Completed'}</p>
-                    </div>
-                    <div className="text-left xs:text-right flex-shrink-0">
-                      <p className="text-xs sm:text-sm font-semibold text-gray-900">{payment.amount || payment.total || '—'}</p>
-                      <p className="text-[10px] sm:text-xs text-gray-400">{payment.date || 'Today'}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Preferences Tab */}
         {activeTab === "preferences" && (
           <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4 md:p-6 shadow-sm">
@@ -460,16 +424,7 @@ function Settings() {
                   <p className="text-xs sm:text-sm font-medium text-gray-900">Theme</p>
                   <p className="text-[10px] sm:text-xs text-gray-500">Choose your preferred theme</p>
                 </div>
-                <div className="flex gap-2">
-                  <button className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-medium border border-blue-200">
-                    <Sun className="h-3.5 w-3.5 inline mr-1" />
-                    Light
-                  </button>
-                  <button className="px-3 py-1.5 bg-gray-100 text-gray-500 rounded-lg text-xs font-medium border border-transparent">
-                    <Moon className="h-3.5 w-3.5 inline mr-1" />
-                    Dark
-                  </button>
-                </div>
+                <ThemeSelect />
               </div>
 
               <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 py-2 border-b border-gray-100">
