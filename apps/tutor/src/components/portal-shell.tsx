@@ -6,7 +6,6 @@ import {
   X, 
   LogOut, 
   User, 
-  ChevronUp,
   LayoutDashboard,
   BookOpen,
   PlusSquare,
@@ -20,7 +19,11 @@ import {
   Sparkles,
   Gauge,
   GraduationCap,
-  Zap
+  Zap,
+  Home,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Pencil,
 } from "lucide-react";
 import { useState, type ReactNode, useRef, useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
@@ -51,9 +54,8 @@ export function PortalShell({
   const isNavigating = useRouterState({ select: (s) => s.status === "pending" });
   const accentLabel = accent === "student" ? "Student" : accent === "tutor" ? "Tutor" : "Admin";
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [desktopNavCollapsed, setDesktopNavCollapsed] = useState(false);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
-  const userMenuRef = useRef<HTMLDivElement>(null);
   const headerMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -65,16 +67,12 @@ export function PortalShell({
   // Close user menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
-        setUserMenuOpen(false);
-      }
       if (headerMenuRef.current && !headerMenuRef.current.contains(event.target as Node)) {
         setHeaderMenuOpen(false);
       }
     };
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setUserMenuOpen(false);
         setHeaderMenuOpen(false);
       }
     };
@@ -156,7 +154,6 @@ export function PortalShell({
 
   const handleLogout = async () => {
     await logout();
-    setUserMenuOpen(false);
     setHeaderMenuOpen(false);
   };
 
@@ -213,7 +210,7 @@ export function PortalShell({
   };
 
   // Render navigation items
-  const renderNavItems = (items: NavItem[]) => {
+  const renderNavItems = (items: NavItem[], collapsed = false) => {
     return items.map((item) => {
       const active = isActiveItem(item.to);
       return (
@@ -221,27 +218,14 @@ export function PortalShell({
           <Link
             to={item.to}
             onClick={() => setMobileNavOpen(false)}
-            className={`flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
-              active
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-foreground/70 hover:bg-secondary hover:text-foreground hover:translate-x-0.5"
-            }`}
+            aria-current={active ? "page" : undefined}
+            aria-label={collapsed ? item.label : undefined}
+            title={collapsed ? item.label : undefined}
+            className="portal-sidebar-link"
           >
-            <span className="flex items-center gap-3">
-              <span className={`grid h-5 w-5 place-items-center transition-transform duration-200 ${
-                active ? "text-primary-foreground" : "text-muted-foreground group-hover:scale-110"
-              }`}>
-                {item.icon}
-              </span>
-              {item.label}
-            </span>
-            {item.badge != null && (
-              <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                active ? "bg-white/20 text-white" : "bg-secondary text-foreground"
-              }`}>
-                {item.badge}
-              </span>
-            )}
+            {item.icon}
+            <span className="portal-sidebar-link-label">{item.label}</span>
+            {!collapsed && item.badge != null && <span className="ml-auto text-xs">{item.badge}</span>}
           </Link>
         </li>
       );
@@ -258,46 +242,32 @@ export function PortalShell({
             className="fixed inset-0 z-40 bg-black/40 lg:hidden animate-in fade-in duration-200"
             aria-label="Close navigation menu"
           />
-          <aside className="fixed inset-y-0 left-0 z-50 w-[85vw] max-w-[320px] border-r border-border bg-sidebar lg:hidden animate-in slide-in-from-left duration-300">
-            <div className="flex items-center justify-between px-4 pt-4 pb-2">
-              <div className="flex items-center gap-2">
-                <div className="rounded-xl bg-primary/10 p-1.5">
-                  <GraduationCap className="h-5 w-5 text-primary" />
-                </div>
-                <span className="text-sm font-bold text-foreground">TechBridge</span>
-                <span className="text-[10px] font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
-                  {accentLabel}
-                </span>
-              </div>
+          <aside className="portal-sidebar portal-mobile-sidebar fixed inset-y-0 left-0 z-50 w-[85vw] max-w-[320px] border-r lg:hidden animate-in slide-in-from-left duration-300">
+            <div className="portal-sidebar-brand-row">
               <button
                 onClick={() => setMobileNavOpen(false)}
-                className="p-2 rounded-lg hover:bg-secondary transition-colors"
+                className="portal-sidebar-close"
+                aria-label="Close navigation"
               >
-                <X className="h-5 w-5 text-muted-foreground" />
+                <X className="h-5 w-5" />
               </button>
             </div>
             
-            <div className="px-3 py-2">
-              <div className="flex items-center gap-3 rounded-xl p-3 bg-gradient-to-r from-primary/10 to-primary/5">
-                <div className="grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground text-sm font-semibold">
-                  {getUserInitials()}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-semibold text-foreground">{getUserName()}</div>
-                  <div className="truncate text-xs text-muted-foreground">{getUserRole()}</div>
-                </div>
+            <div className="portal-sidebar-profile">
+              <div className="portal-sidebar-avatar-wrap">
+                <div className="portal-sidebar-avatar">{getUserInitials()}</div>
+                <Link to="/tutor/settings" onClick={() => setMobileNavOpen(false)} className="portal-sidebar-avatar-edit" aria-label="Edit profile">
+                  <Pencil className="h-3 w-3" />
+                </Link>
               </div>
+              <div className="portal-sidebar-profile-name">{getUserName()}</div>
+              <div className="portal-sidebar-profile-role">{getUserRole()}</div>
             </div>
 
-            <nav className="max-h-[calc(100vh-14rem)] overflow-y-auto px-3 pb-4">
+            <nav className="portal-sidebar-nav max-h-[calc(100vh-14rem)]">
               {navSections.map((section) => (
-                <div key={section.id} className="mt-3 first:mt-0">
-                  <div className="flex items-center gap-1.5 px-3 py-1.5">
-                    <span className="text-muted-foreground/60">{section.icon}</span>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-                      {section.label}
-                    </span>
-                  </div>
+                <div key={section.id} className="portal-sidebar-section">
+                  <div className="portal-sidebar-section-title">{section.label}</div>
                   <ul className="space-y-0.5">
                     {renderNavItems(section.items)}
                   </ul>
@@ -306,13 +276,13 @@ export function PortalShell({
             </nav>
             
             {/* Mobile User Section */}
-            <div className="absolute bottom-0 left-0 right-0 border-t border-border p-3 bg-sidebar">
+            <div className="portal-sidebar-footer">
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
+                className="portal-sidebar-logout"
               >
                 <LogOut className="h-4 w-4" />
-                Logout
+                <span>Logout</span>
               </button>
             </div>
           </aside>
@@ -320,93 +290,46 @@ export function PortalShell({
       )}
 
       {/* Desktop Sidebar */}
-      <aside className="fixed inset-y-0 left-0 hidden w-[270px] border-r border-border bg-sidebar lg:flex lg:flex-col">
-        <div className="px-4 pt-4 pb-3">
-          <div className="flex items-center gap-2">
-            <div className="rounded-xl bg-primary/10 p-2">
-              <GraduationCap className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <span className="text-sm font-bold text-foreground">TechBridge</span>
-              <span className="block text-[10px] font-medium text-muted-foreground">
-                {accentLabel} Portal
-              </span>
-            </div>
+      <aside className={`portal-sidebar fixed inset-y-0 left-0 z-30 hidden border-r lg:flex lg:flex-col ${desktopNavCollapsed ? "is-collapsed w-[82px]" : "w-[300px]"}`}>
+        <div className="portal-sidebar-brand-row">
+          <button type="button" className="portal-sidebar-toggle" onClick={() => setDesktopNavCollapsed((collapsed) => !collapsed)} aria-label={desktopNavCollapsed ? "Expand navigation" : "Collapse navigation"} title={desktopNavCollapsed ? "Expand navigation" : "Collapse navigation"}>
+            {desktopNavCollapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
+          </button>
+        </div>
+        <div className="portal-sidebar-profile">
+          <div className="portal-sidebar-avatar-wrap">
+            <div className="portal-sidebar-avatar">{getUserInitials()}</div>
+            <Link to="/tutor/settings" className="portal-sidebar-avatar-edit" aria-label="Edit profile" title="Edit profile">
+              <Pencil className="h-3 w-3" />
+            </Link>
           </div>
+          <div className="portal-sidebar-profile-name">{getUserName()}</div>
+          <div className="portal-sidebar-profile-role">{getUserRole()}</div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 pb-4">
+        <nav className="portal-sidebar-nav">
           {navSections.map((section) => (
-            <div key={section.id} className="mt-4 first:mt-0">
-              <div className="flex items-center gap-1.5 px-3 py-1.5">
-                <span className="text-muted-foreground/50">{section.icon}</span>
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-                  {section.label}
-                </span>
-              </div>
+            <div key={section.id} className="portal-sidebar-section">
+              <div className="portal-sidebar-section-title">{section.label}</div>
               <ul className="space-y-0.5">
-                {renderNavItems(section.items)}
+                {renderNavItems(section.items, desktopNavCollapsed)}
               </ul>
             </div>
           ))}
         </nav>
 
         {/* Desktop User Section with Dropup Menu */}
-        <div className="border-t border-border p-3 relative" ref={userMenuRef}>
-          <button
-            onClick={() => setUserMenuOpen(!userMenuOpen)}
-            className="w-full flex items-center gap-3 rounded-xl p-2 hover:bg-secondary transition-all duration-200 group"
-          >
-            <div className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground text-sm font-semibold ring-2 ring-primary/10 group-hover:ring-primary/20 transition-all">
-              {getUserInitials()}
-            </div>
-            <div className="min-w-0 flex-1 text-left">
-              <div className="truncate text-sm font-medium text-foreground">{getUserName()}</div>
-              <div className="truncate text-xs text-muted-foreground">{getUserRole()}</div>
-            </div>
-            <ChevronUp className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${userMenuOpen ? 'rotate-180' : ''}`} />
+        <div className="portal-sidebar-footer">
+          <button type="button" onClick={handleLogout} className={`portal-sidebar-logout mt-2 ${desktopNavCollapsed ? "is-collapsed" : ""}`} aria-label="Logout" title={desktopNavCollapsed ? "Logout" : undefined}>
+            <LogOut className="h-4 w-4" />
+            <span className="portal-sidebar-logout-label">Logout</span>
           </button>
-
-          {/* User Dropup Menu */}
-          {userMenuOpen && (
-            <div className="absolute bottom-full left-3 right-3 mb-1 bg-white dark:bg-gray-900 rounded-xl border border-border shadow-xl overflow-hidden z-50 animate-in slide-in-from-bottom-2 duration-200">
-              <div className="p-4 border-b border-border">
-                <div className="flex items-center gap-3">
-                  <div className="grid h-12 w-12 place-items-center rounded-full bg-primary text-primary-foreground text-lg font-semibold">
-                    {getUserInitials()}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-semibold text-foreground">{getUserName()}</div>
-                    <div className="truncate text-xs text-muted-foreground">{getUserEmail()}</div>
-                    <div className="truncate text-xs text-muted-foreground mt-0.5">{getUserRole()}</div>
-                  </div>
-                </div>
-              </div>
-              <div className="p-1">
-                <Link
-                  to="/tutor/settings"
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-foreground hover:bg-secondary transition-colors"
-                  onClick={() => setUserMenuOpen(false)}
-                >
-                  <User className="h-4 w-4 text-muted-foreground" />
-                  Profile Settings
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Logout
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </aside>
 
       {/* Main Content */}
-      <div className="lg:pl-[270px]">
-        <header className="sticky top-0 z-30 flex h-14 sm:h-16 items-center justify-between border-b border-border bg-background/80 px-3 sm:px-6 backdrop-blur-md">
+      <div className={desktopNavCollapsed ? "lg:pl-[82px]" : "lg:pl-[300px]"}>
+        <header className="portal-top-app-bar sticky top-0 z-30 flex h-14 sm:h-16 items-center justify-between border-b px-3 sm:px-6 backdrop-blur-md">
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
             <button
               onClick={() => setMobileNavOpen(true)}
@@ -453,7 +376,7 @@ export function PortalShell({
                     <button
                       type="button"
                       onClick={() => void handleLogout()}
-                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-destructive transition hover:bg-destructive/5"
+                      className="portal-logout-menu-item flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition"
                     >
                       <LogOut className="h-4 w-4" /> Sign out
                     </button>
@@ -472,10 +395,26 @@ export function PortalShell({
               </div>
             </div>
           )}
-          <main className="mx-auto min-h-[calc(100vh-4rem)] max-w-[1400px] px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+          <main className="portal-mobile-nav-main mx-auto min-h-[calc(100vh-4rem)] max-w-[1400px] px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
             <Outlet />
           </main>
         </div>
+        <nav className="portal-mobile-bottom-nav" aria-label="Main navigation">
+          {[
+            { label: "Home", to: "/tutor/dashboard", icon: <Home /> },
+            { label: "Builder", to: "/tutor/builder", icon: <PlusSquare /> },
+            { label: "Students", to: "/tutor/students", icon: <Users /> },
+            { label: "Settings", to: "/tutor/settings", icon: <Settings /> },
+          ].map((item) => {
+            const active = isActiveItem(item.to);
+            return (
+              <Link key={item.to} to={item.to} aria-current={active ? "page" : undefined} className="portal-mobile-bottom-nav-item">
+                <span className="portal-mobile-bottom-nav-icon">{item.icon}</span>
+                <span className="portal-mobile-bottom-nav-label">{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
         <Toaster />
       </div>
     </div>

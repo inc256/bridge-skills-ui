@@ -2,12 +2,14 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { 
   ChevronDown, 
-  ChevronLeft,
-  ChevronRight,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Pencil,
   Menu, 
   X, 
   LogOut, 
   User, 
+  Home,
   ChevronUp,
   LayoutDashboard,
   BookOpen,
@@ -49,6 +51,7 @@ export type NavItem = {
 export type NavSection = { 
   label: string; 
   icon?: ReactNode;
+  dividerBefore?: boolean;
   items: NavItem[]; 
 };
 
@@ -165,6 +168,12 @@ export function PortalShell({
 
   // Use sections if provided, otherwise use flat nav
   const sections = navSections || [{ label: "Navigation", items: nav }];
+  const studentMobileNav = [
+    { label: "Home", to: "/student/dashboard", icon: <Home aria-hidden="true" /> },
+    { label: "Courses", to: "/student/explore", icon: <BookOpen aria-hidden="true" /> },
+    { label: "Forums", to: "/student/forum", icon: <MessageCircle aria-hidden="true" /> },
+    { label: "Profile", to: "/student/profile", icon: <User aria-hidden="true" /> },
+  ];
 
   // Render navigation items
   const renderNavItems = (items: NavItem[], collapsed = false) => {
@@ -177,7 +186,7 @@ export function PortalShell({
             onClick={() => setMobileNavOpen(false)}
             title={collapsed ? item.label : undefined}
             aria-label={collapsed ? item.label : undefined}
-            className={`flex items-center rounded-xl py-2.5 text-sm font-medium transition-all duration-200 ${
+            className={`${accent === "student" ? "student-nav-item" : ""} flex items-center rounded-xl py-2.5 text-sm font-medium transition-all duration-200 ${
               collapsed ? "justify-center px-2.5" : "justify-between px-3"
             } ${
               active
@@ -216,48 +225,77 @@ export function PortalShell({
             className="fixed inset-0 z-40 bg-black/40 lg:hidden animate-in fade-in duration-200"
             aria-label="Close navigation menu"
           />
-          <aside className="fixed inset-y-0 left-0 z-50 w-[85vw] max-w-[320px] border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 lg:hidden animate-in slide-in-from-left duration-300 overflow-y-auto">
-            <div className="flex items-center justify-between px-4 pt-4 pb-2">
-              <div className="flex items-center gap-2">
-                <div className={`rounded-xl ${accentStyle.iconBg} p-1.5`}>
-                  <GraduationCap className="h-5 w-5" />
+          <aside className={`fixed inset-y-0 left-0 z-50 w-[85vw] max-w-[320px] border-r border-gray-200 dark:border-gray-700 lg:hidden animate-in slide-in-from-left duration-300 overflow-y-auto ${
+            accent === "student" ? "student-sidebar student-mobile-sidebar" : "bg-white dark:bg-gray-800"
+          }`}>
+            <div className={`student-mobile-header flex items-center px-4 pt-4 pb-2 ${
+              accent === "student" ? "justify-end" : "justify-between"
+            }`}>
+              {accent !== "student" && (
+                <div className="flex items-center gap-2">
+                  <div className={`rounded-xl ${accentStyle.iconBg} p-1.5`}>
+                    <GraduationCap className="h-5 w-5" />
+                  </div>
+                  <span className="text-sm font-bold text-gray-900 dark:text-white">TechBridge</span>
+                  <span className={`text-[10px] font-medium ${accentStyle.text} ${accentStyle.bg} px-2 py-0.5 rounded-full`}>
+                    {accentLabel}
+                  </span>
                 </div>
-                <span className="text-sm font-bold text-gray-900 dark:text-white">TechBridge</span>
-                <span className={`text-[10px] font-medium ${accentStyle.text} ${accentStyle.bg} px-2 py-0.5 rounded-full`}>
-                  {accentLabel}
-                </span>
-              </div>
+              )}
               <button
+                type="button"
                 onClick={() => setMobileNavOpen(false)}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Close navigation"
+                className="student-mobile-close grid h-9 w-9 place-items-center rounded-xl border border-gray-200 text-gray-600 transition-colors hover:bg-white dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
               >
-                <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                <X className="h-4 w-4" />
               </button>
             </div>
             
-            <div className="px-3 py-2">
-              <div className={`flex items-center gap-3 rounded-xl p-3 ${accentStyle.bg} dark:bg-opacity-10`}>
-                <div className={`grid h-10 w-10 place-items-center rounded-full ${accentStyle.primaryBg} text-white text-sm font-semibold`}>
-                  {safeUser.initials}
+            {accent === "student" ? (
+              <div className="student-sidebar-profile">
+                <div className="student-sidebar-avatar-wrap">
+                  <div className="student-sidebar-avatar">{safeUser.initials}</div>
+                  <Link
+                    to="/student/profile"
+                    onClick={() => setMobileNavOpen(false)}
+                    className="student-avatar-edit"
+                    aria-label="Edit profile"
+                    title="Edit profile"
+                  >
+                    <Pencil aria-hidden="true" />
+                  </Link>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-semibold text-gray-900 dark:text-white">{safeUser.name}</div>
-                  <div className="truncate text-xs text-gray-500 dark:text-gray-400">{safeUser.role}</div>
+                <div className="student-sidebar-name" title={safeUser.name}>{safeUser.name}</div>
+              </div>
+            ) : (
+              <div className="px-3 py-2">
+                <div className={`flex items-center gap-3 rounded-xl p-3 ${accentStyle.bg} dark:bg-opacity-10`}>
+                  <div className={`grid h-10 w-10 place-items-center rounded-full ${accentStyle.primaryBg} text-white text-sm font-semibold`}>
+                    {safeUser.initials}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-semibold text-gray-900 dark:text-white">{safeUser.name}</div>
+                    <div className="truncate text-xs text-gray-500 dark:text-gray-400">{safeUser.role}</div>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            <nav className="max-h-[calc(100vh-14rem)] overflow-y-auto px-3 pb-4">
+            <nav className={`max-h-[calc(100vh-14rem)] overflow-y-auto px-3 pb-4 ${
+              accent === "student" ? "student-sidebar-nav" : ""
+            }`}>
               {sections.map((section) => (
-                <div key={section.label} className="mt-3 first:mt-0">
-                  <div className="flex items-center gap-1.5 px-3 py-1.5">
+                <div key={section.label || section.items[0]?.to} className="student-nav-section mt-3 first:mt-0">
+                  {section.dividerBefore && <div className="student-nav-divider" />}
+                  {section.label && <div className="flex items-center gap-1.5 px-3 py-1.5">
                     {section.icon && (
                       <span className="text-gray-400 dark:text-gray-500">{section.icon}</span>
                     )}
                     <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                       {section.label}
                     </span>
-                  </div>
+                  </div>}
                   <ul className="space-y-0.5">
                     {renderNavItems(section.items)}
                   </ul>
@@ -266,10 +304,12 @@ export function PortalShell({
             </nav>
             
             {/* Mobile User Section */}
-            <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200 dark:border-gray-700 p-3 bg-white dark:bg-gray-800">
+            <div className={`absolute bottom-0 left-0 right-0 border-t border-gray-200 dark:border-gray-700 p-3 bg-white dark:bg-gray-800 ${
+              accent === "student" ? "student-sidebar-footer" : ""
+            }`}>
               <button
                 onClick={onLogout}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30 transition-colors"
+                className="portal-sidebar-logout justify-center"
               >
                 <LogOut className="h-4 w-4" />
                 Logout
@@ -280,46 +320,81 @@ export function PortalShell({
       )}
 
       {/* Desktop Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-30 hidden border-r border-gray-200 bg-white transition-[width] duration-200 dark:border-gray-700 dark:bg-gray-800 lg:flex lg:flex-col overflow-y-auto ${
-        desktopNavCollapsed ? "w-[72px]" : "w-[270px]"
+      <aside className={`fixed inset-y-0 left-0 z-30 hidden border-r border-gray-200 transition-[width] duration-200 dark:border-gray-700 lg:flex lg:flex-col overflow-y-auto ${
+        accent === "student" ? "student-sidebar" : ""
+      } ${
+        accent !== "student" ? "bg-white dark:bg-gray-800" : ""
+      } ${
+        desktopNavCollapsed ? "w-[72px]" : accent === "student" ? "w-[300px]" : "w-[270px]"
       }`}>
-        <div className={`flex items-center pt-4 pb-3 ${desktopNavCollapsed ? "flex-col gap-3 px-2" : "justify-between gap-2 px-4"}`}>
-          <div className={`flex items-center ${desktopNavCollapsed ? "justify-center" : "gap-2"}`}>
-            <div className={`rounded-xl ${accentStyle.iconBg} p-2`}>
-              <GraduationCap className="h-6 w-6" />
+        <div className={`student-brand-row flex items-center pt-4 pb-3 ${
+          accent === "student"
+            ? desktopNavCollapsed ? "justify-center px-2" : "justify-end px-4"
+            : desktopNavCollapsed ? "flex-col gap-3 px-2" : "justify-between gap-2 px-4"
+        }`}>
+          {accent !== "student" && (
+            <div className={`flex items-center ${desktopNavCollapsed ? "justify-center" : "gap-2"}`}>
+              <div className={`rounded-xl ${accentStyle.iconBg} p-2`}>
+                <GraduationCap className="h-6 w-6" />
+              </div>
+              {!desktopNavCollapsed && <div>
+                <span className="text-sm font-bold text-gray-900 dark:text-white">TechBridge</span>
+                <span className={`block text-[10px] font-medium ${accentStyle.text}`}>
+                  {accentLabel} Portal
+                </span>
+              </div>}
             </div>
-            {!desktopNavCollapsed && <div>
-              <span className="text-sm font-bold text-gray-900 dark:text-white">TechBridge</span>
-              <span className={`block text-[10px] font-medium ${accentStyle.text}`}>
-                {accentLabel} Portal
-              </span>
-            </div>}
-          </div>
+          )}
           <button
             type="button"
             onClick={() => setDesktopNavCollapsed((collapsed) => !collapsed)}
             aria-label={desktopNavCollapsed ? "Expand navigation" : "Collapse navigation"}
             title={desktopNavCollapsed ? "Expand navigation" : "Collapse navigation"}
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
+            aria-expanded={!desktopNavCollapsed}
+            className={`student-collapse-button grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-gray-200 bg-white text-gray-600 shadow-sm transition-all hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-gray-600 dark:hover:bg-gray-700 dark:hover:text-white ${
+              accent === "student" ? "is-student" : ""
+            }`}
           >
-            {desktopNavCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            {desktopNavCollapsed
+              ? <PanelLeftOpen className="h-[18px] w-[18px]" strokeWidth={1.8} />
+              : <PanelLeftClose className="h-[18px] w-[18px]" strokeWidth={1.8} />}
           </button>
         </div>
 
+        {accent === "student" && (
+          <div className={`student-sidebar-profile ${desktopNavCollapsed ? "is-collapsed" : ""}`}>
+            <div className="student-sidebar-avatar-wrap">
+              <div className="student-sidebar-avatar">{safeUser.initials}</div>
+              <Link
+                to="/student/profile"
+                className="student-avatar-edit"
+                aria-label="Edit profile"
+                title="Edit profile"
+              >
+                <Pencil aria-hidden="true" />
+              </Link>
+            </div>
+            {!desktopNavCollapsed && (
+              <div className="student-sidebar-name" title={safeUser.name}>{safeUser.name}</div>
+            )}
+          </div>
+        )}
+
         <nav className={`flex-1 overflow-y-auto pb-4 ${desktopNavCollapsed ? "px-2" : "px-3"}`}>
           {sections.map((section) => (
-            <div key={section.label} className="mt-4 first:mt-0">
-              <div
+            <div key={section.label || section.items[0]?.to} className="student-nav-section mt-4 first:mt-0">
+              {section.dividerBefore && <div className="student-nav-divider" />}
+              {section.label && !desktopNavCollapsed && <div
                 title={desktopNavCollapsed ? section.label : undefined}
-                className={`flex items-center gap-1.5 py-1.5 ${desktopNavCollapsed ? "justify-center px-0" : "px-3"}`}
+                className="flex items-center gap-1.5 px-3 py-1.5"
               >
-                {!desktopNavCollapsed && section.icon && (
+                {section.icon && (
                   <span className="text-gray-400 dark:text-gray-500">{section.icon}</span>
                 )}
-                {!desktopNavCollapsed && <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                   {section.label}
-                </span>}
-              </div>
+                </span>
+              </div>}
               <ul className="space-y-0.5">
                 {renderNavItems(section.items, desktopNavCollapsed)}
               </ul>
@@ -328,7 +403,22 @@ export function PortalShell({
         </nav>
 
         {/* Desktop User Section with Dropup Menu */}
-        <div className={`relative border-t border-gray-200 dark:border-gray-700 ${desktopNavCollapsed ? "p-2" : "p-3"}`} ref={userMenuRef}>
+        <div className={`relative border-t border-gray-200 dark:border-gray-700 ${desktopNavCollapsed ? "p-2" : "p-3"} ${
+          accent === "student" ? "student-sidebar-footer" : ""
+        }`} ref={userMenuRef}>
+          {accent === "student" ? (
+            <button
+              type="button"
+              onClick={onLogout}
+              title={desktopNavCollapsed ? "Logout" : undefined}
+              aria-label="Logout"
+              className={`portal-sidebar-logout ${desktopNavCollapsed ? "is-collapsed" : ""}`}
+            >
+              <LogOut className="h-5 w-5" />
+              {!desktopNavCollapsed && <span>Logout</span>}
+            </button>
+          ) : (
+            <>
           <button
             onClick={() => setUserMenuOpen(!userMenuOpen)}
             className={`flex w-full items-center rounded-xl p-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 group ${
@@ -375,7 +465,7 @@ export function PortalShell({
                     setUserMenuOpen(false);
                     if (onLogout) onLogout();
                   }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                  className="portal-logout-menu-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors"
                 >
                   <LogOut className="h-4 w-4" />
                   Logout
@@ -383,12 +473,14 @@ export function PortalShell({
               </div>
             </div>
           )}
+            </>
+          )}
         </div>
       </aside>
 
       {/* Main Content */}
-      <div className={desktopNavCollapsed ? "lg:pl-[72px]" : "lg:pl-[270px]"}>
-        <header className="sticky top-0 z-30 flex h-14 sm:h-16 items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/80 px-3 sm:px-6 backdrop-blur-md">
+      <div className={desktopNavCollapsed ? "lg:pl-[72px]" : accent === "student" ? "lg:pl-[300px]" : "lg:pl-[270px]"}>
+        <header className="student-top-app-bar sticky top-0 z-30 flex h-14 sm:h-16 items-center justify-between border-b px-3 sm:px-6 backdrop-blur-md">
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
             <button
               onClick={() => setMobileNavOpen(true)}
@@ -441,7 +533,7 @@ export function PortalShell({
                         setHeaderMenuOpen(false);
                         onLogout?.();
                       }}
-                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-destructive transition hover:bg-destructive/5"
+                      className="portal-logout-menu-item flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition"
                     >
                       <LogOut className="h-4 w-4" /> Sign out
                     </button>
@@ -461,14 +553,36 @@ export function PortalShell({
             </div>
           )}
           <main
-            className="mx-auto min-h-[calc(100vh-4rem)] max-w-[1400px] px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8"
-            style={{ "--portal-sidebar-width": desktopNavCollapsed ? "72px" : "270px" } as CSSProperties}
+            className={`mx-auto min-h-[calc(100vh-4rem)] max-w-[1400px] px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 ${
+              accent === "student" ? "student-mobile-main" : ""
+            }`}
+            style={{
+              "--portal-sidebar-width": desktopNavCollapsed ? "72px" : accent === "student" ? "300px" : "270px",
+            } as CSSProperties}
           >
             <Outlet />
           </main>
         </div>
         <Toaster />
       </div>
+      {accent === "student" && (
+        <nav className="student-bottom-nav" aria-label="Main navigation">
+          {studentMobileNav.map((item) => {
+            const active = isActiveItem(item.to);
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                aria-current={active ? "page" : undefined}
+                className={`student-bottom-nav-item ${active ? "active" : ""}`}
+              >
+                <span className="student-bottom-nav-icon">{item.icon}</span>
+                <span className="student-bottom-nav-label">{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      )}
     </div>
   );
 }

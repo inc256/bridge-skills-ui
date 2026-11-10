@@ -1,6 +1,8 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
+@import "../../auth-page.css";
+@import "../../portal-sidebar.css";
 
 @custom-variant dark (&:is(.dark *));
 

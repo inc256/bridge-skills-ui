@@ -1,7 +1,6 @@
 import { useRouter } from "@tanstack/react-router";
-import { ArrowRight, Eye, EyeOff } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { useState } from "react";
-import { Logo } from "@/components/logo";
 import { login, getCurrentUserRole } from "@/lib/api";
 
 const ALLOWED_ROLES = ["admin", "super_admin", "staff"];
@@ -11,7 +10,6 @@ export function AdminAuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [keepSignedIn, setKeepSignedIn] = useState(true);
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -59,98 +57,103 @@ export function AdminAuthPage() {
   }
 
   return (
-    <div className="flex h-dvh items-center justify-center overflow-hidden bg-[#F5F7F2] p-3 sm:p-4">
-      <div className="w-full max-w-[380px] max-h-full">
-        {/* Logo */}
-        <div className="flex justify-center mb-8">
-          <Logo />
-        </div>
+    <main className="auth-screen">
+      <section className="auth-image" aria-label="Students working together">
+        <img src="/hero-5.webp" alt="Students working together" />
+      </section>
 
-        {/* Card */}
-        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-8">
-          <h1 className="text-[22px] font-bold text-gray-900 mb-1">Admin Sign In</h1>
-          <p className="text-sm text-gray-400 mb-6">Enter your credentials to access the admin portal.</p>
+      <section className="auth-form-section">
+        <div className="auth-content">
+          <h1>Join For Success</h1>
+          <p className="auth-subtitle">
+            Sign in to securely access the TechBridge admin portal.
+          </p>
 
-          {error && (
-            <div className="mb-4 p-2.5 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-              {error}
-            </div>
-          )}
+          <div className="auth-toggle" role="tablist" aria-label="Account action">
+            <button type="button" className="active" role="tab" aria-selected="true">
+              Log In
+            </button>
+            <button type="button" role="tab" aria-selected="false" disabled>
+              Sign Up
+            </button>
+          </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div>
-              <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-                Email
-              </label>
+          <form className="auth-form" onSubmit={handleSubmit}>
+            <div className="auth-input-group">
+              <label htmlFor="admin-auth-email">Email</label>
               <input
+                id="admin-auth-email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(event) => setEmail(event.target.value)}
                 placeholder="admin@techbridgeskills.ug"
-                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
                 required
                 autoComplete="email"
               />
             </div>
 
-            <div>
-              <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 pr-12 text-sm text-gray-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
-                  required
-                  autoComplete="current-password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
+            <div className="auth-input-group">
+              <label htmlFor="admin-auth-password">Password</label>
+              <input
+                id="admin-auth-password"
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="••••••••••"
+                required
+                autoComplete="current-password"
+              />
             </div>
 
-            <label className="inline-flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={keepSignedIn}
-                onChange={(event) => setKeepSignedIn(event.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-              />
-              Keep me signed in
-            </label>
+            {error && (
+              <div className="auth-error" role="alert">
+                <AlertCircle aria-hidden="true" />
+                <span>{error}</span>
+              </div>
+            )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="mt-2 w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70 flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  Signing in…
-                </>
-              ) : (
-                <>
-                  Sign in
-                  <ArrowRight className="h-4 w-4" />
-                </>
-              )}
+            <button className="auth-submit" type="submit" disabled={loading}>
+              {loading ? "Please wait..." : "Log In"}
             </button>
+
+            <div className="auth-options">
+              <button
+                className="auth-forgot"
+                type="button"
+                onClick={() => setError("Password reset functionality coming soon.")}
+              >
+                Forgot password?
+              </button>
+              <label className="auth-remember">
+                <input
+                  type="checkbox"
+                  checked={keepSignedIn}
+                  onChange={(event) => setKeepSignedIn(event.target.checked)}
+                />
+                Remember Me
+              </label>
+            </div>
+
+            <div className="auth-divider">
+              <span>Or Sign Up with</span>
+            </div>
+
+            <div className="auth-social-buttons">
+              <button className="auth-social-button" type="button" aria-label="Continue with Google">
+                <img src="/google-color-svgrepo-com.svg" alt="" aria-hidden="true" />
+              </button>
+              <button className="auth-social-button" type="button" aria-label="Continue with Apple">
+                <img src="/apple-svgrepo-com.svg" alt="" aria-hidden="true" />
+              </button>
+            </div>
+
+            <p className="auth-terms">
+              By signing up, you agree to the <a href="#">Terms of Service</a> and{" "}
+              <a href="#">Privacy Policy</a>
+            </p>
           </form>
         </div>
-
-        <p className="text-center text-xs text-gray-400 mt-5">
-          TechBridge Skills Hub © {new Date().getFullYear()}
-        </p>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

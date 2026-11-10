@@ -1028,7 +1028,7 @@ function Builder() {
 
   return (
     <form
-      className="mx-auto w-full max-w-[1440px] space-y-5 px-1 pb-24 sm:space-y-6 sm:px-2 lg:pb-8"
+      className="tutor-builder-mobile-form mx-auto w-full max-w-[1440px] space-y-5 px-1 pb-24 sm:space-y-6 sm:px-2 lg:pb-8"
       onSubmit={handleSave}
     >
       <header className="sticky top-0 z-30 -mx-1 border-b border-border bg-background/95 px-1 py-3 backdrop-blur-md sm:-mx-2 sm:px-2">
@@ -2100,7 +2100,7 @@ function Builder() {
         </aside>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-3 border-t border-border bg-card/95 px-3 py-3 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur-md lg:hidden">
+      <div className="tutor-builder-mobile-actions fixed inset-x-0 bottom-0 z-40 flex items-center gap-3 border-t border-border bg-card/95 px-3 py-3 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur-md lg:hidden">
         {step > 0 && (
           <button
             type="button"

@@ -1,39 +1,7 @@
 // apps/student/src/routes/student.tsx
 import { createFileRoute, useRouterState, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { 
-  LayoutDashboard, 
-  GraduationCap, 
-  BookOpen, 
-  Award, 
-  BarChart3, 
-  Settings, 
-  Bell,
-  HelpCircle,
-  MessageCircle,
-  Calendar,
-  Clock,
-  Star,
-  TrendingUp,
-  User,
-  Users,
-  FileText,
-  Play,
-  CheckCircle,
-  Zap,
-  Sparkles,
-  Target,
-  Library,
-  BookMarked,
-  CreditCard,
-  FolderOpen,
-  Globe,
-  Server,
-  Database,
-  Cloud,
-  Lock,
-  UserCog,
-} from "lucide-react";
+import { BarChart3, FileText, LayoutDashboard, Library, MessageCircle, User } from "lucide-react";
 import { PortalShell } from "@/components/portal-shell";
 import { StudentAuthPage } from "@/components/student-auth-page";
 import { apiRequest, logout as apiLogout } from "@/lib/api";
@@ -58,46 +26,31 @@ function getInitials(name: string) {
   return initials || "ST";
 }
 
-// Navigation sections with categories - matching tutor style
 const NAV_SECTIONS = [
   {
-    label: "Quick Access",
-    icon: <Zap className="w-3.5 h-3.5" />,
+    label: "",
     items: [
       { label: "Dashboard", to: "/student/dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
-    ]
+      { label: "Courses", to: "/student/explore", icon: <Library className="h-4 w-4" /> },
+    ],
   },
   {
     label: "Courses",
-    icon: <BookOpen className="w-3.5 h-3.5" />,
+    dividerBefore: true,
     items: [
-      { label: "Browse Courses", to: "/student/explore", icon: <Library className="h-4 w-4" /> },
-      { label: "My Courses", to: "/student/my-learning", icon: <BookMarked className="h-4 w-4" /> },
-      { label: "Course Forums", to: "/student/forum", icon: <MessageCircle className="h-4 w-4" /> },
+      { label: "Forums", to: "/student/forum", icon: <MessageCircle className="h-4 w-4" /> },
       { label: "Assignments", to: "/student/assignments", icon: <FileText className="h-4 w-4" /> },
-    ]
+    ],
   },
   {
-    label: "Progress",
-    icon: <TrendingUp className="w-3.5 h-3.5" />,
+    label: "Profile",
+    dividerBefore: true,
     items: [
-      { label: "Certificates", to: "/student/certificates", icon: <Award className="h-4 w-4" /> },
-      { label: "Bookmarks", to: "/student/bookmarks", icon: <Star className="h-4 w-4" /> },
-      { label: "Payments", to: "/student/payments", icon: <CreditCard className="h-4 w-4" /> },
-    ]
+      { label: "Stats & Activities", to: "/student/achievements", icon: <BarChart3 className="h-4 w-4" /> },
+      { label: "Profile", to: "/student/profile", icon: <User className="h-4 w-4" /> },
+    ],
   },
-  {
-    label: "Settings",
-    icon: <Settings className="w-3.5 h-3.5" />,
-    items: [
-      // { label: "Settings", to: "/student/settings", icon: <Settings className="h-4 w-4" /> },
-      { label: "Account", to: "/student/profile", icon: <User className="h-4 w-4" /> },
-    ]
-  }
 ];
-
-// Flatten nav items for the PortalShell prop
-const FLAT_NAV = NAV_SECTIONS.flatMap(section => section.items);
 
 function StudentLayout() {
   const router = useRouter();
@@ -206,7 +159,7 @@ function StudentLayout() {
       accent="student"
       title="Student Dashboard"
       user={studentUser}
-      nav={FLAT_NAV}
+      nav={NAV_SECTIONS.flatMap((section) => section.items)}
       navSections={NAV_SECTIONS}
       onLogout={handleLogout}
     />
