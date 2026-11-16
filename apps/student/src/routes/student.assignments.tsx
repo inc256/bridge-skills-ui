@@ -1,327 +1,265 @@
-// apps/student/src/routes/student.assignments.tsx
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { PageSkeleton } from "@/components/ui/page-skeleton";
-import { Calendar, FileText, ChevronRight, Clock, CheckCircle, AlertCircle, Filter, Search, TrendingUp, Award } from "lucide-react";
-import { useEffect, useState } from "react";
-import { getAssignments } from "@/lib/api";
-import type { Assignment } from "@/lib/api";
+import { createFileRoute } from "@tanstack/react-router";
+import { EllipsisVertical, FileText } from "lucide-react";
+import { useState } from "react";
 
 export const Route = createFileRoute("/student/assignments")({
   component: Assignments,
 });
 
-interface AssignmentWithStatus extends Assignment {
-  status: "pending" | "submitted" | "graded" | "in-progress" | "not-started";
-  score?: number | null;
-  maxScore?: number;
-  due: string;
-  type: string;
+type AssignmentStatus = "pending" | "submitted" | "assessed" | "declined";
+type AssignmentTab = "all" | "completed" | "assessed";
+
+interface AssignmentWithStatus {
+  id: string;
+  title: string;
   course: string;
+  due: string;
+  status: AssignmentStatus;
+  type: string;
 }
 
-const statusConfig: Record<string, { label: string; className: string; icon: any }> = {
-  "pending": { 
-    label: "Pending", 
-    className: "bg-amber-50 text-amber-600 border-amber-200",
-    icon: AlertCircle
-  },
-  "submitted": { 
-    label: "Submitted", 
-    className: "bg-blue-50 text-blue-600 border-blue-200",
-    icon: Clock
-  },
-  "graded": { 
-    label: "Graded", 
-    className: "bg-emerald-50 text-emerald-600 border-emerald-200",
-    icon: CheckCircle
-  },
-  "in-progress": { 
-    label: "In Progress", 
-    className: "bg-purple-50 text-purple-600 border-purple-200",
-    icon: FileText
-  },
-  "not-started": { 
-    label: "Not Started", 
-    className: "bg-gray-50 text-gray-600 border-gray-200",
-    icon: AlertCircle
-  }
-};
+function dueIn(days: number, hours = 0, minutes = 0) {
+  const duration = (days * 24 * 60 + hours * 60 + minutes) * 60_000;
+  return new Date(Date.now() + duration).toISOString();
+}
 
-const filterOptions = [
-  { key: "all", label: "All" },
-  { key: "pending", label: "Pending" },
-  { key: "submitted", label: "Submitted" },
-  { key: "graded", label: "Graded" },
-  { key: "in-progress", label: "In Progress" },
+const demoAssignments: AssignmentWithStatus[] = [
+  {
+    id: "design-thinking-module-3",
+    course: "Diploma in Design Thinking",
+    type: "Module 3",
+    title: "The End of Module Assignment.",
+    due: dueIn(30),
+    status: "pending",
+  },
+  {
+    id: "intro-to-it-module-1",
+    course: "Introduction to IT",
+    type: "Module 1",
+    title: "Check Assignment.",
+    due: dueIn(-30),
+    status: "declined",
+  },
+  {
+    id: "advanced-javascript-module-2",
+    course: "Advanced Javascript Course",
+    type: "Module 2",
+    title: "Assignment Check.",
+    due: dueIn(3, 2, 31),
+    status: "submitted",
+  },
+  {
+    id: "web-development-module-4",
+    course: "Web Development",
+    type: "Module 4",
+    title: "Build a Responsive Landing Page.",
+    due: dueIn(6),
+    status: "pending",
+  },
+  {
+    id: "design-thinking-module-2",
+    course: "Diploma in Design Thinking",
+    type: "Module 2",
+    title: "Create a User Journey Map.",
+    due: dueIn(-2),
+    status: "assessed",
+  },
+  {
+    id: "javascript-module-1",
+    course: "Advanced Javascript Course",
+    type: "Module 1",
+    title: "JavaScript Functions Practice.",
+    due: dueIn(10),
+    status: "submitted",
+  },
+  {
+    id: "ux-module-5",
+    course: "UX Fundamentals",
+    type: "Module 5",
+    title: "Complete an Accessibility Audit.",
+    due: dueIn(12),
+    status: "pending",
+  },
+  {
+    id: "product-design-module-1",
+    course: "Product Design",
+    type: "Module 1",
+    title: "Write a Project Proposal.",
+    due: dueIn(20),
+    status: "pending",
+  },
+  {
+    id: "design-thinking-module-6",
+    course: "Diploma in Design Thinking",
+    type: "Module 6",
+    title: "Final Project Reflection.",
+    due: dueIn(14),
+    status: "pending",
+  },
+  {
+    id: "it-module-4",
+    course: "Introduction to IT",
+    type: "Module 4",
+    title: "IT Security Fundamentals.",
+    due: dueIn(8),
+    status: "pending",
+  },
 ];
 
+function getTimeLeft(due: string) {
+  if (!due || due.toLowerCase() === "tbd") {
+    return { label: "DUE DATE: TBD", expired: false };
+  }
+
+  const dueTime = new Date(due).getTime();
+  if (!Number.isFinite(dueTime)) {
+    return { label: `DUE: ${due}`, expired: false };
+  }
+
+  const difference = dueTime - Date.now();
+  const totalMinutes = Math.floor(Math.abs(difference) / 60_000);
+  const days = Math.floor(totalMinutes / 1440);
+  const hours = Math.floor((totalMinutes % 1440) / 60);
+  const minutes = totalMinutes % 60;
+  const parts = [
+    days ? `${days} DAY${days === 1 ? "" : "S"}` : "",
+    hours ? `${hours} HR` : "",
+    minutes || (!days && !hours) ? `${minutes} MIN` : "",
+  ].filter(Boolean);
+
+  return {
+    label: `TIME LEFT: ${difference < 0 ? "-" : ""}${parts.join(" ")}`,
+    expired: difference < 0,
+  };
+}
+
+function DocumentThumbnail() {
+  return (
+    <div className="flex h-[85px] w-[65px] shrink-0 flex-col gap-[3px] overflow-hidden rounded border border-gray-300 bg-white p-1.5 sm:h-20 sm:w-[60px] sm:p-1" aria-hidden="true">
+      <span className="mb-[2px] h-[2px] w-3/5 rounded bg-blue-400 sm:bg-blue-600" />
+      <span className="h-[2px] w-full rounded bg-gray-400" />
+      <span className="h-[2px] w-full rounded bg-gray-400" />
+      <span className="h-[2px] w-[70%] rounded bg-gray-400" />
+      <span className="h-[2px] w-full rounded bg-gray-400" />
+      <span className="h-[2px] w-2/5 rounded bg-gray-400" />
+      <span className="h-[2px] w-full rounded bg-gray-400" />
+      <span className="h-[2px] w-[70%] rounded bg-gray-400" />
+      <span className="h-[2px] w-full rounded bg-gray-400" />
+    </div>
+  );
+}
+
 function Assignments() {
-  const [assignments, setAssignments] = useState<AssignmentWithStatus[]>([]);
-  const [filter, setFilter] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const assignments = demoAssignments;
+  const [activeTab, setActiveTab] = useState<AssignmentTab>("all");
 
-  useEffect(() => {
-    const loadAssignments = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const data = await getAssignments();
-        // Map API data to our format with status
-        const mappedData = (Array.isArray(data) ? data : []).map((a: any) => ({
-          ...a,
-          status: a.status?.toLowerCase() || "pending",
-          score: a.score || null,
-          maxScore: a.max_score || 100,
-          due: a.due || a.due_date || "TBD",
-          type: a.type || "Assignment",
-          course: a.course || "Course"
-        }));
-        setAssignments(mappedData);
-      } catch (err) {
-        console.error('Failed to load assignments:', err);
-        setError('Could not load assignments. Please try again.');
-        setAssignments([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadAssignments();
-  }, []);
-
-  // Filter assignments
-  const filteredAssignments = assignments
-    .filter(a => filter === "all" || a.status === filter)
-    .filter(a => {
-      if (!searchQuery) return true;
-      const query = searchQuery.toLowerCase();
-      return a.title?.toLowerCase().includes(query) ||
-             a.course?.toLowerCase().includes(query) ||
-             a.type?.toLowerCase().includes(query);
-    });
-
-  // Statistics
-  const stats = {
-    total: assignments.length,
-    pending: assignments.filter(a => a.status === "pending").length,
-    submitted: assignments.filter(a => a.status === "submitted").length,
-    graded: assignments.filter(a => a.status === "graded").length,
-    inProgress: assignments.filter(a => a.status === "in-progress").length,
-  };
-
-  const statsCards = [
-    { label: "Total", value: stats.total, color: "blue" },
-    { label: "Pending", value: stats.pending, color: "amber" },
-    { label: "Submitted", value: stats.submitted, color: "purple" },
-    { label: "Graded", value: stats.graded, color: "emerald" },
+  const completedCount = assignments.filter((assignment) => assignment.status === "submitted").length;
+  const assessedCount = assignments.filter((assignment) => assignment.status === "assessed").length;
+  const tabs: { key: AssignmentTab; label: string; count: number }[] = [
+    { key: "all", label: "All Assignments", count: assignments.length },
+    { key: "completed", label: "Completed", count: completedCount },
+    { key: "assessed", label: "Assessed", count: assessedCount },
   ];
-
-  const colorMap = {
-    blue: "bg-blue-50 text-blue-600",
-    amber: "bg-amber-50 text-amber-600",
-    purple: "bg-purple-50 text-purple-600",
-    emerald: "bg-emerald-50 text-emerald-600",
-  };
-
-  const getStatusIcon = (status: string) => {
-    const config = statusConfig[status];
-    if (!config) return FileText;
-    return config.icon;
-  };
-
-  const getStatusBadge = (status: string) => {
-    const config = statusConfig[status];
-    if (!config) return statusConfig["pending"];
-    return config;
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-4">
-          <PageSkeleton rows={4} />
-          <p className="text-xs sm:text-sm text-gray-500">Loading assignments...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh] px-4">
-        <div className="text-center max-w-md p-6 bg-red-50 rounded-xl">
-          <div className="text-red-500 text-4xl mb-4">⚠️</div>
-          <p className="text-gray-700 mb-2">{error}</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Try again
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const visibleAssignments = assignments.filter((assignment) => (
+    activeTab === "all"
+    || (activeTab === "completed" && assignment.status === "submitted")
+    || (activeTab === "assessed" && assignment.status === "assessed")
+  ));
 
   return (
-    <div className="space-y-4 sm:space-y-6 lg:space-y-8 p-3 sm:p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4">
-        <div>
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Assignments</h2>
-          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
-            Track your projects and submissions across all courses
+    <div className="mx-auto w-full max-w-[700px] px-2 sm:max-w-[1200px] sm:px-0">
+      <div className="mb-6 flex justify-center overflow-x-auto border-b border-gray-200 dark:border-border" role="group" aria-label="Assignment status">
+        <div className="flex w-full items-center justify-center gap-0 sm:w-auto sm:gap-12 lg:gap-24">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              aria-pressed={activeTab === tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`relative flex-1 whitespace-nowrap px-1 pb-3 pt-1 text-[14px] font-medium transition-colors sm:flex-none sm:px-0 sm:pb-4 sm:text-base ${
+                activeTab === tab.key
+                    ? "font-semibold text-[#013a23] after:absolute after:-bottom-px after:left-1/2 after:h-[3px] after:w-[60px] after:-translate-x-1/2 after:rounded-t after:bg-[#013a23] dark:text-emerald-300 dark:after:bg-emerald-300 sm:after:inset-x-0 sm:after:left-0 sm:after:w-auto sm:after:translate-x-0"
+                    : "text-gray-500 hover:text-gray-800 dark:text-muted-foreground dark:hover:text-foreground"
+              }`}
+            >
+              {tab.key === "all" ? (
+                <>
+                  <span className="sm:hidden">All ({tab.count})</span>
+                  <span className="hidden sm:inline">{tab.label} ({tab.count})</span>
+                </>
+              ) : (
+                `${tab.label} (${tab.count})`
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {visibleAssignments.length === 0 ? (
+        <div className="rounded-xl border border-gray-200 bg-card px-6 py-14 text-center">
+          <FileText className="mx-auto h-9 w-9 text-muted-foreground" aria-hidden="true" />
+          <h1 className="mt-3 text-lg font-semibold text-foreground">No assignments found</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {activeTab === "all" ? "Assignments will appear here when available." : "There are no assignments in this section yet."}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] sm:text-xs text-gray-400 bg-gray-100 px-2.5 py-1 rounded-full">
-            {assignments.length} total
-          </span>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
-        {statsCards.map((stat) => {
-          const colorClass = colorMap[stat.color as keyof typeof colorMap];
-          return (
-            <div key={stat.label} className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4 shadow-sm hover:shadow-md transition-all active:scale-[0.98] touch-manipulation">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className={`p-1.5 sm:p-2 rounded-lg ${colorClass}`}>
-                  {stat.label === "Total" && <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
-                  {stat.label === "Pending" && <AlertCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
-                  {stat.label === "Submitted" && <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
-                  {stat.label === "Graded" && <Award className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
-                </div>
-                <div>
-                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">{stat.value}</p>
-                  <p className="text-[10px] sm:text-xs text-gray-500">{stat.label}</p>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Search & Filters */}
-      <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search assignments..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2 sm:py-2.5 pl-9 sm:pl-10 pr-3 text-xs sm:text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-            />
-          </div>
-          
-          <div className="flex flex-wrap gap-1 sm:gap-1.5 overflow-x-auto pb-1">
-            {filterOptions.map((opt) => (
-              <button
-                key={opt.key}
-                onClick={() => setFilter(opt.key)}
-                className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-xs font-medium transition-all whitespace-nowrap active:scale-95 touch-manipulation ${
-                  filter === opt.key
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200"
-                }`}
-              >
-                {opt.label}
-                {opt.key !== "all" && (
-                  <span className={`ml-1 sm:ml-1.5 px-1.5 py-0.5 rounded-full text-[8px] sm:text-[10px] ${
-                    filter === opt.key ? "bg-white/20" : "bg-gray-200"
-                  }`}>
-                    {stats[opt.key as keyof typeof stats] || 0}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Assignments List */}
-      {filteredAssignments.length === 0 ? (
-        <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-8 sm:p-12 md:p-16 text-center shadow-sm">
-          <div className="flex flex-col items-center">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gray-100 flex items-center justify-center text-3xl sm:text-4xl mb-3 sm:mb-4">
-              📝
-            </div>
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900">No assignments found</h3>
-            <p className="text-xs sm:text-sm text-gray-500 mt-1">
-              {searchQuery ? "Try adjusting your search or filters" : "Assignments will appear here when available"}
-            </p>
-            {(searchQuery || filter !== "all") && (
-              <button 
-                onClick={() => { setSearchQuery(""); setFilter("all"); }}
-                className="mt-4 text-xs sm:text-sm text-blue-600 hover:text-blue-700 font-medium"
-              >
-                Clear all filters
-              </button>
-            )}
-          </div>
-        </div>
       ) : (
-        <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-          <ul className="divide-y divide-gray-100">
-            {filteredAssignments.map((a) => {
-              const StatusIcon = getStatusIcon(a.status);
-              const statusBadge = getStatusBadge(a.status);
-              const isGraded = a.status === "graded";
-              
-              return (
-                <li 
-                  key={a.id} 
-                  className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 sm:p-4 hover:bg-gray-50/50 transition-colors active:bg-gray-100/50 touch-manipulation"
-                >
-                  <div className={`p-2 sm:p-2.5 rounded-xl flex-shrink-0 ${
-                    a.status === "graded" ? "bg-emerald-50 text-emerald-600" :
-                    a.status === "submitted" ? "bg-blue-50 text-blue-600" :
-                    a.status === "pending" ? "bg-amber-50 text-amber-600" :
-                    "bg-gray-50 text-gray-600"
+        <div className="flex flex-col gap-3 sm:gap-4">
+          {visibleAssignments.map((assignment) => {
+            const due = getTimeLeft(assignment.due);
+            const actionLabel = assignment.status === "pending"
+              ? "Submit"
+              : assignment.status === "declined"
+                ? "Declined"
+                : assignment.status === "assessed"
+                  ? "Assessed"
+                  : "Submitted";
+            const actionClass = assignment.status === "pending"
+              ? "bg-[#013a23] text-white hover:bg-[#024b2e]"
+              : assignment.status === "declined"
+                ? "bg-[#ff0000] text-white"
+                : "border-2 border-[#013a23] bg-transparent text-[#013a23] dark:border-emerald-300 dark:text-emerald-300";
+
+            return (
+              <article
+                key={assignment.id}
+                className="flex flex-wrap items-center gap-4 rounded-xl border border-gray-200 bg-card px-4 py-4 transition-shadow hover:shadow-md dark:border-border sm:gap-5 sm:px-5"
+              >
+                <DocumentThumbnail />
+                <div className="flex min-w-0 flex-1 flex-col justify-center sm:min-w-[180px]">
+                  <h2 className="mb-1 text-base font-bold text-foreground sm:text-lg">
+                    {assignment.course || "Course"}
+                  </h2>
+                  <p className={`mb-2 text-sm ${
+                    assignment.status === "submitted"
+                      ? "text-muted-foreground sm:text-blue-600 sm:underline dark:sm:text-blue-400"
+                      : "text-muted-foreground"
                   }`}>
-                    <StatusIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-                  </div>
-                  
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                      <span className="text-sm sm:text-base font-semibold text-gray-900 truncate">
-                        {a.title}
-                      </span>
-                      <span className={`text-[10px] sm:text-xs font-medium px-1.5 sm:px-2 py-0.5 rounded-full border ${statusBadge.className}`}>
-                        {statusBadge.label}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-1 sm:gap-3 text-[10px] sm:text-xs text-gray-500 mt-0.5">
-                      <span>{a.course || "Course"}</span>
-                      <span className="hidden xs:inline">·</span>
-                      <span>{a.type || "Assignment"}</span>
-                      {isGraded && a.score !== null && (
-                        <>
-                          <span className="hidden xs:inline">·</span>
-                          <span className="font-semibold text-emerald-600">
-                            Score: {a.score}/{a.maxScore || 100}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
-                    <div className="flex items-center gap-1 text-[10px] sm:text-xs text-gray-400">
-                      <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                      <span className="hidden xs:inline">Due</span>
-                      <span>{a.due || "TBD"}</span>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-gray-300" />
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+                    {assignment.type}: {assignment.title}
+                  </p>
+                  <span className={`inline-flex self-start rounded px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide sm:text-xs ${
+                    due.expired
+                      ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300"
+                      : "bg-green-100 text-green-700 dark:bg-emerald-950 dark:text-emerald-300"
+                  }`}>
+                    {due.label}
+                  </span>
+                </div>
+                <div className="mt-2.5 flex w-full items-center justify-end gap-3 sm:mt-0 sm:w-auto sm:gap-4">
+                  <button
+                    type="button"
+                    disabled={assignment.status !== "pending"}
+                    className={`min-w-[110px] rounded-md px-4 py-2.5 text-sm font-semibold transition-colors disabled:cursor-default sm:min-w-[160px] sm:rounded-lg sm:px-6 sm:py-3 sm:text-base ${actionClass}`}
+                  >
+                    {actionLabel}
+                  </button>
+                  <span className="grid h-9 w-7 shrink-0 place-items-center text-foreground" aria-hidden="true">
+                    <EllipsisVertical className="h-5 w-5" />
+                  </span>
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
     </div>

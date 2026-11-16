@@ -19,13 +19,6 @@ export const Route = createFileRoute("/student")({
 
 const ALLOWED_ROLES = ["student", "user"];
 
-function getInitials(name: string) {
-  if (!name) return "ST";
-  const parts = name.trim().split(/\s+/);
-  const initials = parts.slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("");
-  return initials || "ST";
-}
-
 const NAV_SECTIONS = [
   {
     label: "",
@@ -146,18 +139,17 @@ function StudentLayout() {
   }
 
   // Prepare user data for PortalShell
-  const displayName = user.full_name || user.username || user.email || "Student";
   const studentUser = {
-    name: displayName,
+    name: "Mubarak Luutu",
     role: "Student",
-    initials: getInitials(displayName),
+    initials: "ML",
   };
 
   // For all other /student/* routes, show the PortalShell
   return (
     <PortalShell
       accent="student"
-      title="Student Dashboard"
+      title="Dashboard"
       user={studentUser}
       nav={NAV_SECTIONS.flatMap((section) => section.items)}
       navSections={NAV_SECTIONS}

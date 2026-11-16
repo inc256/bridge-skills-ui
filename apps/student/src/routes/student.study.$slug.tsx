@@ -1,41 +1,49 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import {
   Check, ChevronLeft, ChevronRight, Play, Pause, Volume2, Maximize, Settings,
-  FileText, Download, Bookmark, ChevronDown, Minimize, VolumeX, FileSpreadsheet, ExternalLink,
-  Lock, ChevronUp, List, FolderOpen, Menu, X,
+  FileText, Download, ChevronDown, Minimize, VolumeX, FileSpreadsheet, ExternalLink,
+  Lock, ChevronUp, List, X, Star, Clock,
 } from "lucide-react";
 import { useEffect, useState, useMemo, useRef } from "react";
-import { getCourse, getCourseModules, getLessonProgress, getMyEnrollments, getQuizzesForCourse, getQuiz, markLessonComplete, resolveCourseMedia, sortCourseModules, submitQuizAnswers, syncLessonProgress } from "@/lib/api";
 import { setSelectedCourseSlug } from "@/lib/student-onboarding";
 import { getLocalStudyProgress, getLocalStudyState, saveLocalLessonPosition, saveLocalStudyState } from "@/lib/study-progress";
+import type { Course } from "@/lib/api";
+import {
+  getMockCourse,
+  getMockCourseModules,
+  getMockQuiz,
+  getMockQuizzesForCourse,
+  scoreMockQuiz,
+  type MockModule,
+} from "@/lib/mock-course-data";
 import { AudioPlayer } from "@/components/audio-player";
 import { PdfViewer } from "@/components/pdf-viewer";
 import { PptViewer } from "@/components/ppt-viewer";
-import { useIsMobile } from "@/hooks/use-mobile";
+
+function getMockMediaUrl(value: unknown) {
+  if (typeof value === "string") return value;
+  if (typeof value !== "object" || value === null) return "";
+  const media = value as { url?: unknown; path?: unknown; file?: unknown };
+  return String(media.url ?? media.path ?? media.file ?? "");
+}
 
 export const Route = createFileRoute("/student/study/$slug")({
-  loader: async ({ params }) => {
-    const [course, modules, enrollments] = await Promise.all([
-      getCourse(params.slug),
-      getCourseModules(params.slug),
-      getMyEnrollments(),
-    ]);
+  loader: ({ params }) => {
+    const course = getMockCourse(params.slug);
     if (!course) throw notFound();
-    const enrollment = enrollments.find((item) => item.course?.slug === params.slug);
-    return {
-      course,
-      modules,
-      enrollmentProgress: enrollment?.status === "completed" ? 100 : enrollment?.progress ?? 0,
-    };
+    return { course, modules: getMockCourseModules(params.slug), enrollmentProgress: course.progress ?? 0 };
   },
   component: StudyInterface,
 });
 
 function StudyInterface() {
-  const { course, modules: initialModules, enrollmentProgress } = Route.useLoaderData();
-  const isMobile = useIsMobile();
+  const loaderData = Route.useLoaderData();
+  const course: Course = loaderData.course;
+  const initialModules: MockModule[] = loaderData.modules;
+  const enrollmentProgress: number = loaderData.enrollmentProgress;
   const [showOutline, setShowOutline] = useState(true);
-  const [mobileOutlineOpen, setMobileOutlineOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"Overview" | "Notes" | "Announcements" | "Reviews" | "Learning tools">("Overview");
+  const [courseNote, setCourseNote] = useState("");
   const [modules, setModules] = useState<any[]>(initialModules ?? []);
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [activeQuiz, setActiveQuiz] = useState<any | null>(null);
@@ -64,7 +72,6 @@ function StudyInterface() {
   const [selectedResource, setSelectedResource] = useState<{ label: string; url: string; type: "pdf" | "ppt" | "audio" } | null>(null);
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
   const [savedPosition, setSavedPosition] = useState(0);
-  const navigationExpanded = isMobile ? mobileOutlineOpen : showOutline;
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
@@ -76,20 +83,21 @@ function StudyInterface() {
   const lastKnownPositionRef = useRef(0);
 
   useEffect(() => {
-    if (!mobileOutlineOpen) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMobileOutlineOpen(false);
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [mobileOutlineOpen]);
-
-  useEffect(() => {
-    setModules(Array.isArray(initialModules) ? sortCourseModules(initialModules) : []);
+    const completedLessonIds = new Set(getLocalStudyState(course.slug).completedLessonIds ?? []);
+    setModules(initialModules.map((module) => ({
+      ...module,
+      lessons: module.lessons.map((lesson) => ({
+        ...lesson,
+        completed: lesson.completed || completedLessonIds.has(lesson.id),
+      })),
+    })));
     setSelectedCourseSlug(course.slug);
-    void getQuizzesForCourse(course.slug).then(setQuizzes);
+    setQuizzes(getMockQuizzesForCourse(course.slug));
 
-    if (!window.YT) {
+    const hasYoutubeLesson = initialModules.some((module) => (
+      module.lessons.some((lesson) => /(?:youtube\.com|youtu\.be)/i.test(String(lesson.video_url ?? "")))
+    ));
+    if (hasYoutubeLesson && !window.YT) {
       const tag = document.createElement('script');
       tag.src = 'https://www.youtube.com/iframe_api';
       const firstScriptTag = document.getElementsByTagName('script')[0];
@@ -165,22 +173,6 @@ function StudyInterface() {
     setXpRewardMessage(null);
     if (!currentLessonId) return;
     saveLocalStudyState(course.slug, { currentLessonId });
-
-    let cancelled = false;
-    void getLessonProgress(currentLessonId).then((lessonProgress) => {
-      if (cancelled) return;
-      const position = Number(lessonProgress?.position ?? lessonProgress?.last_position ?? lessonProgress?.current_time ?? 0);
-      if (Number.isFinite(position) && position > 0) {
-        const latestPosition = Math.max(localPosition, position);
-        setSavedPosition(latestPosition);
-        lastKnownPositionRef.current = latestPosition;
-        saveLocalLessonPosition(course.slug, currentLessonId, latestPosition);
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
   }, [course.slug, currentLessonId]);
 
   const currentLesson = useMemo(() => {
@@ -190,21 +182,21 @@ function StudyInterface() {
 
   useEffect(() => {
     if (!currentLessonId) return;
-    const syncLatestPosition = () => {
+    const saveLatestPosition = () => {
       const position = lastKnownPositionRef.current;
-      if (position > 0) void syncLessonProgress(currentLessonId, position, position);
+      if (position > 0) saveLocalLessonPosition(course.slug, currentLessonId, position);
     };
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden") syncLatestPosition();
+      if (document.visibilityState === "hidden") saveLatestPosition();
     };
-    window.addEventListener("pagehide", syncLatestPosition);
+    window.addEventListener("pagehide", saveLatestPosition);
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => {
-      syncLatestPosition();
-      window.removeEventListener("pagehide", syncLatestPosition);
+      saveLatestPosition();
+      window.removeEventListener("pagehide", saveLatestPosition);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [currentLessonId]);
+  }, [course.slug, currentLessonId]);
 
   const currentLessonIndex = useMemo(() => lessonList.findIndex((l: any) => l.id === currentLessonId), [currentLessonId, lessonList]);
   const nextLessonIndex = useMemo(() => {
@@ -229,7 +221,7 @@ function StudyInterface() {
     }
   }, [course.slug, currentLessonIndex, pct]);
 
-  // Get lesson type - this comes from the database field
+  // Select the lesson presentation from the mock curriculum.
   const lessonType = currentLesson?.type?.toLowerCase() || "video";
 
   const getVideoInfo = (url: string | undefined) => {
@@ -247,7 +239,7 @@ function StudyInterface() {
   };
 
   const lessonContent = currentLesson?.content ?? currentLesson?.description ?? "";
-  const audioUrl = resolveCourseMedia(currentLesson?.audio_file ?? currentLesson?.audio_url, "audio");
+  const audioUrl = getMockMediaUrl(currentLesson?.audio_file ?? currentLesson?.audio_url);
   const videoUrl = currentLesson?.video_url ?? currentLesson?.video_url_resolved ?? currentLesson?.video?.url ?? currentLesson?.content_url ?? "";
   const videoInfo = useMemo(() => getVideoInfo(videoUrl), [videoUrl]);
   const dbDuration = currentLesson?.duration || currentLesson?.estimated_duration || currentLesson?.video_duration || 0;
@@ -261,7 +253,7 @@ function StudyInterface() {
   };
 
   const resolveResourceUrl = (url: string, type: 'pdf' | 'ppt' | 'audio' | 'video' | 'link') =>
-    type === 'pdf' || type === 'ppt' || type === 'audio' ? resolveCourseMedia(url, type) : url;
+    type === 'pdf' || type === 'ppt' || type === 'audio' ? getMockMediaUrl(url) : url;
 
   // Resources - includes all extra files and links
   const resources = useMemo(() => {
@@ -269,12 +261,12 @@ function StudyInterface() {
 
     // PDF files
     if (currentLesson?.pdf_file) {
-      allResources.push({ label: 'PDF Document', url: resolveCourseMedia(currentLesson.pdf_file, "pdf"), type: 'pdf' });
+      allResources.push({ label: 'PDF Document', url: getMockMediaUrl(currentLesson.pdf_file), type: 'pdf' });
     }
 
     // PPT files
     if (currentLesson?.ppt_file) {
-      allResources.push({ label: 'PowerPoint Slides', url: resolveCourseMedia(currentLesson.ppt_file, "ppt"), type: 'ppt' });
+      allResources.push({ label: 'PowerPoint Slides', url: getMockMediaUrl(currentLesson.ppt_file), type: 'ppt' });
     }
 
     if (audioUrl) {
@@ -443,12 +435,9 @@ function StudyInterface() {
           setCurrentTime(current);
           lastKnownPositionRef.current = current;
           setProgress((current / dur) * 100);
-          if (currentLesson) {
+          if (currentLesson && current - lastSyncedProgressRef.current >= 10) {
+            lastSyncedProgressRef.current = current;
             saveLocalLessonPosition(course.slug, currentLesson.id, current);
-            if (current - lastSyncedProgressRef.current >= 10) {
-              lastSyncedProgressRef.current = current;
-              void syncLessonProgress(currentLesson.id, current, current);
-            }
           }
         }
       } catch (e) {
@@ -486,12 +475,9 @@ function StudyInterface() {
     setCurrentTime(current);
     lastKnownPositionRef.current = current;
     setProgress(dur ? (current / dur) * 100 : 0);
-    if (currentLesson) {
+    if (currentLesson && current - lastSyncedProgressRef.current >= 10) {
+      lastSyncedProgressRef.current = current;
       saveLocalLessonPosition(course.slug, currentLesson.id, current);
-      if (current - lastSyncedProgressRef.current >= 10) {
-        lastSyncedProgressRef.current = current;
-        void syncLessonProgress(currentLesson.id, current, current);
-      }
     }
   };
 
@@ -516,8 +502,9 @@ function StudyInterface() {
     setIsCompleting(true);
     setCompletionError(null);
     try {
-      const response = await markLessonComplete(currentLesson.id);
-      if (!response) throw new Error("Unable to save lesson progress.");
+      const completedLessonIds = new Set(getLocalStudyState(course.slug).completedLessonIds ?? []);
+      completedLessonIds.add(currentLesson.id);
+      saveLocalStudyState(course.slug, { completedLessonIds: [...completedLessonIds] });
       setModules((prevModules) => prevModules.map((mod) => ({
         ...mod,
         lessons: (mod.lessons ?? []).map((lesson: any) =>
@@ -528,8 +515,8 @@ function StudyInterface() {
       setXpRewardMessage(`Lesson complete. +${lessonXp} XP`);
       return true;
     } catch (completionFailure) {
-      setCompletionError(completionFailure instanceof Error ? completionFailure.message : "Unable to save lesson progress.");
-      setXpRewardMessage("XP was not awarded because the backend completion request failed. Please try again after the learning service is restored.");
+      setCompletionError(completionFailure instanceof Error ? completionFailure.message : "Unable to save demo progress on this device.");
+      setXpRewardMessage("Lesson progress was not saved on this device. Please try again.");
       return false;
     } finally {
       setIsCompleting(false);
@@ -633,7 +620,7 @@ function StudyInterface() {
     if (currentLessonIndex < lessonList.length - 1) {
       const completedCurrentLesson = await completeCurrentLesson();
       if (!completedCurrentLesson) {
-        setCompletionError("Lesson progress could not be saved because the learning service is unavailable. You can continue, and progress will retry when the service recovers.");
+        setCompletionError("Lesson progress could not be saved on this device. You can continue, but it may not persist.");
       }
       const nextLesson = lessonList[currentLessonIndex + 1];
       setCurrentLessonId(nextLesson.id);
@@ -659,7 +646,7 @@ function StudyInterface() {
 
   const startQuiz = async (quizId: string) => {
     setLoadingQuiz(true);
-    const quiz = await getQuiz(quizId);
+    const quiz = getMockQuiz(quizId);
     setActiveQuiz(quiz);
     setQuizAnswers({});
     setQuizResult(null);
@@ -669,13 +656,7 @@ function StudyInterface() {
   const submitQuiz = async () => {
     if (!activeQuiz) return;
     setLoadingQuiz(true);
-    const payload = {
-      answers: activeQuiz.questions.reduce((acc: Record<string, string>, question: any) => {
-        if (quizAnswers[question.id]) acc[question.id] = quizAnswers[question.id];
-        return acc;
-      }, {})
-    };
-    const result = await submitQuizAnswers(activeQuiz.id, payload);
+    const result = scoreMockQuiz(activeQuiz, quizAnswers);
     setQuizResult(result);
     setLoadingQuiz(false);
   };
@@ -908,7 +889,6 @@ function StudyInterface() {
                   setIsPlaying(false);
                   setProgress(100);
                   if (currentLesson) saveLocalLessonPosition(course.slug, currentLesson.id, videoRef.current?.duration ?? currentTime);
-                  if (currentLesson) void syncLessonProgress(currentLesson.id, videoRef.current?.duration ?? currentTime, videoRef.current?.duration ?? currentTime);
                 }}
                 onWaiting={() => setIsLoading(true)}
                 onCanPlay={() => setIsLoading(false)}
@@ -1097,97 +1077,37 @@ function StudyInterface() {
   };
 
   return (
-    <div className="-mx-3 -my-6 bg-background sm:-mx-6 lg:-mx-8 lg:-my-8">
-      {isMobile && (
-        <div className="sticky top-14 z-20 flex items-center gap-3 border-b border-border bg-card/95 px-3 py-2.5 shadow-sm backdrop-blur">
-          <button
-            type="button"
-            onClick={() => setMobileOutlineOpen(true)}
-            aria-label="Open course lessons"
-            aria-expanded={mobileOutlineOpen}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border bg-background text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-          >
-            <Menu className="h-4 w-4" />
-          </button>
-          <div className="min-w-0 flex-1">
-            <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Now studying</div>
-            <div className="truncate text-sm font-semibold">{course.title}</div>
-          </div>
-          <div
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-full p-[3px]"
-            style={{ background: `conic-gradient(var(--primary) ${pct * 3.6}deg, var(--secondary) 0deg)` }}
-            aria-label={`Course progress ${pct}%`}
-            role="img"
-          >
-            <span className="grid h-full w-full place-items-center rounded-full bg-card text-[9px] font-semibold tabular-nums">{pct}%</span>
-          </div>
-        </div>
-      )}
-      {isMobile && mobileOutlineOpen && (
-        <button
-          type="button"
-          onClick={() => setMobileOutlineOpen(false)}
-          aria-label="Close course lessons"
-          className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-[1px]"
-        />
-      )}
-      <div className={`grid min-h-[calc(100vh-4rem)] grid-cols-1 bg-background ${navigationExpanded ? "md:grid-cols-[300px_1fr] lg:grid-cols-[340px_1fr]" : "md:grid-cols-[56px_1fr]"}`}>
+    <div className="student-study-page">
+      <div className={`student-study-columns ${showOutline ? "has-outline" : ""}`}>
         <aside
           aria-label="Course lessons"
-          aria-hidden={isMobile && !mobileOutlineOpen}
-          aria-modal={isMobile && mobileOutlineOpen ? true : undefined}
-          role={isMobile ? "dialog" : undefined}
-          className={`flex flex-col overflow-hidden border-r border-border bg-card ${
-            isMobile
-              ? `fixed bottom-0 left-0 top-14 z-50 w-[min(88vw,340px)] shadow-xl transition-transform duration-300 ${
-                  mobileOutlineOpen ? "translate-x-0" : "-translate-x-full"
-                }`
-              : "order-2 md:order-1 md:sticky md:top-16 md:h-[calc(100vh-4rem)]"
-          }`}
+          aria-hidden={!showOutline}
+          className={`student-study-sidebar ${showOutline ? "flex" : "hidden"}`}
         >
-          {navigationExpanded ? <>
-          <div className="shrink-0 border-b border-border bg-card px-4 py-4 sm:px-5 sm:py-5">
+          {showOutline ? <>
+          <div className="student-study-sidebar-header">
             <div className="flex items-center justify-between gap-3">
-              <Link
-                to="/student/course/$slug"
-                params={{ slug: course.slug }}
-                onClick={() => setMobileOutlineOpen(false)}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-primary"
+              <h2 className="text-lg font-bold tracking-tight">Course content</h2>
+              <button
+                type="button"
+                onClick={() => setShowOutline(false)}
+                aria-label="Close course content"
+                className="grid h-9 w-9 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
               >
-                <ChevronLeft className="h-3.5 w-3.5" /> Course overview
-              </Link>
-              {isMobile ? (
-                <button
-                  type="button"
-                  onClick={() => setMobileOutlineOpen(false)}
-                  aria-label="Close course lessons"
-                  className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setShowOutline(false)}
-                  aria-label="Collapse course lessons"
-                  className="hidden h-8 w-8 place-items-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground md:grid"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-              )}
+                <X className="h-5 w-5" />
+              </button>
             </div>
-            <h2 className="mt-4 line-clamp-2 text-base font-semibold leading-snug tracking-tight">{course.title}</h2>
-            <div className="mt-4 rounded-xl border border-border bg-background p-3.5">
-              <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
-                <span>Course progress</span>
-                <span className="font-semibold text-foreground">{pct}%</span>
+            <div className="mt-5 space-y-2">
+              <div className="flex items-center justify-between gap-3 text-xs font-semibold text-muted-foreground">
+                <span>{orderedModules.filter((module) => module.lessons?.every((lesson: any) => lesson.completed)).length} of {orderedModules.length} sections completed</span>
+                <span className="text-primary">{pct}%</span>
               </div>
-              <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-secondary">
+              <div className="h-1.5 overflow-hidden rounded-full bg-secondary">
                 <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${pct}%` }} />
               </div>
             </div>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto p-3">
+          <div className="student-study-sidebar-scroll">
             {orderedModules.map((m, mi) => (
                 <details
                   key={m.id ?? `${m.title}-${mi}`}
@@ -1202,40 +1122,43 @@ function StudyInterface() {
                       return next;
                     });
                   }}
-                  className="group mb-2 overflow-hidden rounded-xl border border-border/70 bg-background"
+                  className="student-study-section group"
                 >
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-3 transition-colors hover:bg-secondary/70 [&::-webkit-details-marker]:hidden">
+                <summary className="student-study-section-header group-open:bg-secondary/60">
                   <div className="min-w-0">
-                    <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Module {mi + 1}</div>
-                    <div className="mt-1 truncate text-sm font-semibold">{m.title}</div>
+                    <div className="text-sm font-bold leading-snug">{`Section ${mi + 1}: ${m.title}`}</div>
+                    <div className="mt-1.5 text-xs text-muted-foreground">
+                      {m.lessons?.filter((lesson: any) => lesson.completed).length ?? 0} / {m.lessons?.length ?? 0} lessons
+                      {m.duration ? ` | ${m.duration}` : ""}
+                    </div>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">{m.lessons?.filter((lesson: any) => lesson.completed).length ?? 0}/{m.lessons?.length ?? 0}</span>
-                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
-                  </div>
+                  <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
                 </summary>
-                <ul className="space-y-1 border-t border-border/70 p-2">
+                <ul>
                   {(Array.isArray(m.lessons) ? m.lessons : []).map((l: any) => {
                     const lessonIndex = lessonList.findIndex((lesson: any) => lesson.id === l.id);
                     const isCurrent = l.id === currentLessonId;
                     const isLocked = !l.completed && lessonIndex > nextLessonIndex;
                     const lessonDuration = l.duration || l.estimated_duration || l.video_duration || 0;
+                    const lessonDurationLabel = typeof lessonDuration === "string"
+                      ? lessonDuration
+                      : Number(lessonDuration) > 0 ? formatTime(Number(lessonDuration)) : "";
                     const lessonTypeDisplay = l.type?.toLowerCase() || 'video';
                     return (
                       <li key={l.id}>
                         <button
                           disabled={isLocked}
+                          aria-current={isCurrent ? "true" : undefined}
                           onClick={() => {
                             if (isLocked) return;
                             setCurrentLessonId(l.id);
                             resetPlayer();
-                            setMobileOutlineOpen(false);
                           }}
-                          className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-left text-xs transition-colors ${
-                            isCurrent ? "bg-primary/10 font-semibold text-primary ring-1 ring-inset ring-primary/15" : isLocked ? "cursor-not-allowed opacity-45" : "text-foreground/80 hover:bg-secondary"
+                          className={`student-study-lesson ${isCurrent ? "is-current" : ""} ${isLocked ? "is-locked" : ""} ${
+                            isCurrent ? "font-semibold text-primary" : isLocked ? "cursor-not-allowed opacity-45" : "text-foreground/80"
                           }`}
                         >
-                          <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full ${
+                          <span className={`grid h-[18px] w-[18px] shrink-0 place-items-center rounded-sm ${
                             l.completed ? "bg-primary text-primary-foreground" : isCurrent ? "bg-primary/20 text-primary" : "border border-border text-muted-foreground"
                           }`}>
                             {l.completed ? <Check className="h-3 w-3" /> : isLocked ? <Lock className="h-3 w-3" /> : 
@@ -1248,12 +1171,10 @@ function StudyInterface() {
                             }
                           </span>
                           <span className="min-w-0 flex-1 truncate">{l.title}</span>
-                          <span className="rounded-md bg-secondary px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
+                          <span className="student-study-lesson-type">
                             {lessonTypeDisplay}
                           </span>
-                          <span className="whitespace-nowrap text-[10px] tabular-nums text-muted-foreground">
-                            {lessonDuration > 0 ? formatTime(lessonDuration) : ""}
-                          </span>
+                          <span className="whitespace-nowrap text-[10px] tabular-nums text-muted-foreground">{lessonDurationLabel}</span>
                         </button>
                       </li>
                     );
@@ -1262,202 +1183,233 @@ function StudyInterface() {
               </details>
             ))}
           </div>
-          </> : (
-            <div className="flex h-full flex-col items-center gap-2 border-r border-border bg-card py-3">
-              <button
-                type="button"
-                onClick={() => setShowOutline(true)}
-                title="Expand course lessons"
-                aria-label="Expand course lessons"
-                className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary transition-colors hover:bg-primary/15"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowOutline(true)}
-                title="Lessons"
-                aria-label="Open lessons"
-                className="grid h-10 w-10 place-items-center rounded-xl text-primary transition-colors hover:bg-secondary"
-              >
-                <List className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => resourcesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                title="Lesson resources"
-                aria-label="Go to lesson resources"
-                className="grid h-10 w-10 place-items-center rounded-xl text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-              >
-                <FolderOpen className="h-4 w-4" />
-              </button>
-            </div>
-          )}
+          </> : null}
         </aside>
 
-        <div
-          className="order-1 flex flex-col pb-20 md:order-2"
-          style={{
-            "--study-outline-width-md": navigationExpanded ? "300px" : "56px",
-            "--study-footer-left": `calc(var(--portal-sidebar-width, 270px) + ${navigationExpanded ? "340px" : "56px"} + max(0px, (100vw - var(--portal-sidebar-width, 270px) - 1400px) / 2))`,
-          } as React.CSSProperties}
-        >
+        <div className="student-study-main-column">
+          <div className="student-study-scroll">
           {/* Video Player Section */}
-          <div className="bg-[#071a35] px-3 py-3 sm:px-5 sm:py-5 lg:px-8">
+          <section className="student-study-video">
             <div
               ref={playerContainerRef}
-              className={`relative mx-auto w-full max-w-[1200px] overflow-hidden rounded-xl bg-[#071a35] text-white shadow-xl shadow-black/15 fullscreen:rounded-none ${
-                lessonType === "document"
-                  ? "aspect-[16/9] min-h-0"
-                  : ["text", "quiz", "assignment", "audio"].includes(lessonType)
-                    ? "min-h-[560px] sm:aspect-video"
-                  : "aspect-video"
-              }`}
+              className="relative flex h-full w-full overflow-hidden rounded-xl bg-black text-white shadow-xl shadow-black/15 fullscreen:rounded-none"
             >
-              {renderShowcase()}
-            </div>
-          </div>
-
-          {/* Lesson Info Bar */}
-          <div className="border-b border-border bg-card px-4 py-4 shadow-sm sm:px-6 sm:py-5">
-            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-              <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <span className="font-medium">
-                  {currentLesson ? `Lesson ${currentLessonIndex + 1} of ${total}` : "Course Overview"}
-                </span>
-                <span className="text-border hidden xs:inline">•</span>
-                <span className="flex items-center gap-1">
-                  <span className="hidden xs:inline">⏱</span> {dbDuration > 0 ? formatTime(dbDuration) : "N/A"}
-                </span>
-                <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                  {lessonType}
-                </span>
-                {currentLesson?.completed && (
-                  <>
-                    <span className="text-border hidden sm:inline">•</span>
-                    <span className="text-green-600 text-[10px] sm:text-xs flex items-center gap-1">
-                      <Check className="h-3 w-3" /> Completed
-                    </span>
-                  </>
-                )}
+              <div className="relative min-w-0 flex-1">
+                {renderShowcase()}
               </div>
-              <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
+            </div>
+          </section>
+
+          <section className="student-study-content">
+            <nav className="student-study-tabs" role="tablist" aria-label="Course sections">
+              {(["Overview", "Notes", "Announcements", "Reviews", "Learning tools"] as const).map((tab) => (
                 <button
-                  title="Bookmark"
-                  aria-label="Bookmark lesson"
-                  className="grid h-8 w-8 place-items-center rounded-xl border border-border bg-background transition-colors hover:bg-secondary sm:h-9 sm:w-9"
+                  key={tab}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`student-study-tab ${activeTab === tab ? "active" : ""}`}
                 >
-                  <Bookmark className="h-4 w-4" />
+                  {tab}
                 </button>
-              </div>
-            </div>
-            <h1 className="mt-2 break-words text-lg font-semibold leading-snug tracking-tight sm:text-xl lg:text-2xl">
-              {currentLesson?.title ?? "No active lesson"}
-            </h1>
-            {completionError && (
-              <div className="border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 sm:px-6">
-                {completionError}
-              </div>
-            )}
-            {xpRewardMessage && (
-              <div className="border-b border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 sm:px-6">
-                {xpRewardMessage}
-              </div>
-            )}
-          </div>
+              ))}
+              {!showOutline && (
+                <button
+                  type="button"
+                  onClick={() => setShowOutline(true)}
+                  className="student-study-open-sidebar"
+                  aria-label="Open course content"
+                >
+                  <List className="h-4 w-4" />
+                  <span>Course content</span>
+                </button>
+              )}
+            </nav>
 
-          <div className="flex-1 bg-background px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
-            <div className="mx-auto max-w-5xl space-y-5">
-            {lessonContent && lessonType !== 'video' && lessonType !== 'text' && (
-              <article className="card-surface p-5 shadow-soft sm:p-6">
-                <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Lesson content</div>
-                <div className="prose prose-sm mt-3 max-w-none text-sm leading-7 text-foreground/80" dangerouslySetInnerHTML={{ __html: lessonContent }} />
-              </article>
-            )}
-
-            {(lessonType === "assignment") && (
-              <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-primary/20 bg-primary/5 p-5">
-                <div>
-                  <div className="text-sm font-semibold">Ready to submit your work?</div>
-                  <div className="mt-1 text-sm text-muted-foreground">Review the instructions, then submit your completed work.</div>
+            <div className="student-study-course-info" role="tabpanel">
+              {completionError && (
+                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                  {completionError}
                 </div>
-                <Link to="/student/assignments" className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90">
-                  Submit assignment <ChevronRight className="h-4 w-4" />
-                </Link>
-              </div>
-            )}
-            
-              <section ref={resourcesRef} id="lesson-resources" className="scroll-mt-24 card-surface p-5 shadow-soft sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-base font-semibold">Lesson resources</h2>
-                    <div className="mt-1 text-sm text-muted-foreground">
-                      {resources.length} resource{resources.length !== 1 ? 's' : ''} available
+              )}
+              {xpRewardMessage && (
+                <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">
+                  {xpRewardMessage}
+                </div>
+              )}
+
+              {activeTab === "Overview" && (
+                <div>
+                  <h1 className="student-study-course-title">{course.title}</h1>
+                  <div className="student-study-stats">
+                    <div className="student-study-stat">
+                      <div className="flex items-center gap-1.5 text-base font-bold text-primary">
+                        {course.rating.toFixed(1)}
+                        <Star className="h-4 w-4 fill-current" aria-hidden="true" />
+                      </div>
+                      <span>{course.reviews.toLocaleString()} ratings</span>
+                    </div>
+                    <div className="student-study-stat">
+                      <strong>{course.students.toLocaleString()}</strong>
+                      <span>Students</span>
+                    </div>
+                    <div className="student-study-stat">
+                      <strong>{course.duration}</strong>
+                      <span>Total duration</span>
                     </div>
                   </div>
-                </div>
-
-                <div className="mt-5 space-y-2">
-                  {resources.length ? resources.map((r, index) => (
-                    <a
-                      key={`${r.url}-${index}`}
-                      href={r.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="resource-item flex items-center gap-3 rounded-xl border border-border bg-background px-3.5 py-3 transition-colors hover:border-primary/40 hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <span className="w-5 text-center">
-                        {r.type === 'pdf' && <FileText className="h-4 w-4 text-red-500" />}
-                        {r.type === 'ppt' && <FileText className="h-4 w-4 text-orange-500" />}
-                        {r.type === 'audio' && <Volume2 className="h-4 w-4 text-emerald-500" />}
-                        {r.type === 'video' && <Play className="h-4 w-4 text-purple-400" />}
-                        {r.type === 'link' && <ExternalLink className="h-4 w-4 text-muted-foreground" />}
-                        {r.type === 'doc' && <FileText className="h-4 w-4 text-blue-400" />}
-                        {!['pdf', 'ppt', 'video', 'link', 'doc'].includes(r.type) && <ExternalLink className="h-4 w-4 text-muted-foreground" />}
-                      </span>
-                      <span className="text-sm flex-1 truncate">{r.label}</span>
-                      <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                        {r.type === 'pdf' ? 'PDF' : r.type === 'ppt' ? 'PPT' : r.type === 'audio' ? 'Audio' : r.type === 'video' ? 'Video' : 'Link'}
-                        <ExternalLink className="h-3 w-3" />
-                      </span>
-                    </a>
-                  )) : (
-                    <div className="rounded-xl border border-dashed border-border bg-background px-4 py-8 text-center text-sm text-muted-foreground">
-                      No resources are available for this lesson right now.
+                  <div className="student-study-last-updated">
+                    <Clock className="h-4 w-4" aria-hidden="true" />
+                    <span>Self-paced demo course · {lessonType} lesson</span>
+                  </div>
+                  <div className="mt-7 border-t border-border pt-6">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Now studying</p>
+                        <h2 className="mt-1 text-lg font-bold">{currentLesson?.title ?? "Course overview"}</h2>
+                      </div>
+                      {currentLesson?.completed && (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                          <Check className="h-3.5 w-3.5" /> Completed
+                        </span>
+                      )}
                     </div>
-                  )}
+                    <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">{course.description}</p>
+                    {lessonType === "assignment" && (
+                      <div className="mt-5 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-primary/20 bg-primary/5 p-4">
+                        <div>
+                          <div className="text-sm font-semibold">Ready to submit your work?</div>
+                          <div className="mt-1 text-sm text-muted-foreground">Review the instructions, then submit your completed work.</div>
+                        </div>
+                        <Link to="/student/assignments" className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90">
+                          Submit assignment <ChevronRight className="h-4 w-4" />
+                        </Link>
+                      </div>
+                    )}
+                  </div>
                 </div>
+              )}
+
+              {activeTab === "Notes" && (
+                <section aria-label="Course notes">
+                  <h2 className="text-xl font-bold">My notes</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">Notes are kept in this page for your demo session.</p>
+                  <textarea
+                    value={courseNote}
+                    onChange={(event) => setCourseNote(event.target.value)}
+                    placeholder="Write notes for this course..."
+                    className="mt-5 min-h-48 w-full resize-y rounded-xl border border-border bg-card p-4 text-sm leading-6 text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                  />
                 </section>
-              </div>
-          </div>
+              )}
 
-          <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-card/95 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur md:left-[calc(var(--study-outline-width-md,300px)-1px)] lg:left-[calc(var(--study-footer-left,610px)-1px)]">
-            <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-3.5">
-              <button
-                onClick={handlePreviousLesson}
-                disabled={currentLessonIndex <= 0}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-background px-3.5 py-2.5 text-xs font-semibold transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:text-sm"
-              >
-                <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span className="hidden xs:inline">Previous lesson</span>
-                <span className="xs:hidden">Previous</span>
-              </button>
-              <div className="rounded-full bg-secondary/70 px-3 py-1.5 text-center text-[10px] font-medium text-muted-foreground sm:text-xs">
-                {total > 0 && currentLesson ? `Lesson ${currentLessonIndex + 1} of ${total}` : "Lesson overview"}
-                {dbDuration > 0 && ` · ${formatTime(dbDuration)}`}
-              </div>
-              <button
-                onClick={handleNextLesson}
-                disabled={isCompleting || currentLessonIndex < 0 || currentLessonIndex >= lessonList.length - 1}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:text-sm"
-              >
-                <span className="hidden xs:inline">Next lesson</span>
-                <span className="xs:hidden">Next</span>
-                <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </button>
+              {activeTab === "Announcements" && (
+                <section aria-label="Course announcements">
+                  <h2 className="text-xl font-bold">Announcements</h2>
+                  <article className="mt-5 rounded-xl border border-border bg-secondary/30 p-5">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-primary">Welcome</p>
+                    <h3 className="mt-2 text-base font-semibold">Welcome to {course.title}</h3>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                      Start with the course content panel and work through each lesson at your own pace.
+                    </p>
+                  </article>
+                </section>
+              )}
+
+              {activeTab === "Reviews" && (
+                <section aria-label="Course reviews">
+                  <h2 className="text-xl font-bold">Learner reviews</h2>
+                  <div className="mt-5 flex flex-wrap items-center gap-4 rounded-xl border border-border bg-secondary/30 p-5">
+                    <div className="flex items-center gap-2 text-2xl font-bold text-primary">
+                      {course.rating.toFixed(1)}
+                      <Star className="h-5 w-5 fill-current" aria-hidden="true" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">Course rating</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{course.reviews.toLocaleString()} demo ratings</p>
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {activeTab === "Learning tools" && (
+                <section ref={resourcesRef} id="lesson-resources" className="scroll-mt-24" aria-label="Learning tools and lesson resources">
+                  <div className="flex flex-wrap items-end justify-between gap-2">
+                    <div>
+                      <h2 className="text-xl font-bold">Learning tools</h2>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {resources.length} resource{resources.length !== 1 ? "s" : ""} for {currentLesson?.title ?? "this course"}.
+                      </p>
+                    </div>
+                  </div>
+                  {lessonContent && lessonType !== "video" && lessonType !== "text" && (
+                    <article className="mt-5 rounded-xl border border-border bg-card p-5">
+                      <h3 className="text-sm font-semibold">Lesson content</h3>
+                      <div className="prose prose-sm mt-3 max-w-none text-sm leading-7 text-foreground/80" dangerouslySetInnerHTML={{ __html: lessonContent }} />
+                    </article>
+                  )}
+                  <div className="mt-5 space-y-2">
+                    {resources.length ? resources.map((resource, index) => (
+                      <a
+                        key={`${resource.url}-${index}`}
+                        href={resource.url}
+                        target={resource.type === "pdf" || resource.type === "ppt" ? undefined : "_blank"}
+                        rel={resource.type === "pdf" || resource.type === "ppt" ? undefined : "noreferrer"}
+                        onClick={(event) => {
+                          if (resource.type === "pdf" || resource.type === "ppt") {
+                            event.preventDefault();
+                            selectResource(resource);
+                            setActiveTab("Overview");
+                            playerContainerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+                          }
+                        }}
+                        className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-sm transition-colors hover:bg-secondary/50"
+                      >
+                        {resource.type === "audio" ? <Volume2 className="h-4 w-4 text-primary" /> : <FileText className="h-4 w-4 text-primary" />}
+                        <span className="min-w-0 flex-1 truncate">{resource.label}</span>
+                        <span className="text-xs text-muted-foreground">{resource.type.toUpperCase()}</span>
+                        <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                      </a>
+                    )) : (
+                      <div className="rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+                        No resources are available for this lesson right now.
+                      </div>
+                    )}
+                  </div>
+                  {lessonType === "assignment" && (
+                    <Link to="/student/assignments" className="mt-5 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
+                      Submit assignment <ChevronRight className="h-4 w-4" />
+                    </Link>
+                  )}
+                </section>
+              )}
             </div>
+          </section>
           </div>
 
+          <footer className="student-study-footer">
+            <button
+              onClick={handlePreviousLesson}
+              disabled={currentLessonIndex <= 0}
+              className="student-study-previous"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Previous
+            </button>
+            <div className="text-center text-xs font-medium text-muted-foreground">
+              {total > 0 && currentLesson ? `Lesson ${currentLessonIndex + 1} of ${total}` : "Lesson overview"}
+              {dbDuration > 0 && ` · ${formatTime(Number(dbDuration))}`}
+            </div>
+            <button
+              onClick={handleNextLesson}
+              disabled={isCompleting || currentLessonIndex < 0 || currentLessonIndex >= lessonList.length - 1}
+              className="student-study-next"
+            >
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </footer>
         </div>
       </div>
     </div>

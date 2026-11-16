@@ -27,6 +27,8 @@ import { Route as StudentPaymentsRouteImport } from './routes/student.payments'
 import { Route as StudentProfileRouteImport } from './routes/student.profile'
 import { Route as StudentSettingsRouteImport } from './routes/student.settings'
 import { Route as StudentCourseSlugRouteImport } from './routes/student.course.$slug'
+import { Route as StudentForumIndexRouteImport } from './routes/student.forum.index'
+import { Route as StudentForumDiscussionIdRouteImport } from './routes/student.forum.$discussionId'
 import { Route as StudentStudyIndexRouteImport } from './routes/student.study.index'
 import { Route as StudentStudySlugRouteImport } from './routes/student.study.$slug'
 
@@ -120,6 +122,17 @@ const StudentCourseSlugRoute = StudentCourseSlugRouteImport.update({
   path: '/course/$slug',
   getParentRoute: () => StudentRoute,
 } as any)
+const StudentForumIndexRoute = StudentForumIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => StudentForumRoute,
+} as any)
+const StudentForumDiscussionIdRoute =
+  StudentForumDiscussionIdRouteImport.update({
+    id: '/$discussionId',
+    path: '/$discussionId',
+    getParentRoute: () => StudentForumRoute,
+  } as any)
 const StudentStudyIndexRoute = StudentStudyIndexRouteImport.update({
   id: '/study/',
   path: '/study/',
@@ -141,7 +154,7 @@ export interface FileRoutesByFullPath {
   '/student/certificates': typeof StudentCertificatesRoute
   '/student/dashboard': typeof StudentDashboardRoute
   '/student/explore': typeof StudentExploreRoute
-  '/student/forum': typeof StudentForumRoute
+  '/student/forum': typeof StudentForumRouteWithChildren
   '/student/my-learning': typeof StudentMyLearningRoute
   '/student/opportunities': typeof StudentOpportunitiesRoute
   '/student/paths': typeof StudentPathsRoute
@@ -150,7 +163,9 @@ export interface FileRoutesByFullPath {
   '/student/settings': typeof StudentSettingsRoute
   '/student/': typeof StudentIndexRoute
   '/student/course/$slug': typeof StudentCourseSlugRoute
+  '/student/forum/$discussionId': typeof StudentForumDiscussionIdRoute
   '/student/study/$slug': typeof StudentStudySlugRoute
+  '/student/forum/': typeof StudentForumIndexRoute
   '/student/study/': typeof StudentStudyIndexRoute
 }
 export interface FileRoutesByTo {
@@ -162,7 +177,6 @@ export interface FileRoutesByTo {
   '/student/certificates': typeof StudentCertificatesRoute
   '/student/dashboard': typeof StudentDashboardRoute
   '/student/explore': typeof StudentExploreRoute
-  '/student/forum': typeof StudentForumRoute
   '/student/my-learning': typeof StudentMyLearningRoute
   '/student/opportunities': typeof StudentOpportunitiesRoute
   '/student/paths': typeof StudentPathsRoute
@@ -171,7 +185,9 @@ export interface FileRoutesByTo {
   '/student/settings': typeof StudentSettingsRoute
   '/student': typeof StudentIndexRoute
   '/student/course/$slug': typeof StudentCourseSlugRoute
+  '/student/forum/$discussionId': typeof StudentForumDiscussionIdRoute
   '/student/study/$slug': typeof StudentStudySlugRoute
+  '/student/forum': typeof StudentForumIndexRoute
   '/student/study': typeof StudentStudyIndexRoute
 }
 export interface FileRoutesById {
@@ -185,7 +201,7 @@ export interface FileRoutesById {
   '/student/certificates': typeof StudentCertificatesRoute
   '/student/dashboard': typeof StudentDashboardRoute
   '/student/explore': typeof StudentExploreRoute
-  '/student/forum': typeof StudentForumRoute
+  '/student/forum': typeof StudentForumRouteWithChildren
   '/student/my-learning': typeof StudentMyLearningRoute
   '/student/opportunities': typeof StudentOpportunitiesRoute
   '/student/paths': typeof StudentPathsRoute
@@ -194,7 +210,9 @@ export interface FileRoutesById {
   '/student/settings': typeof StudentSettingsRoute
   '/student/': typeof StudentIndexRoute
   '/student/course/$slug': typeof StudentCourseSlugRoute
+  '/student/forum/$discussionId': typeof StudentForumDiscussionIdRoute
   '/student/study/$slug': typeof StudentStudySlugRoute
+  '/student/forum/': typeof StudentForumIndexRoute
   '/student/study/': typeof StudentStudyIndexRoute
 }
 export interface FileRouteTypes {
@@ -218,7 +236,9 @@ export interface FileRouteTypes {
     | '/student/settings'
     | '/student/'
     | '/student/course/$slug'
+    | '/student/forum/$discussionId'
     | '/student/study/$slug'
+    | '/student/forum/'
     | '/student/study/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -230,7 +250,6 @@ export interface FileRouteTypes {
     | '/student/certificates'
     | '/student/dashboard'
     | '/student/explore'
-    | '/student/forum'
     | '/student/my-learning'
     | '/student/opportunities'
     | '/student/paths'
@@ -239,7 +258,9 @@ export interface FileRouteTypes {
     | '/student/settings'
     | '/student'
     | '/student/course/$slug'
+    | '/student/forum/$discussionId'
     | '/student/study/$slug'
+    | '/student/forum'
     | '/student/study'
   id:
     | '__root__'
@@ -261,7 +282,9 @@ export interface FileRouteTypes {
     | '/student/settings'
     | '/student/'
     | '/student/course/$slug'
+    | '/student/forum/$discussionId'
     | '/student/study/$slug'
+    | '/student/forum/'
     | '/student/study/'
   fileRoutesById: FileRoutesById
 }
@@ -398,6 +421,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudentCourseSlugRouteImport
       parentRoute: typeof StudentRoute
     }
+    '/student/forum/': {
+      id: '/student/forum/'
+      path: '/'
+      fullPath: '/student/forum/'
+      preLoaderRoute: typeof StudentForumIndexRouteImport
+      parentRoute: typeof StudentForumRoute
+    }
+    '/student/forum/$discussionId': {
+      id: '/student/forum/$discussionId'
+      path: '/$discussionId'
+      fullPath: '/student/forum/$discussionId'
+      preLoaderRoute: typeof StudentForumDiscussionIdRouteImport
+      parentRoute: typeof StudentForumRoute
+    }
     '/student/study/': {
       id: '/student/study/'
       path: '/study'
@@ -415,6 +452,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface StudentForumRouteChildren {
+  StudentForumDiscussionIdRoute: typeof StudentForumDiscussionIdRoute
+  StudentForumIndexRoute: typeof StudentForumIndexRoute
+}
+
+const StudentForumRouteChildren: StudentForumRouteChildren = {
+  StudentForumDiscussionIdRoute: StudentForumDiscussionIdRoute,
+  StudentForumIndexRoute: StudentForumIndexRoute,
+}
+
+const StudentForumRouteWithChildren = StudentForumRoute._addFileChildren(
+  StudentForumRouteChildren,
+)
+
 interface StudentRouteChildren {
   StudentAchievementsRoute: typeof StudentAchievementsRoute
   StudentAssignmentsRoute: typeof StudentAssignmentsRoute
@@ -423,7 +474,7 @@ interface StudentRouteChildren {
   StudentCertificatesRoute: typeof StudentCertificatesRoute
   StudentDashboardRoute: typeof StudentDashboardRoute
   StudentExploreRoute: typeof StudentExploreRoute
-  StudentForumRoute: typeof StudentForumRoute
+  StudentForumRoute: typeof StudentForumRouteWithChildren
   StudentMyLearningRoute: typeof StudentMyLearningRoute
   StudentOpportunitiesRoute: typeof StudentOpportunitiesRoute
   StudentPathsRoute: typeof StudentPathsRoute
@@ -444,7 +495,7 @@ const StudentRouteChildren: StudentRouteChildren = {
   StudentCertificatesRoute: StudentCertificatesRoute,
   StudentDashboardRoute: StudentDashboardRoute,
   StudentExploreRoute: StudentExploreRoute,
-  StudentForumRoute: StudentForumRoute,
+  StudentForumRoute: StudentForumRouteWithChildren,
   StudentMyLearningRoute: StudentMyLearningRoute,
   StudentOpportunitiesRoute: StudentOpportunitiesRoute,
   StudentPathsRoute: StudentPathsRoute,

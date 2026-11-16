@@ -34,7 +34,8 @@ import {
   Play,
   CheckCircle,
   Calendar,
-  Clock
+  Clock,
+  Search,
 } from "lucide-react";
 import { useState, type CSSProperties, type ReactNode, useRef, useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
@@ -76,6 +77,12 @@ export function PortalShell({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const isStudentDashboard = accent === "student" && pathname.replace(/\/$/, "") === "/student/dashboard";
+  const isStudentExplore = accent === "student" && pathname.replace(/\/$/, "") === "/student/explore";
+  const isStudentAssignments = accent === "student" && pathname.replace(/\/$/, "") === "/student/assignments";
+  const isStudentAchievements = accent === "student" && pathname.replace(/\/$/, "") === "/student/achievements";
+  const isStudentCourseDetails = accent === "student" && /^\/student\/course\/[^/]+$/.test(pathname.replace(/\/$/, ""));
+  const isStudentForum = accent === "student" && pathname.startsWith("/student/forum");
   const isStudyPage = pathname.startsWith("/student/study/");
   const [desktopNavCollapsed, setDesktopNavCollapsed] = useState(isStudyPage);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -216,7 +223,7 @@ export function PortalShell({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className={`min-h-screen ${accent === "student" ? "student-portal-shell" : "bg-gray-50 dark:bg-gray-900"}`}>
       {/* Mobile Navigation Overlay */}
       {mobileNavOpen && (
         <>
@@ -325,7 +332,7 @@ export function PortalShell({
       } ${
         accent !== "student" ? "bg-white dark:bg-gray-800" : ""
       } ${
-        desktopNavCollapsed ? "w-[72px]" : accent === "student" ? "w-[300px]" : "w-[270px]"
+        desktopNavCollapsed ? "w-[72px]" : accent === "student" ? "w-[280px]" : "w-[270px]"
       }`}>
         <div className={`student-brand-row flex items-center pt-4 pb-3 ${
           accent === "student"
@@ -479,21 +486,33 @@ export function PortalShell({
       </aside>
 
       {/* Main Content */}
-      <div className={desktopNavCollapsed ? "lg:pl-[72px]" : accent === "student" ? "lg:pl-[300px]" : "lg:pl-[270px]"}>
+      <div className={desktopNavCollapsed ? "lg:pl-[72px]" : accent === "student" ? "lg:pl-[280px]" : "lg:pl-[270px]"}>
         <header className="student-top-app-bar sticky top-0 z-30 flex h-14 sm:h-16 items-center justify-between border-b px-3 sm:px-6 backdrop-blur-md">
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
             <button
               onClick={() => setMobileNavOpen(true)}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 lg:hidden hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl border transition-colors lg:hidden ${
+                accent === "student"
+                  ? "student-mobile-menu-button"
+                  : "border-gray-200 bg-white hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700"
+              }`}
               aria-label="Open navigation"
             >
               <Menu className="h-4 w-4" />
             </button>
-            <h1 className="truncate text-base sm:text-lg font-semibold text-gray-900 dark:text-white">{title}</h1>
+            <h1 className={`truncate text-base font-semibold sm:text-lg ${accent === "student" ? "text-white" : "text-gray-900 dark:text-white"}`}>{title}</h1>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
-            <ThemeSelect />
-            <span className="hidden xs:inline-block text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+            {accent === "student" && (
+              <label className="student-header-search hidden md:flex">
+                <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <input type="search" aria-label="Search courses" placeholder="What do you want to learn?" />
+              </label>
+            )}
+            <div className={accent === "student" ? "student-theme-control" : ""}>
+              <ThemeSelect />
+            </div>
+            <span className={`hidden xs:inline-block text-xs sm:text-sm ${accent === "student" ? "text-white/75" : "text-gray-500 dark:text-gray-400"}`}>
               {safeUser.name.split(' ')[0]}
             </span>
             <div className="relative" ref={headerMenuRef}>
@@ -503,7 +522,7 @@ export function PortalShell({
                 aria-label="Open profile menu"
                 aria-haspopup="true"
                 aria-expanded={headerMenuOpen}
-                className={`grid h-9 w-9 place-items-center rounded-full ${accentStyle.iconBg} text-xs font-semibold ring-2 ring-offset-2 ring-offset-white transition hover:scale-105 focus-visible:outline-none focus-visible:ring-primary dark:ring-offset-gray-900 ${accentStyle.ring}`}
+                className={`grid h-9 w-9 place-items-center rounded-full ${accentStyle.iconBg} text-xs font-semibold ring-2 ring-offset-2 ${accent === "student" ? "student-header-avatar" : "ring-offset-white dark:ring-offset-gray-900"} transition hover:scale-105 focus-visible:outline-none focus-visible:ring-primary ${accentStyle.ring}`}
               >
                 {safeUser.initials}
               </button>
@@ -553,11 +572,19 @@ export function PortalShell({
             </div>
           )}
           <main
-            className={`mx-auto min-h-[calc(100vh-4rem)] max-w-[1400px] px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 ${
-              accent === "student" ? "student-mobile-main" : ""
-            }`}
+            className={`${isStudentDashboard
+              ? "student-dashboard-main"
+              : isStudentCourseDetails
+                ? "mx-auto min-h-[calc(100vh-4rem)] max-w-[1400px] px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 student-course-details-main"
+              : isStudentForum
+                ? "student-forum-main"
+              : isStudyPage
+                ? "student-study-main-shell"
+              : "mx-auto min-h-[calc(100vh-4rem)] max-w-[1400px] px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8"
+            } ${accent === "student" && !isStudentForum ? "student-mobile-main" : ""
+            } ${isStudentExplore ? "student-explore-main" : ""} ${isStudentAssignments ? "student-assignments-main" : ""} ${isStudentAchievements ? "student-achievements-main" : ""}`}
             style={{
-              "--portal-sidebar-width": desktopNavCollapsed ? "72px" : accent === "student" ? "300px" : "270px",
+              "--portal-sidebar-width": desktopNavCollapsed ? "72px" : accent === "student" ? "280px" : "270px",
             } as CSSProperties}
           >
             <Outlet />

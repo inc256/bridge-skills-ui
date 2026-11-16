@@ -4,6 +4,7 @@ export type LocalStudyState = {
   currentLessonId?: string;
   progress?: number;
   positions?: Record<string, number>;
+  completedLessonIds?: string[];
 };
 
 function getStudentId() {

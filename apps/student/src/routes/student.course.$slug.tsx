@@ -1,44 +1,24 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
-import { Award, Clock, Users, Star, Check, ChevronRight, PlayCircle, Globe, Download, RefreshCw } from "lucide-react";
-import { useEffect, useState, type FormEvent } from "react";
+import { Award, Clock, Users, Star, Check, ChevronRight, PlayCircle, Globe, Download } from "lucide-react";
+import { useState } from "react";
 import { CourseThumb } from "@/components/course-thumb";
 import { jsPDF } from "jspdf";
-import { checkCourseEnrollment, enrollInCourse, getCourse, getCourseModules, getLocalWishlistCourses, getPaymentStatus, getStoredSession, initiatePayment, sortCourseModules, toggleLocalWishlist } from "@/lib/api";
 import type { Course } from "@/lib/api";
-
-function isSuccessfulPaymentStatus(status: unknown) {
-  return ["paid", "success", "succeeded", "successful", "completed"].includes(String(status ?? "").toLowerCase());
-}
-
-function getPendingPaymentStorageKey(courseSlug: string) {
-  const userId = getStoredSession()?.user?.id ?? "guest";
-  return `bridge_student_pending_payment:${userId}:${courseSlug}`;
-}
-
-async function refreshPayment(reference: string, courseSlug: string) {
-  const response = await getPaymentStatus(reference);
-  const payment = response?.payment ?? response?.data?.payment ?? response?.data ?? response;
-  const status = String(payment?.status ?? payment?.payment_status ?? response?.status ?? response?.payment_status ?? "pending");
-  const paymentConfirmed = response?.enrolled === true
-    || payment?.enrolled === true
-    || isSuccessfulPaymentStatus(status);
-
-  if (!paymentConfirmed) return { status, enrolled: false };
-
-  const enrollment = await checkCourseEnrollment(courseSlug);
-  const enrolled = Boolean(
-    enrollment?.enrolled
-      ?? enrollment?.is_enrolled
-      ?? ["active", "completed"].includes(String(enrollment?.status ?? "").toLowerCase()),
-  );
-  return { status, enrolled };
-}
+import {
+  enrollInMockCourse,
+  getMockCourse,
+  getMockCourseModules,
+  getMockWishlistCourses,
+  isMockCourseEnrolled,
+  toggleMockWishlist,
+  type MockModule,
+} from "@/lib/mock-course-data";
 
 export const Route = createFileRoute("/student/course/$slug")({
-  loader: async ({ params }) => {
-    const course = await getCourse(params.slug);
+  loader: ({ params }) => {
+    const course = getMockCourse(params.slug);
     if (!course) throw notFound();
-    return { course };
+    return { course, modules: getMockCourseModules(params.slug) };
   },
   component: CourseDetails,
   notFoundComponent: () => <div className="p-8">Course not found.</div>,
@@ -46,18 +26,13 @@ export const Route = createFileRoute("/student/course/$slug")({
 
 function CourseDetails() {
   const navigate = useNavigate();
-  const { course } = Route.useLoaderData();
-  const [modules, setModules] = useState<any[]>([]);
-  const [enrolled, setEnrolled] = useState(course.progress != null);
+  const loaderData = Route.useLoaderData();
+  const course: Course = loaderData.course;
+  const modules: MockModule[] = loaderData.modules;
+  const [enrolled, setEnrolled] = useState(() => isMockCourseEnrolled(course.slug));
   const [enrolling, setEnrolling] = useState(false);
   const [enrollmentError, setEnrollmentError] = useState<string | null>(null);
-  const [showPaymentForm, setShowPaymentForm] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"mobile_money" | "card">("mobile_money");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [paymentReference, setPaymentReference] = useState<string | null>(null);
-  const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
-  const [checkingPayment, setCheckingPayment] = useState(false);
-  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(() => getMockWishlistCourses().some((item) => item.slug === course.slug));
   const [bookmarking, setBookmarking] = useState(false);
   const raw = course.raw as Record<string, any>;
 
@@ -69,23 +44,11 @@ function CourseDetails() {
 
   const youtubeId = getYoutubeId(course.introVideoUrl ?? raw?.intro_video_url ?? raw?.video_url ?? raw?.youtube_url);
 
-  useEffect(() => {
-    void getCourseModules(course.slug).then((data) => setModules(Array.isArray(data) ? sortCourseModules(data) : []));
-  }, [course.slug]);
-
-  useEffect(() => {
-    void checkCourseEnrollment(course.slug).then((result) => {
-      if (result) setEnrolled(Boolean(result.enrolled ?? result.is_enrolled ?? result.status === "active"));
-    });
-    const wishlist = getLocalWishlistCourses();
-    setIsBookmarked(wishlist.some((item) => item.slug === course.slug));
-  }, [course.slug]);
-
   async function handleBookmark() {
     setBookmarking(true);
     setEnrollmentError(null);
     try {
-      const nextBookmarked = toggleLocalWishlist(course);
+      const nextBookmarked = toggleMockWishlist(course);
       setIsBookmarked(nextBookmarked);
     } catch (error) {
       setEnrollmentError(error instanceof Error ? error.message : "Unable to update bookmarks right now.");
@@ -131,139 +94,18 @@ function CourseDetails() {
     pdf.save(`${course.slug}-syllabus.pdf`);
   }
 
-  const rawPrice = raw?.price ?? raw?.amount;
-  const numericPrice = rawPrice == null ? Number.NaN : Number(rawPrice);
-  const isFree = course.price.toLowerCase() === "free"
-    || String(raw?.pricing ?? "").toLowerCase() === "free"
-    || raw?.is_free === true
-    || (Number.isFinite(numericPrice) && numericPrice <= 0);
-
-  useEffect(() => {
-    const storageKey = getPendingPaymentStorageKey(course.slug);
-    const reference = window.localStorage.getItem(storageKey);
-    if (!reference) return;
-
-    let cancelled = false;
-    setPaymentReference(reference);
-    setCheckingPayment(true);
-    void refreshPayment(reference, course.slug)
-      .then(({ status, enrolled: hasEnrollment }) => {
-        if (cancelled) return;
-        setPaymentStatus(status);
-        if (hasEnrollment) {
-          window.localStorage.removeItem(storageKey);
-          setEnrolled(true);
-          navigate({ to: "/student/study/$slug", params: { slug: course.slug } });
-        } else if (isSuccessfulPaymentStatus(status)) {
-          setEnrollmentError("Payment is confirmed, but course access is still being activated. Check the payment status again shortly.");
-        }
-      })
-      .catch((error: unknown) => {
-        if (!cancelled) {
-          setEnrollmentError(error instanceof Error ? error.message : "Unable to check payment status.");
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setCheckingPayment(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [course.slug, navigate]);
-
   async function handleAccessCourse() {
     if (enrolled) return;
-    if (!isFree) {
-      setShowPaymentForm(true);
-      return;
-    }
     setEnrolling(true);
     setEnrollmentError(null);
     try {
-      await enrollInCourse(course.slug);
+      enrollInMockCourse(course.slug);
       setEnrolled(true);
       navigate({ to: "/student/study/$slug", params: { slug: course.slug } });
     } catch (error) {
-      setEnrollmentError(error instanceof Error ? error.message : "Unable to enroll in this course.");
+      setEnrollmentError(error instanceof Error ? error.message : "Unable to save demo enrollment.");
     } finally {
       setEnrolling(false);
-    }
-  }
-
-  async function handleStartPayment(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setEnrolling(true);
-    setEnrollmentError(null);
-    setPaymentReference(null);
-    setPaymentStatus(null);
-    try {
-      const courseId = typeof raw?.id === "string" ? raw.id.trim() : "";
-      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(courseId)) {
-        throw new Error("This course is missing a valid payment identifier. Please contact support.");
-      }
-      if (paymentMethod === "mobile_money" && !phoneNumber.trim()) {
-        throw new Error("Enter the mobile money phone number for this payment.");
-      }
-      const response = await initiatePayment("makypay", {
-        course_id: courseId,
-        method: paymentMethod,
-        ...(paymentMethod === "mobile_money" ? { phone_number: phoneNumber.trim() } : {}),
-      });
-      const payment = response?.payment ?? response?.data?.payment ?? response?.data ?? response;
-      const redirectUrl = payment?.redirect_url ?? response?.redirect_url;
-      const reference = payment?.reference
-        ?? payment?.payment_reference
-        ?? response?.reference
-        ?? response?.payment_reference;
-      const paymentReferenceValue = typeof reference === "string" ? reference.trim() : "";
-      if (!paymentReferenceValue) throw new Error("Payment was not started: the payment service did not return a reference.");
-      window.localStorage.setItem(getPendingPaymentStorageKey(course.slug), paymentReferenceValue);
-      setPaymentReference(paymentReferenceValue);
-      setPaymentStatus(String(payment?.status ?? payment?.payment_status ?? response?.status ?? response?.payment_status ?? "pending"));
-
-      if (paymentMethod === "card" && (typeof redirectUrl !== "string" || !redirectUrl)) {
-        throw new Error("The payment service did not return a secure card checkout link. Your payment reference is saved so you can check its status.");
-      }
-      if (typeof redirectUrl === "string" && redirectUrl) {
-        window.location.assign(redirectUrl);
-        return;
-      }
-
-      const result = await refreshPayment(paymentReferenceValue, course.slug);
-      setPaymentStatus(result.status);
-      if (result.enrolled) {
-        window.localStorage.removeItem(getPendingPaymentStorageKey(course.slug));
-        setEnrolled(true);
-        navigate({ to: "/student/study/$slug", params: { slug: course.slug } });
-      } else if (isSuccessfulPaymentStatus(result.status)) {
-        setEnrollmentError("Payment is confirmed, but course access is still being activated. Check the payment status again shortly.");
-      }
-    } catch (error) {
-      setEnrollmentError(error instanceof Error ? error.message : "Unable to start this payment.");
-    } finally {
-      setEnrolling(false);
-    }
-  }
-
-  async function handleRefreshPaymentStatus() {
-    if (!paymentReference) return;
-    setCheckingPayment(true);
-    setEnrollmentError(null);
-    try {
-      const result = await refreshPayment(paymentReference, course.slug);
-      setPaymentStatus(result.status);
-      if (result.enrolled) {
-        window.localStorage.removeItem(getPendingPaymentStorageKey(course.slug));
-        setEnrolled(true);
-        navigate({ to: "/student/study/$slug", params: { slug: course.slug } });
-      } else if (isSuccessfulPaymentStatus(result.status)) {
-        setEnrollmentError("Payment is confirmed, but course access is still being activated. Check the payment status again shortly.");
-      }
-    } catch (error) {
-      setEnrollmentError(error instanceof Error ? error.message : "Unable to check payment status.");
-    } finally {
-      setCheckingPayment(false);
     }
   }
 
@@ -447,39 +289,8 @@ function CourseDetails() {
                 className="mt-5 flex w-full items-center justify-center gap-2 rounded-[14px] bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors disabled:cursor-wait disabled:opacity-60"
               >
                 {enrolling && <span className="skeleton h-4 w-16 rounded" aria-hidden="true" />}
-                {enrolling ? "Processing..." : isFree ? "Enroll and start" : "Pay and enroll"}
+                {enrolling ? "Processing..." : "Enroll and start"}
               </button>
-            )}
-            {!isFree && !enrolled && showPaymentForm && !paymentReference && (
-              <form onSubmit={(event) => void handleStartPayment(event)} className="mt-4 space-y-3 rounded-xl border border-border bg-background p-4">
-                <p className="text-sm font-semibold">Choose a payment method</p>
-                <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-border p-3 text-sm">
-                  <input type="radio" name="payment-method" checked={paymentMethod === "mobile_money"} onChange={() => setPaymentMethod("mobile_money")} className="mt-0.5" />
-                  <span><span className="block font-medium">Mobile money</span><span className="text-xs text-muted-foreground">Approve the payment on your phone.</span></span>
-                </label>
-                <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-border p-3 text-sm">
-                  <input type="radio" name="payment-method" checked={paymentMethod === "card"} onChange={() => setPaymentMethod("card")} className="mt-0.5" />
-                  <span><span className="block font-medium">Card</span><span className="text-xs text-muted-foreground">Continue to the secure card checkout.</span></span>
-                </label>
-                {paymentMethod === "mobile_money" && (
-                  <label className="block space-y-1 text-sm font-medium">
-                    <span>Mobile money phone number</span>
-                    <input type="tel" value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value)} required placeholder="256700000000" className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm font-normal" />
-                  </label>
-                )}
-                <button type="submit" disabled={enrolling} className="w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50">
-                  {enrolling ? "Starting payment..." : `Continue · ${course.price || "Price unavailable"}`}
-                </button>
-              </form>
-            )}
-            {paymentReference && (
-              <div className="mt-4 space-y-2 rounded-xl border border-border bg-background p-4">
-                <p className="text-sm font-semibold">Payment {paymentStatus || "pending"}</p>
-                <p className="break-all text-xs text-muted-foreground">Reference: {paymentReference}</p>
-                <button type="button" onClick={() => void handleRefreshPaymentStatus()} disabled={checkingPayment} className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-medium hover:bg-muted disabled:opacity-50">
-                  <RefreshCw className={`h-3.5 w-3.5 ${checkingPayment ? "animate-spin" : ""}`} />Check payment status
-                </button>
-              </div>
             )}
             {enrollmentError && <p className="mt-3 text-xs text-destructive">{enrollmentError}</p>}
             <button
