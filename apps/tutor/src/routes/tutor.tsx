@@ -5,17 +5,40 @@ import {
   BookOpen, 
   PlusSquare, 
   Users, 
-  ClipboardList, 
-  HelpCircle, 
-  BarChart3, 
-  MessageCircle, 
   Award, 
   Settings,
-  Sparkles,
-  Gauge
 } from "lucide-react";
 import { PortalShell } from "@/components/portal-shell";
 import { TutorAuthPage } from "@/components/tutor-auth-page";
+
+const NAV_SECTIONS = [
+  {
+    label: "",
+    items: [
+      { label: "Dashboard", to: "/tutor/dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
+    ],
+  },
+  {
+    label: "",
+    items: [
+      { label: "Courses", to: "/tutor/courses", icon: <BookOpen className="h-4 w-4" />, dividerAfter: true },
+      { label: "Course Builder", to: "/tutor/builder", icon: <PlusSquare className="h-4 w-4" /> },
+    ],
+  },
+  {
+    label: "",
+    items: [
+      { label: "Students", to: "/tutor/students", icon: <Users className="h-4 w-4" />, dividerAfter: true },
+    ],
+  },
+  {
+    label: "",
+    items: [
+      { label: "Certificates", to: "/tutor/certificates", icon: <Award className="h-4 w-4" /> },
+      { label: "Settings", to: "/tutor/settings", icon: <Settings className="h-4 w-4" /> },
+    ],
+  },
+];
 
 export const Route = createFileRoute("/tutor")({
   head: () => ({ meta: [{ title: "Tutor — TechBridge" }, { name: "description", content: "Tutor dashboard: manage your courses and students on TechBridge." }] }),
@@ -34,79 +57,8 @@ function TutorLayout() {
     <PortalShell
       accent="tutor"
       title="Tutor workspace"
-      nav={[
-        // Quick Access Section
-        { 
-          label: "Dashboard", 
-          to: "/tutor/dashboard", 
-          icon: <LayoutDashboard className="h-4 w-4" />,
-          section: "quick-access"
-        },
-        
-        // Courses Section
-        { 
-          label: "My Courses", 
-          to: "/tutor/courses", 
-          icon: <BookOpen className="h-4 w-4" />,
-          section: "courses"
-        },
-        { 
-          label: "Course Builder", 
-          to: "/tutor/builder", 
-          icon: <PlusSquare className="h-4 w-4" />,
-          section: "courses"
-        },
-        
-        // Students Section
-        { 
-          label: "Students", 
-          to: "/tutor/students", 
-          icon: <Users className="h-4 w-4" />,
-          section: "students"
-        },
-        { 
-          label: "Assignments", 
-          to: "/tutor/assignments", 
-          icon: <ClipboardList className="h-4 w-4" />,
-          section: "students"
-        },
-        
-        // Analytics Section
-        { 
-          label: "Quizzes", 
-          to: "/tutor/quizzes", 
-          icon: <HelpCircle className="h-4 w-4" />,
-          section: "analytics"
-        },
-        // { 
-        //   label: "Analytics", 
-        //   to: "/tutor/analytics", 
-        //   icon: <BarChart3 className="h-4 w-4" />,
-        //   section: "analytics"
-        // },
-        
-        // Communication Section
-        // { 
-        //   label: "Messages", 
-        //   to: "/tutor/messages", 
-        //   icon: <MessageCircle className="h-4 w-4" />,
-        //   section: "communication"
-        // },
-        { 
-          label: "Certificates", 
-          to: "/tutor/certificates", 
-          icon: <Award className="h-4 w-4" />,
-          section: "communication"
-        },
-        
-        // Settings Section
-        { 
-          label: "Settings", 
-          to: "/tutor/settings", 
-          icon: <Settings className="h-4 w-4" />,
-          section: "settings"
-        },
-      ]}
+      nav={NAV_SECTIONS.flatMap((section) => section.items)}
+      navSections={NAV_SECTIONS}
     />
   );
 }

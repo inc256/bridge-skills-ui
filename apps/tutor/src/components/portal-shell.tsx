@@ -36,14 +36,25 @@ export type NavItem = {
   icon: ReactNode; 
   badge?: string | number;
   section?: string;
+  dividerAfter?: boolean;
+};
+
+export type NavSection = {
+  label: string;
+  icon?: ReactNode;
+  dividerBefore?: boolean;
+  dividerAfter?: boolean;
+  items: NavItem[];
 };
 
 export function PortalShell({
   nav,
+  navSections: providedNavSections,
   title,
   accent = "student",
 }: {
   nav: NavItem[];
+  navSections?: NavSection[];
   title: string;
   accent?: "student" | "tutor" | "admin";
 }) {
@@ -158,7 +169,7 @@ export function PortalShell({
   };
 
   // Define navigation sections
-  const navSections = [
+  const legacyNavSections = [
     {
       id: "quick-access",
       label: "Quick Access",
@@ -197,6 +208,16 @@ export function PortalShell({
     }
   ].filter(section => section.items.length > 0);
 
+  const navSections = providedNavSections?.length
+    ? providedNavSections.map((section) => ({
+        id: section.label || section.items[0]?.to,
+        label: section.label,
+        dividerBefore: section.dividerBefore,
+        dividerAfter: section.dividerAfter,
+        items: section.items,
+      }))
+    : legacyNavSections;
+
   const getSectionIcon = (sectionId: string) => {
     const icons: Record<string, ReactNode> = {
       "quick-access": <Zap className="w-3.5 h-3.5" />,
@@ -221,19 +242,22 @@ export function PortalShell({
             aria-current={active ? "page" : undefined}
             aria-label={collapsed ? item.label : undefined}
             title={collapsed ? item.label : undefined}
-            className="portal-sidebar-link"
+            className={`student-nav-item flex items-center rounded-xl py-2.5 text-sm font-medium transition-all duration-200 ${collapsed ? "justify-center px-2.5" : "justify-between px-3"} ${active ? "active" : ""}`}
           >
-            {item.icon}
-            <span className="portal-sidebar-link-label">{item.label}</span>
-            {!collapsed && item.badge != null && <span className="ml-auto text-xs">{item.badge}</span>}
+            <span className={`flex items-center ${collapsed ? "justify-center" : "gap-3"}`}>
+              <span className="grid h-5 w-5 place-items-center">{item.icon}</span>
+              {!collapsed && item.label}
+            </span>
+            {!collapsed && item.badge != null && <span className="ml-auto rounded-full px-2 py-0.5 text-[10px] font-semibold">{item.badge}</span>}
           </Link>
+          {item.dividerAfter && <div className="student-nav-divider" />}
         </li>
       );
     });
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="tutor-portal-shell min-h-screen">
       {/* Mobile Navigation Overlay */}
       {mobileNavOpen && (
         <>
@@ -242,47 +266,47 @@ export function PortalShell({
             className="fixed inset-0 z-40 bg-black/40 lg:hidden animate-in fade-in duration-200"
             aria-label="Close navigation menu"
           />
-          <aside className="portal-sidebar portal-mobile-sidebar fixed inset-y-0 left-0 z-50 w-[85vw] max-w-[320px] border-r lg:hidden animate-in slide-in-from-left duration-300">
-            <div className="portal-sidebar-brand-row">
+          <aside className="student-sidebar student-mobile-sidebar fixed inset-y-0 left-0 z-50 w-[85vw] max-w-[320px] border-r lg:hidden animate-in slide-in-from-left duration-300">
+            <div className="student-mobile-header flex items-center justify-end px-4 pt-4 pb-2">
               <button
                 onClick={() => setMobileNavOpen(false)}
-                className="portal-sidebar-close"
+                className="student-mobile-close grid h-9 w-9 place-items-center rounded-xl border border-gray-200 text-gray-600 transition-colors hover:bg-white"
                 aria-label="Close navigation"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
             
-            <div className="portal-sidebar-profile">
-              <div className="portal-sidebar-avatar-wrap">
-                <div className="portal-sidebar-avatar">{getUserInitials()}</div>
-                <Link to="/tutor/settings" onClick={() => setMobileNavOpen(false)} className="portal-sidebar-avatar-edit" aria-label="Edit profile">
-                  <Pencil className="h-3 w-3" />
+            <div className="student-sidebar-profile">
+              <div className="student-sidebar-avatar-wrap">
+                <div className="student-sidebar-avatar">{getUserInitials()}</div>
+                <Link to="/tutor/settings" onClick={() => setMobileNavOpen(false)} className="student-avatar-edit" aria-label="Edit profile">
+                  <Pencil aria-hidden="true" />
                 </Link>
               </div>
-              <div className="portal-sidebar-profile-name">{getUserName()}</div>
-              <div className="portal-sidebar-profile-role">{getUserRole()}</div>
+              <div className="student-sidebar-name" title={getUserName()}>{getUserName()}</div>
             </div>
 
-            <nav className="portal-sidebar-nav max-h-[calc(100vh-14rem)]">
+            <nav className="student-sidebar-nav max-h-[calc(100vh-14rem)] overflow-y-auto px-3 pb-4">
               {navSections.map((section) => (
-                <div key={section.id} className="portal-sidebar-section">
-                  <div className="portal-sidebar-section-title">{section.label}</div>
+                <div key={section.id} className="student-nav-section mt-3 first:mt-0">
+                  {section.dividerBefore && <div className="student-nav-divider" />}
                   <ul className="space-y-0.5">
                     {renderNavItems(section.items)}
                   </ul>
+                  {section.dividerAfter && <div className="student-nav-divider" />}
                 </div>
               ))}
             </nav>
             
             {/* Mobile User Section */}
-            <div className="portal-sidebar-footer">
+            <div className="student-sidebar-footer absolute bottom-0 left-0 right-0 border-t p-3">
               <button
                 onClick={handleLogout}
-                className="portal-sidebar-logout"
+                className="portal-sidebar-logout justify-center"
               >
                 <LogOut className="h-4 w-4" />
-                <span>Logout</span>
+                Logout
               </button>
             </div>
           </aside>
@@ -290,59 +314,59 @@ export function PortalShell({
       )}
 
       {/* Desktop Sidebar */}
-      <aside className={`portal-sidebar fixed inset-y-0 left-0 z-30 hidden border-r lg:flex lg:flex-col ${desktopNavCollapsed ? "is-collapsed w-[82px]" : "w-[300px]"}`}>
-        <div className="portal-sidebar-brand-row">
-          <button type="button" className="portal-sidebar-toggle" onClick={() => setDesktopNavCollapsed((collapsed) => !collapsed)} aria-label={desktopNavCollapsed ? "Expand navigation" : "Collapse navigation"} title={desktopNavCollapsed ? "Expand navigation" : "Collapse navigation"}>
-            {desktopNavCollapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
+      <aside className={`student-sidebar fixed inset-y-0 left-0 z-30 hidden border-r lg:flex lg:flex-col ${desktopNavCollapsed ? "w-[72px]" : "w-[280px]"}`}>
+        <div className={`student-brand-row flex items-center pt-4 pb-3 ${desktopNavCollapsed ? "justify-center px-2" : "justify-end px-4"}`}>
+          <button type="button" className="student-collapse-button is-student grid h-9 w-9 shrink-0 place-items-center rounded-xl border" onClick={() => setDesktopNavCollapsed((collapsed) => !collapsed)} aria-label={desktopNavCollapsed ? "Expand navigation" : "Collapse navigation"} title={desktopNavCollapsed ? "Expand navigation" : "Collapse navigation"}>
+            {desktopNavCollapsed ? <PanelLeftOpen className="h-[18px] w-[18px]" /> : <PanelLeftClose className="h-[18px] w-[18px]" />}
           </button>
         </div>
-        <div className="portal-sidebar-profile">
-          <div className="portal-sidebar-avatar-wrap">
-            <div className="portal-sidebar-avatar">{getUserInitials()}</div>
-            <Link to="/tutor/settings" className="portal-sidebar-avatar-edit" aria-label="Edit profile" title="Edit profile">
-              <Pencil className="h-3 w-3" />
+        <div className={`student-sidebar-profile ${desktopNavCollapsed ? "is-collapsed" : ""}`}>
+          <div className="student-sidebar-avatar-wrap">
+            <div className="student-sidebar-avatar">{getUserInitials()}</div>
+            <Link to="/tutor/settings" className="student-avatar-edit" aria-label="Edit profile" title="Edit profile">
+              <Pencil aria-hidden="true" />
             </Link>
           </div>
-          <div className="portal-sidebar-profile-name">{getUserName()}</div>
-          <div className="portal-sidebar-profile-role">{getUserRole()}</div>
+          {!desktopNavCollapsed && <div className="student-sidebar-name" title={getUserName()}>{getUserName()}</div>}
         </div>
 
-        <nav className="portal-sidebar-nav">
+        <nav className={`flex-1 overflow-y-auto pb-4 ${desktopNavCollapsed ? "px-2" : "px-3"}`}>
           {navSections.map((section) => (
-            <div key={section.id} className="portal-sidebar-section">
-              <div className="portal-sidebar-section-title">{section.label}</div>
+            <div key={section.id} className="student-nav-section mt-4 first:mt-0">
+              {section.dividerBefore && <div className="student-nav-divider" />}
               <ul className="space-y-0.5">
                 {renderNavItems(section.items, desktopNavCollapsed)}
               </ul>
+              {section.dividerAfter && <div className="student-nav-divider" />}
             </div>
           ))}
         </nav>
 
         {/* Desktop User Section with Dropup Menu */}
-        <div className="portal-sidebar-footer">
-          <button type="button" onClick={handleLogout} className={`portal-sidebar-logout mt-2 ${desktopNavCollapsed ? "is-collapsed" : ""}`} aria-label="Logout" title={desktopNavCollapsed ? "Logout" : undefined}>
-            <LogOut className="h-4 w-4" />
-            <span className="portal-sidebar-logout-label">Logout</span>
+        <div className={`student-sidebar-footer relative border-t ${desktopNavCollapsed ? "p-2" : "p-3"}`}>
+          <button type="button" onClick={handleLogout} className={`portal-sidebar-logout ${desktopNavCollapsed ? "is-collapsed" : ""}`} aria-label="Logout" title={desktopNavCollapsed ? "Logout" : undefined}>
+            <LogOut className="h-5 w-5" />
+            {!desktopNavCollapsed && <span>Logout</span>}
           </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <div className={desktopNavCollapsed ? "lg:pl-[82px]" : "lg:pl-[300px]"}>
-        <header className="portal-top-app-bar sticky top-0 z-30 flex h-14 sm:h-16 items-center justify-between border-b px-3 sm:px-6 backdrop-blur-md">
+      <div className={desktopNavCollapsed ? "lg:pl-[72px]" : "lg:pl-[280px]"}>
+        <header className="student-top-app-bar sticky top-0 z-30 flex h-14 sm:h-16 items-center justify-between border-b px-3 sm:px-6 backdrop-blur-md">
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
             <button
               onClick={() => setMobileNavOpen(true)}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border bg-card lg:hidden hover:bg-secondary transition-colors"
+              className="student-mobile-menu-button grid h-9 w-9 shrink-0 place-items-center rounded-xl border lg:hidden"
               aria-label="Open navigation"
             >
               <Menu className="h-4 w-4" />
             </button>
-            <h1 className="truncate text-base sm:text-lg font-semibold text-foreground">{title}</h1>
+            <h1 className="truncate text-base sm:text-lg font-semibold text-white">{title}</h1>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
-            <ThemeSelect />
-            <span className="hidden xs:inline-block text-xs sm:text-sm text-muted-foreground">
+            <div className="student-theme-control"><ThemeSelect /></div>
+            <span className="hidden xs:inline-block text-xs sm:text-sm text-white/75">
               {getUserDisplayName()}
             </span>
             <div className="relative" ref={headerMenuRef}>
@@ -352,7 +376,7 @@ export function PortalShell({
                 aria-label="Open profile menu"
                 aria-haspopup="true"
                 aria-expanded={headerMenuOpen}
-                className="grid h-9 w-9 place-items-center rounded-full bg-primary/10 text-xs font-semibold text-primary ring-2 ring-primary/10 transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="student-header-avatar grid h-9 w-9 place-items-center rounded-full text-xs font-semibold transition hover:scale-105"
               >
                 {getUserInitials()}
               </button>
@@ -395,22 +419,22 @@ export function PortalShell({
               </div>
             </div>
           )}
-          <main className="portal-mobile-nav-main mx-auto min-h-[calc(100vh-4rem)] max-w-[1400px] px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+          <main className="student-mobile-main mx-auto min-h-[calc(100vh-4rem)] max-w-[1400px] px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
             <Outlet />
           </main>
         </div>
-        <nav className="portal-mobile-bottom-nav" aria-label="Main navigation">
+        <nav className="student-bottom-nav" aria-label="Main navigation">
           {[
             { label: "Home", to: "/tutor/dashboard", icon: <Home /> },
+            { label: "Courses", to: "/tutor/courses", icon: <BookOpen /> },
             { label: "Builder", to: "/tutor/builder", icon: <PlusSquare /> },
-            { label: "Students", to: "/tutor/students", icon: <Users /> },
             { label: "Settings", to: "/tutor/settings", icon: <Settings /> },
           ].map((item) => {
             const active = isActiveItem(item.to);
             return (
-              <Link key={item.to} to={item.to} aria-current={active ? "page" : undefined} className="portal-mobile-bottom-nav-item">
-                <span className="portal-mobile-bottom-nav-icon">{item.icon}</span>
-                <span className="portal-mobile-bottom-nav-label">{item.label}</span>
+              <Link key={item.to} to={item.to} aria-current={active ? "page" : undefined} className={`student-bottom-nav-item ${active ? "active" : ""}`}>
+                <span className="student-bottom-nav-icon">{item.icon}</span>
+                <span className="student-bottom-nav-label">{item.label}</span>
               </Link>
             );
           })}
